@@ -27,6 +27,18 @@ func (s *Server) audit(ctx context.Context, e models.AuditEntry) {
 	}
 }
 
+// auditAs records a change attributed to an explicit actor rather than the
+// request-context user. Used by public endpoints (e.g. first-run setup) where
+// there is no authenticated principal in the context yet.
+func (s *Server) auditAs(ctx context.Context, actor models.User, e models.AuditEntry) {
+	e.ActorID = actor.ID
+	e.ActorEmail = actor.Email
+	if err := s.store.CreateAuditEntry(ctx, e); err != nil {
+		s.log.Warn("audit: record failed",
+			slog.String("action", e.Action), slog.String("error", err.Error()))
+	}
+}
+
 // jsonData marshals detail for an audit entry's data field.
 func jsonData(v any) json.RawMessage {
 	b, err := json.Marshal(v)

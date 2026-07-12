@@ -1,4 +1,5 @@
 import { getConfig } from '@/config/env'
+import { getToken } from '@/lib/auth-token'
 
 export class ApiError extends Error {
   readonly status: number
@@ -25,11 +26,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   // Read at call time, not module scope: config is not loaded when this module
   // is first evaluated.
   const url = `${getConfig().apiUrl}${path}`
+  // Attach the bearer token if we have one. Read from the lib holder (not the
+  // store) — the boundary matrix forbids api -> store.
+  const token = getToken()
 
   const response = await fetch(url, {
     ...rest,
     headers: {
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

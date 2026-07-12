@@ -19,4 +19,46 @@ export const scenarios: Record<string, RequestHandler[]> = {
       return HttpResponse.json([])
     }),
   ],
+
+  // A fresh install: GET /setup reports needs_setup, so the app opens the wizard.
+  // POST /setup succeeds; the wizard seeds the cache to "done" on success, so no
+  // refetch sends the user back here — they land in the app.
+  'needs-setup': [
+    http.get('*/api/v1/setup', () => HttpResponse.json({ needs_setup: true })),
+    http.post('*/api/v1/setup', async ({ request }) => {
+      const input = (await request.json()) as {
+        email: string
+        tenant_slug?: string
+        tenant_name?: string
+      }
+      return HttpResponse.json(
+        {
+          token: 'mock-token',
+          user: {
+            id: 'u1',
+            email: input.email,
+            full_name: 'Admin',
+            is_superuser: true,
+            is_active: true,
+            created_at: '2026-07-12T00:00:00Z',
+            updated_at: '2026-07-12T00:00:00Z',
+          },
+          tenant: input.tenant_slug
+            ? {
+                id: 't1',
+                slug: input.tenant_slug,
+                name: input.tenant_name ?? input.tenant_slug,
+                created_at: '2026-07-12T00:00:00Z',
+                updated_at: '2026-07-12T00:00:00Z',
+              }
+            : undefined,
+        },
+        { status: 201 },
+      )
+    }),
+  ],
+
+  'login-error': [
+    http.post('*/api/v1/auth/login', () => new HttpResponse(null, { status: 401 })),
+  ],
 }

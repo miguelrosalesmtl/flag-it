@@ -34,6 +34,16 @@ func (s *Store) GetUserByID(ctx context.Context, id string) (models.User, error)
 	return userOrNotFound(scanUser(row))
 }
 
+// CountSuperusers returns how many platform superusers exist (0 = fresh install
+// needing setup).
+func (s *Store) CountSuperusers(ctx context.Context) (int, error) {
+	var n int
+	if err := s.pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE is_superuser = true`).Scan(&n); err != nil {
+		return 0, fmt.Errorf("store: count superusers: %w", err)
+	}
+	return n, nil
+}
+
 // ListUsers returns all users ordered by email (superuser view).
 func (s *Store) ListUsers(ctx context.Context) ([]models.User, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+userColumns+` FROM users ORDER BY email`)

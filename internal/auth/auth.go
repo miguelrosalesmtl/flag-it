@@ -65,6 +65,12 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, mo
 	return token, user, nil
 }
 
+// IssueToken signs a token for an already-authenticated user id. Used by flows
+// that establish identity by means other than password (e.g. first-run setup).
+func (s *Service) IssueToken(userID string) (string, error) {
+	return s.issueToken(userID)
+}
+
 // issueToken signs a short-lived HS256 token whose subject is the user id.
 func (s *Service) issueToken(userID string) (string, error) {
 	now := time.Now()

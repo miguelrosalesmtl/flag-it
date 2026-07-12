@@ -90,6 +90,7 @@ func New(
 	r.Get("/api/v1/eval/stream", s.handleEvalStream)
 
 	s.registerHealth()
+	s.registerSetup()
 	s.registerAuth()
 	s.registerUsers()
 	s.registerTenants()

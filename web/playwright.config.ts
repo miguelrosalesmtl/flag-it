@@ -16,5 +16,8 @@ export default defineConfig({
     command: 'pnpm dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
+    // E2E runs against MSW so it needs no backend, even though local `.env` points
+    // the app at a real API. This process-env var overrides `.env` in loadEnv.
+    env: { APP_ENABLE_MOCKING: 'true' },
   },
 })
