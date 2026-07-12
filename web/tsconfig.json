@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" },
+    { "path": "./tsconfig.e2e.json" }
+  ],
+
+  // This root config is solution-style: `files: []` means it compiles nothing,
+  // and the real settings live in the referenced projects. But external tools
+  // (the shadcn CLI, react-docgen-typescript) read THIS file to resolve the
+  // `@/*` alias. Without the paths below, `shadcn add` silently writes its
+  // components into a literal `./@/components/ui` directory instead of `src/`.
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

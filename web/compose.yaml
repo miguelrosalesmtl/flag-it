@@ -1,0 +1,37 @@
+# Two environments, ONE image.
+#
+# Both services below build from the same Dockerfile and run the identical
+# artifact. The only thing that makes one of them staging and the other
+# production is the environment passed at `docker run` time, which
+# docker/entrypoint.sh turns into /config.json when the container starts.
+#
+# That is the whole point of the build-once model, made literal: bring both up
+# and diff them.
+#
+#   pnpm docker:staging       -> http://localhost:8081
+#   pnpm docker:production    -> http://localhost:8082
+#   docker compose up --build -> both at once
+#
+#   curl -s localhost:8081/config.json   # staging
+#   curl -s localhost:8082/config.json   # production, same bytes of JS
+#
+# Nothing here is secret: config.json is served to the browser in plain text.
+
+services:
+  app-staging:
+    build: .
+    image: frontend-template
+    ports:
+      - '8081:8080'
+    environment:
+      APP_API_URL: https://staging-api.example.com
+      APP_ENVIRONMENT: staging
+
+  app-production:
+    build: .
+    image: frontend-template
+    ports:
+      - '8082:8080'
+    environment:
+      APP_API_URL: https://api.example.com
+      APP_ENVIRONMENT: production

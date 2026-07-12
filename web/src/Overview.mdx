@@ -1,0 +1,44 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Overview" />
+
+# Component catalog
+
+Every component in this sidebar is **presentational**. It takes props and emits
+callbacks. It cannot fetch, cannot read a store, cannot call a hook — that is
+enforced by ESLint (`boundaries/dependencies`), so a violation fails CI.
+
+Which is exactly why this catalog works at all: there is no provider to set up, no
+API to mock, no router to fake. A component here is a function of its props, so
+rendering it is just calling it.
+
+## Feeding them values
+
+Open any story and use the **Controls** panel underneath the canvas. Every prop is
+editable live — change `user.name`, flip `isDeleting`, clear `onDelete` and watch
+the delete button disappear. The controls are generated from the component's
+TypeScript types, so they never drift out of date.
+
+The **Actions** panel logs every callback the component fires. Click a delete button
+and you will see `onDelete('1')` recorded — that is the component's entire outward
+contract, made visible.
+
+## Where the loading and error states went
+
+They live in the _container_, not the component. `UsersPage` branches on
+`isPending` / `isError` and only renders `<UserList users={users} />` once data has
+resolved. So `UserList` takes a plain `User[]` — never `undefined`, never a state
+machine.
+
+That is why you will find `Skeleton` and `ErrorState` under **UI** as components in
+their own right: the container composes them, rather than every component growing
+its own `loading` prop.
+
+## Layers
+
+```
+api ──▶ hook ──▶ feature (container) ──▶ component ──▶ ui
+```
+
+Only `hook` may reach `api`. Only a container may pair data with presentation.
+Everything in this catalog lives at the `component` and `ui` end of that arrow.

@@ -1,28 +1,337 @@
-# web — Frontend
+# frontend-template-react
 
-The feature-flag platform UI. Part of the monorepo (the Go backend lives at the
-repo root).
+[![CI](https://github.com/miguelrosalesmtl/frontend-template/actions/workflows/ci.yml/badge.svg)](https://github.com/miguelrosalesmtl/frontend-template/actions/workflows/ci.yml)
 
-## Talking to the API
-- Base URL: `http://localhost:8080`, everything under `/api/v1`.
-- Auth: `POST /auth/login` → `{ token }`; send `Authorization: Bearer <token>` on
-  every other request. 401 → re-login, 403 → missing permission.
-- Addressing: tenant by **slug**, project by **key**
-  (e.g. `/api/v1/tenants/acme/projects/web/flags`).
-- SDK-key endpoints (`/eval`, `/eval/all`, `/events`, `/eval/stream`) use the
-  `X-SDK-Key` header instead of JWT.
+A production-ready React + Vite starter to scaffold new applications from.
 
-## Typed client
-Generate types/client from the backend's OpenAPI spec (kept in sync as endpoints
-are added):
+It is built around one idea: **components are dumb**. They receive props and emit
+callbacks. They never fetch, never subscribe to a store, never know what an API is.
+Everything else in the template exists to make that true — and, crucially, to _keep_
+it true: the architecture is enforced by ESLint, so a component that reaches for the
+network fails CI rather than quietly setting a precedent.
+
+## What's in it
+
+**The whole shadcn/ui library — 61 primitives, every one with a Storybook story.**
+Table, Form (react-hook-form + Zod), Chart (recharts), Sidebar, Command, Calendar,
+Dialog, Combobox, and the rest. Run `pnpm storybook` and you can render any of them
+and edit its props live. That is the base you compose your own components from.
+
+**A layered architecture that cannot rot.** Dependencies flow one way —
+`api → hook → container → component → ui` — and `eslint-plugin-boundaries` enforces
+the matrix. A presentational component _physically cannot_ import the API client or
+the store. It is a build error, not a code-review convention.
+
+**A complete worked feature.** `src/features/users/` is a full vertical slice —
+container, query hooks, pure components, a story, a component test, and a container
+test — that you copy to start a new feature.
+
+**Build once, deploy anywhere.** No environment value is compiled into the bundle.
+The app fetches `/config.json` at boot and validates it with Zod, so the exact image
+you tested in staging is the one that reaches production. The included `Dockerfile`
+ships a config-free image; `docker/entrypoint.sh` writes the config from environment
+variables at container start.
+
+**A mock backend shared by everything.** MSW handlers serve the dev server, the unit
+tests, and the E2E suite from one set of fixtures — so the template runs, and its
+tests pass, with no backend at all. Named failure scenarios (`?scenario=users-error`)
+let you look at any error state in a real browser.
+
+**Testing at three levels.** Vitest + Testing Library for pure components and
+containers, Playwright for real-browser end-to-end, and Storybook (with a11y checks
+and interaction tests) for the component catalog.
+
+## Stack
+
+| Concern          | Choice                                     |
+| ---------------- | ------------------------------------------ |
+| Build            | Vite 8, TypeScript 6                       |
+| Server state     | TanStack Query                             |
+| Client state     | Zustand                                    |
+| Routing          | React Router 8                             |
+| Styling          | Tailwind 4 + shadcn/ui (61 primitives)     |
+| Forms            | react-hook-form + Zod                      |
+| Config           | Runtime `/config.json`, validated with Zod |
+| Unit / component | Vitest + Testing Library                   |
+| Mock API         | MSW (shared by dev, tests, and Storybook)  |
+| E2E              | Playwright                                 |
+| Isolation        | Storybook (+ a11y, autodocs)               |
+| Deploy           | Docker + nginx, runtime-configured         |
+| Package manager  | pnpm                                       |
+
+## Getting started
 
 ```bash
-# types only
-npx openapi-typescript ../docs/openapi.yaml -o src/api/types.ts
-# or a full client: npx orval / openapi-generator against ../docs/openapi.yaml
+pnpm install
+pnpm dev            # http://localhost:5173, served from MSW fixtures
 ```
 
-Interactive API reference: run the backend and open `http://localhost:8080/docs`.
+Other commands:
 
-## CORS
-The backend allows browser origins via `CORS_ALLOWED_ORIGINS` (default `*` in dev).
+```bash
+pnpm components     # list every dumb component and its props
+pnpm storybook      # render them; edit their props live
+pnpm test           # unit + component tests
+pnpm test:e2e       # Playwright (boots the dev server itself)
+pnpm test:e2e:ui    # Playwright time-travel debugger
+pnpm lint           # includes architectural boundary enforcement
+pnpm typecheck
+pnpm build
+
+pnpm docker:build   # production image (nginx, config injected at startup)
+pnpm docker:run     # serve it on :8080
+pnpm docker:staging # same image as staging (:8081) — see compose.yaml
+```
+
+## The component library
+
+The **entire shadcn/ui library — 61 primitives — is installed** in `src/components/ui/`, and
+every one of them has a Storybook story. Table, Form (react-hook-form + Zod), Chart (recharts),
+Sidebar, Command, Calendar, Dialog, Combobox, plus the newer primitives (Field, Empty,
+InputGroup, Item, Kbd, Spinner, Bubble, Message). That is the base you compose custom
+components from.
+
+**`src/components/ui/` is vendored.** Those files are generated by the shadcn CLI and are meant
+to be _regenerated_, not hand-edited:
+
+```bash
+pnpm dlx shadcn@latest add button --overwrite   # pull upstream fixes
+```
+
+So components **you** write live one level up in `src/components/*.tsx` (see `error-state.tsx`),
+where the full lint rule set applies. The four upstream components that trip our React Compiler
+rules (carousel, sidebar, combobox, use-mobile) have those specific rules disabled for the
+vendored directory only — patching them in place would be undone by the next update.
+
+## Seeing what the components do
+
+Because components are pure, there is nothing to set up in order to look at one — no
+provider, no mock backend, no router. Two ways in:
+
+**`pnpm components`** prints the catalog to your terminal: every presentational component,
+the props it accepts, and a warning on any that lack a story.
+
+```
+src/features/users/components/UserList.tsx
+  <UserList>
+    users: User[]
+    onDelete?: (id: string) => void
+    deletingId?: string | null
+```
+
+**`pnpm storybook`** is where you feed them values. Open a story and the **Controls** panel
+lets you edit every prop live — rename a user, flip `isDeleting`, clear `onDelete` and watch
+the delete button vanish. Controls and the props table are generated from the TypeScript
+types, so they cannot drift. The **Actions** panel logs each callback the component fires
+(`onDelete('1')`), which is its entire outward contract.
+
+Some stories also carry a `play` function that drives the component and asserts on it —
+see `ClickingDeleteEmitsTheUserId`, which clicks delete and checks the component emits the
+id _without_ removing anything, because deciding what a delete means is the container's job.
+
+## Architecture
+
+Dependencies flow one way. A layer may only import from the layers it is allowed to.
+
+```
+        api  ──▶  hook  ──▶  feature (container)  ──▶  component  ──▶  ui
+                    │              │
+        store  ─────┴──────────────┘
+
+  types  ── importable by everyone (pure types, zero runtime)
+  config ── runtime configuration, read via getConfig()
+```
+
+| Layer       | Path                                          | May import                                     |
+| ----------- | --------------------------------------------- | ---------------------------------------------- |
+| `app`       | `src/app`                                     | everything (composition root)                  |
+| `feature`   | `src/features/*`                              | hook, store, component, ui, lib, types, config |
+| `hook`      | `src/features/*/hooks`                        | api, store, lib, types, config                 |
+| `component` | `src/components`, `src/features/*/components` | component, ui, lib, types                      |
+| `ui`        | `src/components/ui`                           | ui, lib, types                                 |
+| `api`       | `src/api`                                     | lib, types, config                             |
+| `store`     | `src/store`                                   | lib, types, config                             |
+| `config`    | `src/config`                                  | types                                          |
+| `types`     | `src/types`                                   | types                                          |
+
+**`component` and `ui` cannot import `api`, `store`, or `hook`.** That is the whole
+point, and it is enforced by `eslint-plugin-boundaries` — a violation fails `pnpm lint`,
+so it fails CI. It is not a convention that erodes; it is a build error.
+
+### Where the loading state lives
+
+Containers branch, components don't. `UsersPage` handles `isPending` / `isError` and
+only renders `<UserList users={users} />` once data has resolved. So `UserList` takes
+a plain `User[]` — no `undefined`, no state machine in its props, and every state it
+can be in is a Storybook story.
+
+### The vertical slice
+
+`src/features/users/` is a complete worked example. Copy it to start a feature:
+
+```
+features/users/
+  UsersPage.tsx           container — the only file that touches hooks
+  hooks/useUsers.ts       queries + mutations — the only bridge to api/
+  components/
+    UserList.tsx          pure
+    UserCard.tsx          pure
+    UserList.stories.tsx  renders with no providers at all
+    UserList.test.tsx     renders with no providers at all
+  UsersPage.test.tsx      exercises the full slice through MSW
+```
+
+## Contributing / CI
+
+`main` is protected. Work happens on a branch and lands through a pull request:
+
+```bash
+git checkout -b feat/thing
+# ...
+git push -u origin feat/thing
+gh pr create
+```
+
+Two checks must pass before a PR can merge:
+
+| Check     | What it runs                                                                                                   |
+| --------- | -------------------------------------------------------------------------------------------------------------- |
+| `quality` | lint (**architectural boundaries**), typecheck, unit tests, app build, Storybook build, `prettier --check`     |
+| `e2e`     | 6 Playwright tests in real Chromium — config fetch, Zod validation, MSW startup, render, delete, error + retry |
+
+The `lint` step is the load-bearing one. If a presentational component imports the API
+client or the store, if a source file lands in an unclassified directory, or if someone
+reads a custom `import.meta.env` var, the job fails and **GitHub refuses the merge** —
+`the base branch policy prohibits the merge`. That is what makes the architecture in this
+template a property of the repository rather than a note in a README.
+
+Run the whole pipeline locally before pushing:
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e
+```
+
+Node and pnpm versions come from `.nvmrc` and `packageManager`, so CI, the Dockerfile,
+and your laptop cannot drift apart.
+
+## Configuration
+
+Locally, you configure the app with a **`.env` file**:
+
+```bash
+cp .env.example .env
+```
+
+```bash
+APP_API_URL=/api              # where the API lives
+APP_ENVIRONMENT=development   # development | staging | production
+APP_ENABLE_MOCKING=true       # serve from MSW fixtures instead of a real backend
+```
+
+To point at a real backend: set `APP_API_URL` and `APP_ENABLE_MOCKING=false`.
+
+### What actually happens (and why it isn't `import.meta.env`)
+
+**The app is built once and promoted unchanged through environments**, so no environment
+value may be compiled into the bundle. Vite's `VITE_*` vars are the opposite of that —
+they are string-replaced into your JavaScript at _build_ time, which makes the artifact
+environment-specific: the bundle you tested in staging is not the bundle you ship.
+
+So the app fetches **`/config.json`** at boot, validates it with Zod, and refuses to start
+(with a readable error, never a blank page) if a field is missing or malformed.
+
+`config.json` is generated, never hand-edited:
+
+| Where          | Generated by                             | From                     |
+| -------------- | ---------------------------------------- | ------------------------ |
+| locally        | `vite/runtime-config.ts` (a Vite plugin) | your `.env`              |
+| in a container | `docker/entrypoint.sh`                   | the container's env vars |
+
+Both read the same `APP_*` variable names and produce the same file — so **local
+development boots through the exact code path production does**, rather than a second,
+divergent mechanism that would let a broken `config.json` reach production undiscovered.
+
+Read config anywhere with `getConfig()` from `@/config/env`. An ESLint rule blocks reading
+custom `import.meta.env.VITE_*` vars, so the build-time approach cannot creep back in.
+
+> **Everything in `config.json` is served to the browser in plain text. It is public.**
+> Never put a secret in it, or in a `VITE_*` var — an SPA has no server side, so there is
+> nowhere to hide one. API keys and tokens belong behind your backend.
+
+Mocking is forced **off** in any build, whatever `.env` says: MSW is gated behind
+`import.meta.env.DEV` and cannot run in a production bundle, so claiming otherwise would
+just send the app hunting for fixtures that are never served.
+
+### Deploying
+
+The app ships as a **static bundle served by nginx**, in a multi-stage image that builds
+with Node and throws the toolchain away:
+
+```bash
+pnpm docker:build      # build the production image
+pnpm docker:run        # serve it on http://localhost:8080
+```
+
+`pnpm docker:run` takes `APP_API_URL` and `APP_ENVIRONMENT` from your shell:
+
+```bash
+APP_API_URL=https://api.example.com APP_ENVIRONMENT=production pnpm docker:run
+```
+
+**The image contains no configuration at all.** `docker/entrypoint.sh` writes `config.json`
+from the container's environment when it starts, so the same image is a staging container
+or a production one depending only on how you run it. Those are the _same_ `APP_*` variable
+names you use in `.env` locally — one vocabulary from laptop to production.
+
+`compose.yaml` makes that concrete by running the same image as two environments at once:
+
+```bash
+pnpm docker:staging      # http://localhost:8081
+pnpm docker:production   # http://localhost:8082
+pnpm docker:stop
+```
+
+Bring both up and you can verify the central claim yourself — the JavaScript bundle is
+byte-identical across the two, and only `config.json` differs:
+
+```bash
+curl -s localhost:8081/config.json   # staging-api.example.com
+curl -s localhost:8082/config.json   # api.example.com
+```
+
+`APP_API_URL` and `APP_ENVIRONMENT` are required; the container refuses to start without
+them rather than serving a broken app. `config.json` is served `no-store` and hashed assets
+`immutable` — do not cache `config.json` at a CDN, or a promoted container will hand out the
+previous environment's config.
+
+> The `docker:*` scripts resolve **Docker or Podman**, whichever you have installed.
+
+### Adding a config field
+
+Four places, e.g. to add a Sentry DSN later:
+
+1. `src/config/env.ts` — add it to the Zod schema (this makes it typed and validated)
+2. `vite/runtime-config.ts` — read it from `.env` for local development
+3. `.env.example` — document it
+4. `docker/entrypoint.sh` — emit it from a container env var
+
+Then read it with `getConfig()`. Remember it will be public.
+
+## Mock API
+
+MSW handlers in `src/mocks/handlers.ts` are the single source of fixtures, shared by the
+dev server, Vitest, and Playwright. One place to describe your backend, three consumers.
+
+`src/mocks/scenarios.ts` adds named failure modes you can switch on with a query param, in
+the browser or in a test:
+
+```
+/?scenario=users-error    500 from GET /api/users
+/?scenario=users-empty    empty list
+/?scenario=users-slow     3s delay, to look at the skeletons
+```
+
+One caveat worth knowing: MSW runs in a **service worker**, which intercepts requests
+_beneath_ Playwright's `page.route` — so an E2E test cannot fulfil those calls from the
+outside. Steer the mock API with a scenario, or via `window.msw.worker` (exposed in dev),
+instead. `e2e/users.spec.ts` shows both.
