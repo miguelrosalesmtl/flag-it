@@ -13,13 +13,18 @@ const membershipColumns = `id, user_id, tenant_id, created_at, updated_at`
 // CreateMembership records that a user belongs to a tenant (belonging only;
 // permissions come from role assignments). Idempotent.
 func (s *Store) CreateMembership(ctx context.Context, userID, tenantID string) (models.Membership, error) {
-	const q = `
+	return insertMembership(ctx, s.pool, userID, tenantID)
+}
+
+// insertMembership is the querier-based body of CreateMembership, so it can run
+// inside a larger transaction (e.g. AddMember, GrantProjectRole).
+func insertMembership(ctx context.Context, q querier, userID, tenantID string) (models.Membership, error) {
+	const sql = `
 		INSERT INTO memberships (user_id, tenant_id)
 		VALUES ($1, $2)
 		ON CONFLICT (user_id, tenant_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + membershipColumns
-	row := s.pool.QueryRow(ctx, q, userID, tenantID)
-	return scanMembership(row)
+	return scanMembership(q.QueryRow(ctx, sql, userID, tenantID))
 }
 
 // ListMembershipsByUser returns every tenant a user belongs to.

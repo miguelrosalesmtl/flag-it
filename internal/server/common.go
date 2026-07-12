@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/miguelrosalesmtl/flag-it/internal/authz"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
@@ -73,4 +74,18 @@ func storeError(err error, notFoundMsg string) error {
 		return huma.Error404NotFound(notFoundMsg)
 	}
 	return huma.Error500InternalServerError(err.Error())
+}
+
+// authzError maps member/role service errors to HTTP statuses.
+func authzError(err error) error {
+	switch {
+	case errors.Is(err, authz.ErrUserNotFound):
+		return huma.Error404NotFound("user not found")
+	case errors.Is(err, authz.ErrRoleNotFound):
+		return huma.Error400BadRequest("unknown role")
+	case errors.Is(err, authz.ErrRoleScope):
+		return huma.Error400BadRequest("role has the wrong scope")
+	default:
+		return huma.Error500InternalServerError(err.Error())
+	}
 }

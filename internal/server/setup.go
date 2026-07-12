@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -67,51 +68,40 @@ func (s *Server) registerSetup() {
 		Tags:          []string{"Setup"},
 		DefaultStatus: http.StatusCreated,
 	}, func(ctx context.Context, in *setupInput) (*setupOutput, error) {
-		n, err := s.store.CountSuperusers(ctx)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
-		}
-		if n > 0 {
-			return nil, huma.Error409Conflict("setup already complete")
-		}
-		if in.Body.Email == "" || in.Body.Password == "" {
-			return nil, huma.Error400BadRequest("email and password are required")
-		}
+		// Input-shape validation stays at the edge; the workflow itself (the
+		// "already complete" invariant, atomic user+tenant creation, token
+		// issuance) lives in auth.Bootstrap.
 		if (in.Body.TenantSlug == "") != (in.Body.TenantName == "") {
 			return nil, huma.Error400BadRequest("tenant_slug and tenant_name must be provided together")
 		}
 
-		hash, err := auth.HashPassword(in.Body.Password)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
+		res, err := s.auth.Bootstrap(ctx, auth.BootstrapInput{
+			Email:      in.Body.Email,
+			Password:   in.Body.Password,
+			FullName:   in.Body.FullName,
+			TenantSlug: in.Body.TenantSlug,
+			TenantName: in.Body.TenantName,
+		})
+		if errors.Is(err, auth.ErrSetupComplete) {
+			return nil, huma.Error409Conflict("setup already complete")
 		}
-		user, err := s.store.CreateUser(ctx, in.Body.Email, hash, in.Body.FullName, true)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 
 		out := &setupOutput{}
-		out.Body.User = user
+		out.Body.User = res.User
+		out.Body.Tenant = res.Tenant
+		out.Body.Token = res.Token
 
-		if in.Body.TenantSlug != "" {
-			tenant, err := s.store.CreateTenant(ctx, in.Body.TenantSlug, in.Body.TenantName)
-			if err != nil {
-				return nil, huma.Error500InternalServerError(err.Error())
-			}
-			out.Body.Tenant = &tenant
-			// Attribute this to the just-created superuser; there is no request
-			// context actor on a public endpoint, so record it directly.
-			s.auditAs(ctx, user, models.AuditEntry{TenantID: tenant.ID,
-				Action: "tenant.created", ResourceType: "tenant", ResourceKey: tenant.Slug})
+		// Attribute the audit trail to the just-created superuser; there is no
+		// request-context actor on a public endpoint.
+		if res.Tenant != nil {
+			s.auditAs(ctx, res.User, models.AuditEntry{TenantID: res.Tenant.ID,
+				Action: "tenant.created", ResourceType: "tenant", ResourceKey: res.Tenant.Slug})
 		}
-		s.auditAs(ctx, user, models.AuditEntry{
-			Action: "setup.completed", ResourceType: "user", ResourceKey: user.Email})
-
-		token, err := s.auth.IssueToken(user.ID)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
-		}
-		out.Body.Token = token
+		s.auditAs(ctx, res.User, models.AuditEntry{
+			Action: "setup.completed", ResourceType: "user", ResourceKey: res.User.Email})
 		return out, nil
 	})
 }

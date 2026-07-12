@@ -70,20 +70,11 @@ func (s *Server) registerProjects() {
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
-		out := &listProjectsOutput{}
-		if subject.IsSuperuser || subject.TenantPerms[tenant.ID][models.PermProjectRead] {
-			out.Body.Projects = projects
-			return out, nil
-		}
-		visible := make([]models.Project, 0, len(projects))
-		for _, p := range projects {
-			if subject.ProjectPerms[p.ID][models.PermProjectRead] {
-				visible = append(visible, p)
-			}
-		}
-		if len(visible) == 0 {
+		visible, tenantWide := subject.ReadableProjects(tenant.ID, projects)
+		if !tenantWide && len(visible) == 0 {
 			return nil, huma.Error403Forbidden("forbidden")
 		}
+		out := &listProjectsOutput{}
 		out.Body.Projects = visible
 		return out, nil
 	})

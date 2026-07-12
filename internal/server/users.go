@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
@@ -64,11 +63,7 @@ func (s *Server) registerUsers() {
 		if in.Body.Email == "" || in.Body.Password == "" {
 			return nil, huma.Error400BadRequest("email and password are required")
 		}
-		hash, err := auth.HashPassword(in.Body.Password)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
-		}
-		user, err := s.store.CreateUser(ctx, in.Body.Email, hash, in.Body.FullName, in.Body.IsSuperuser)
+		user, err := s.auth.CreateUser(ctx, in.Body.Email, in.Body.Password, in.Body.FullName, in.Body.IsSuperuser)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}

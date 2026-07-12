@@ -20,16 +20,27 @@ func (s *Store) CreateTenant(ctx context.Context, slug, name string) (models.Ten
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
 
-	const q = `INSERT INTO tenants (slug, name) VALUES ($1, $2) RETURNING ` + tenantColumns
-	tenant, err := scanTenant(tx.QueryRow(ctx, q, slug, name))
+	tenant, err := insertTenantWithRoles(ctx, tx, slug, name)
 	if err != nil {
-		return models.Tenant{}, fmt.Errorf("store: insert tenant: %w", err)
-	}
-	if err := seedDefaultRoles(ctx, tx, tenant.ID); err != nil {
 		return models.Tenant{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return models.Tenant{}, fmt.Errorf("store: commit: %w", err)
+	}
+	return tenant, nil
+}
+
+// insertTenantWithRoles inserts a tenant and seeds its default system roles
+// using the given querier, so it can run standalone or inside a larger
+// transaction (e.g. first-run bootstrap).
+func insertTenantWithRoles(ctx context.Context, q querier, slug, name string) (models.Tenant, error) {
+	const sql = `INSERT INTO tenants (slug, name) VALUES ($1, $2) RETURNING ` + tenantColumns
+	tenant, err := scanTenant(q.QueryRow(ctx, sql, slug, name))
+	if err != nil {
+		return models.Tenant{}, fmt.Errorf("store: insert tenant: %w", err)
+	}
+	if err := seedDefaultRoles(ctx, q, tenant.ID); err != nil {
+		return models.Tenant{}, err
 	}
 	return tenant, nil
 }

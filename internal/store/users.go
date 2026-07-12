@@ -14,12 +14,17 @@ const userColumns = `id, email, COALESCE(password_hash, ''), full_name,
 
 // CreateUser inserts a user and returns it with server-populated fields.
 func (s *Store) CreateUser(ctx context.Context, email, passwordHash, fullName string, isSuperuser bool) (models.User, error) {
-	const q = `
+	return insertUser(ctx, s.pool, email, passwordHash, fullName, isSuperuser)
+}
+
+// insertUser is the querier-based body of CreateUser, so it can run inside a
+// larger transaction (e.g. first-run bootstrap).
+func insertUser(ctx context.Context, q querier, email, passwordHash, fullName string, isSuperuser bool) (models.User, error) {
+	const sql = `
 		INSERT INTO users (email, password_hash, full_name, is_superuser)
 		VALUES ($1, $2, $3, $4)
 		RETURNING ` + userColumns
-	row := s.pool.QueryRow(ctx, q, email, passwordHash, fullName, isSuperuser)
-	return scanUser(row)
+	return scanUser(q.QueryRow(ctx, sql, email, passwordHash, fullName, isSuperuser))
 }
 
 // GetUserByEmail looks a user up by (case-insensitive) email.

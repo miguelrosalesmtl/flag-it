@@ -21,6 +21,10 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 // ErrInvalidToken is returned when a token is missing, malformed, or expired.
 var ErrInvalidToken = errors.New("invalid token")
 
+// ErrSetupComplete is returned by Bootstrap when a superuser already exists, so
+// first-run setup can never be replayed to self-promote.
+var ErrSetupComplete = errors.New("setup already complete")
+
 // Service issues and verifies auth tokens for users.
 type Service struct {
 	store  *store.Store
@@ -40,6 +44,60 @@ func HashPassword(plain string) (string, error) {
 		return "", fmt.Errorf("auth: hash password: %w", err)
 	}
 	return string(h), nil
+}
+
+// CreateUser hashes the password and persists a new user. The handler never
+// sees a hash — password handling stays inside this service.
+func (s *Service) CreateUser(ctx context.Context, email, password, fullName string, isSuperuser bool) (models.User, error) {
+	hash, err := HashPassword(password)
+	if err != nil {
+		return models.User{}, err
+	}
+	return s.store.CreateUser(ctx, email, hash, fullName, isSuperuser)
+}
+
+// BootstrapInput is the payload for first-run setup. Tenant fields are optional
+// but must be provided together.
+type BootstrapInput struct {
+	Email      string
+	Password   string
+	FullName   string
+	TenantSlug string
+	TenantName string
+}
+
+// BootstrapResult is the outcome of first-run setup: the created superuser, the
+// optional first tenant, and a token so the caller lands signed in.
+type BootstrapResult struct {
+	User   models.User
+	Tenant *models.Tenant
+	Token  string
+}
+
+// Bootstrap runs first-run setup: it creates the first superuser (and optional
+// first tenant) atomically, then issues a token. It returns ErrSetupComplete if
+// a superuser already exists, so the flow can never be replayed.
+func (s *Service) Bootstrap(ctx context.Context, in BootstrapInput) (BootstrapResult, error) {
+	n, err := s.store.CountSuperusers(ctx)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	if n > 0 {
+		return BootstrapResult{}, ErrSetupComplete
+	}
+	hash, err := HashPassword(in.Password)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	user, tenant, err := s.store.Bootstrap(ctx, in.Email, hash, in.FullName, in.TenantSlug, in.TenantName)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	token, err := s.issueToken(user.ID)
+	if err != nil {
+		return BootstrapResult{}, err
+	}
+	return BootstrapResult{User: user, Tenant: tenant, Token: token}, nil
 }
 
 // Login verifies credentials and, on success, returns a signed token and the user.
