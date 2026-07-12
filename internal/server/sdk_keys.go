@@ -2,27 +2,13 @@ package server
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
+	"errors"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
-
-// generateSDKKey mints a random bearer key. Server keys are secret; client keys
-// are public (client-side ID) and get a distinct prefix.
-func generateSDKKey(kind string) (string, error) {
-	b := make([]byte, 24)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	prefix := "sdk-"
-	if kind == "client" {
-		prefix = "client-"
-	}
-	return prefix + hex.EncodeToString(b), nil
-}
 
 type envKeyPath struct {
 	TenantSlug string `path:"tenantSlug"`
@@ -75,7 +61,7 @@ func (s *Server) registerSDKKeys() {
 		if err != nil {
 			return nil, err
 		}
-		keys, err := s.store.ListSdkKeysByEnvironment(ctx, env.ID)
+		keys, err := s.catalog.ListSdkKeys(ctx, env.ID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -100,14 +86,10 @@ func (s *Server) registerSDKKeys() {
 		if err != nil {
 			return nil, err
 		}
-		if in.Body.Kind != "server" && in.Body.Kind != "client" {
+		sk, err := s.catalog.CreateSdkKey(ctx, env.ID, in.Body.Kind, in.Body.Name)
+		if errors.Is(err, catalog.ErrInvalidSDKKeyKind) {
 			return nil, huma.Error400BadRequest("kind must be 'server' or 'client'")
 		}
-		key, err := generateSDKKey(in.Body.Kind)
-		if err != nil {
-			return nil, huma.Error500InternalServerError("failed to generate key")
-		}
-		sk, err := s.store.CreateSdkKey(ctx, env.ID, key, in.Body.Kind, in.Body.Name)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -134,7 +116,7 @@ func (s *Server) registerSDKKeys() {
 		if err != nil {
 			return nil, err
 		}
-		if err := s.store.RevokeSdkKey(ctx, in.KeyID, env.ID); err != nil {
+		if err := s.catalog.RevokeSdkKey(ctx, in.KeyID, env.ID); err != nil {
 			return nil, storeError(err, "sdk key not found or already revoked")
 		}
 		s.sdkCache.flush() // drop cached lookups so the revoke takes effect now

@@ -3,28 +3,22 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/miguelrosalesmtl/flag-it/internal/audit"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
-	"github.com/miguelrosalesmtl/flag-it/internal/store"
 )
 
-// audit records a change, best-effort. The actor is taken from the request
-// context; a failure is logged but never fails the underlying operation. (A
-// future refinement could write this in the same transaction as the change.)
+// audit records a change attributed to the request-context user, best-effort.
 func (s *Server) audit(ctx context.Context, e models.AuditEntry) {
-	e.ActorID = userID(ctx)
-	if e.ActorID != "" {
-		if u, err := s.store.GetUserByID(ctx, e.ActorID); err == nil {
-			e.ActorEmail = u.Email
-		}
-	}
-	if err := s.store.CreateAuditEntry(ctx, e); err != nil {
-		s.log.Warn("audit: record failed",
-			slog.String("action", e.Action), slog.String("error", err.Error()))
-	}
+	s.auditSvc.Record(ctx, userID(ctx), e)
+}
+
+// auditAs records a change attributed to an explicit actor, for public
+// endpoints (e.g. first-run setup) with no authenticated principal in context.
+func (s *Server) auditAs(ctx context.Context, actor models.User, e models.AuditEntry) {
+	s.auditSvc.RecordAs(ctx, actor, e)
 }
 
 // jsonData marshals detail for an audit entry's data field.
@@ -63,7 +57,7 @@ func (s *Server) registerAudit() {
 		if err := s.authorize(ctx, models.PermAuditRead, models.Resource{TenantID: tenant.ID}); err != nil {
 			return nil, err
 		}
-		entries, err := s.store.ListAuditEntries(ctx, tenant.ID, store.AuditFilter{
+		entries, err := s.auditSvc.List(ctx, tenant.ID, audit.ListParams{
 			ProjectID:    in.ProjectID,
 			ResourceType: in.ResourceType,
 			ResourceKey:  in.ResourceKey,

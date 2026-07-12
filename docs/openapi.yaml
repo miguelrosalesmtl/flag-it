@@ -1297,6 +1297,72 @@ components:
         - contextKind
         - values
       type: object
+    SetupInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SetupInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          description: first superuser's email
+          format: email
+          type: string
+        full_name:
+          description: display name
+          type: string
+        password:
+          description: first superuser's password
+          minLength: 8
+          type: string
+        tenant_name:
+          description: first tenant's display name
+          type: string
+        tenant_slug:
+          description: first tenant's url slug
+          type: string
+      required:
+        - email
+        - password
+      type: object
+    SetupOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SetupOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        tenant:
+          $ref: "#/components/schemas/Tenant"
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+      type: object
+    SetupStatusOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SetupStatusOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        needs_setup:
+          type: boolean
+      required:
+        - needs_setup
+      type: object
     Target:
       additionalProperties: false
       properties:
@@ -1627,6 +1693,49 @@ paths:
       summary: Current authenticated user
       tags:
         - Auth
+  /api/v1/setup:
+    get:
+      operationId: setup-status
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupStatusOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Whether the install still needs first-run setup
+      tags:
+        - Setup
+    post:
+      operationId: setup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Create the first superuser and tenant (one-time, fresh install only)
+      tags:
+        - Setup
   /api/v1/tenants:
     get:
       operationId: list-tenants

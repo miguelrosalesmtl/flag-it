@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/miguelrosalesmtl/flag-it/internal/authz"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
@@ -15,7 +16,7 @@ type noContent struct{}
 
 // resolveTenant resolves a URL tenant slug to the tenant (404 if unknown).
 func (s *Server) resolveTenant(ctx context.Context, slug string) (models.Tenant, error) {
-	t, err := s.store.GetTenantBySlug(ctx, slug)
+	t, err := s.catalog.TenantBySlug(ctx, slug)
 	if err != nil {
 		return models.Tenant{}, storeError(err, "tenant not found")
 	}
@@ -24,7 +25,7 @@ func (s *Server) resolveTenant(ctx context.Context, slug string) (models.Tenant,
 
 // resolveProject resolves a URL project key within a tenant to the project.
 func (s *Server) resolveProject(ctx context.Context, tenantID, projectKey string) (models.Project, error) {
-	p, err := s.store.GetProjectByKey(ctx, tenantID, projectKey)
+	p, err := s.catalog.ProjectByKey(ctx, tenantID, projectKey)
 	if err != nil {
 		return models.Project{}, storeError(err, "project not found in tenant")
 	}
@@ -47,7 +48,7 @@ func (s *Server) resolveScope(ctx context.Context, tenantSlug, projectKey string
 
 // resolveEnv returns an environment by key within a project.
 func (s *Server) resolveEnv(ctx context.Context, projectID, envKey string) (models.Environment, error) {
-	env, err := s.store.GetEnvironmentByKey(ctx, projectID, envKey)
+	env, err := s.catalog.EnvByKey(ctx, projectID, envKey)
 	if err != nil {
 		return models.Environment{}, storeError(err, "environment not found")
 	}
@@ -73,4 +74,18 @@ func storeError(err error, notFoundMsg string) error {
 		return huma.Error404NotFound(notFoundMsg)
 	}
 	return huma.Error500InternalServerError(err.Error())
+}
+
+// authzError maps member/role service errors to HTTP statuses.
+func authzError(err error) error {
+	switch {
+	case errors.Is(err, authz.ErrUserNotFound):
+		return huma.Error404NotFound("user not found")
+	case errors.Is(err, authz.ErrRoleNotFound):
+		return huma.Error400BadRequest("unknown role")
+	case errors.Is(err, authz.ErrRoleScope):
+		return huma.Error400BadRequest("role has the wrong scope")
+	default:
+		return huma.Error500InternalServerError(err.Error())
+	}
 }

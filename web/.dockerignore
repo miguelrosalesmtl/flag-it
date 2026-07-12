@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+storybook-static
+playwright-report
+test-results
+.git
+e2e
+*.md
+.env
+compose.yaml

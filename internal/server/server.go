@@ -14,12 +14,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/miguelrosalesmtl/flag-it/internal/analytics"
+	"github.com/miguelrosalesmtl/flag-it/internal/audit"
 	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/authz"
+	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
 	"github.com/miguelrosalesmtl/flag-it/internal/settings"
-	"github.com/miguelrosalesmtl/flag-it/internal/store"
 )
 
 // Server holds the HTTP server, the huma API, and dependencies.
@@ -27,7 +28,8 @@ type Server struct {
 	http      *http.Server
 	api       huma.API
 	flags     *flags.Service
-	store     *store.Store
+	catalog   *catalog.Service
+	auditSvc  *audit.Service
 	auth      *auth.Service // issues tokens (login)
 	verifier  tokenVerifier // verifies tokens (OIDC seam; defaults to auth)
 	authz     *authz.Service
@@ -38,11 +40,13 @@ type Server struct {
 	sdkCache  *sdkKeyCache
 }
 
-// New builds a Server with all routes registered on a huma API over chi.
+// New builds a Server with all routes registered on a huma API over chi. It is
+// given services, never the store: handlers reach data only through a service.
 func New(
 	cfg settings.Server,
 	flagService *flags.Service,
-	st *store.Store,
+	catalogSvc *catalog.Service,
+	auditSvc *audit.Service,
 	authSvc *auth.Service,
 	authzSvc *authz.Service,
 	analyticsRec *analytics.Recorder,
@@ -51,7 +55,8 @@ func New(
 ) *Server {
 	s := &Server{
 		flags:     flagService,
-		store:     st,
+		catalog:   catalogSvc,
+		auditSvc:  auditSvc,
 		auth:      authSvc,
 		verifier:  authSvc,
 		authz:     authzSvc,
@@ -90,6 +95,7 @@ func New(
 	r.Get("/api/v1/eval/stream", s.handleEvalStream)
 
 	s.registerHealth()
+	s.registerSetup()
 	s.registerAuth()
 	s.registerUsers()
 	s.registerTenants()
@@ -155,7 +161,7 @@ func (s *Server) registerHealth() {
 		OperationID: "readyz", Method: http.MethodGet, Path: "/readyz",
 		Summary: "Readiness probe (pings Postgres + Redis)", Tags: []string{"Health"},
 	}, func(ctx context.Context, _ *struct{}) (*healthOutput, error) {
-		if err := s.store.Pool().Ping(ctx); err != nil {
+		if err := s.catalog.Ping(ctx); err != nil {
 			return nil, huma.Error503ServiceUnavailable("postgres unavailable")
 		}
 		if err := s.bus.Ping(ctx); err != nil {

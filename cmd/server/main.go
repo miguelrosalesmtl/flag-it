@@ -16,8 +16,10 @@ import (
 	"syscall"
 
 	"github.com/miguelrosalesmtl/flag-it/internal/analytics"
+	"github.com/miguelrosalesmtl/flag-it/internal/audit"
 	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/authz"
+	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
 	"github.com/miguelrosalesmtl/flag-it/internal/database"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/logger"
@@ -122,9 +124,11 @@ func runOpenAPI() error {
 	st := store.New(nil)
 	authSvc := auth.New(st, cfg.JWT.Secret, cfg.JWT.TTL)
 	authzSvc := authz.New(st)
+	catalogSvc := catalog.New(st)
+	auditSvc := audit.New(st, log)
 	analyticsRec := analytics.New(st, 0, log)
 	flagSvc := flags.NewService(st, nil, log)
-	srv := server.New(cfg.Server, flagSvc, st, authSvc, authzSvc, analyticsRec, nil, log)
+	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, nil, log)
 
 	spec, err := srv.OpenAPIYAML()
 	if err != nil {
@@ -163,10 +167,12 @@ func run() error {
 	defer bus.Close()
 	log.Info("connected to redis")
 
-	// Data-access layer shared by the flag service and HTTP handlers.
+	// Data-access layer. Handlers never see it — services wrap it.
 	st := store.New(pool)
 	authSvc := auth.New(st, cfg.JWT.Secret, cfg.JWT.TTL)
 	authzSvc := authz.New(st)
+	catalogSvc := catalog.New(st)
+	auditSvc := audit.New(st, log)
 
 	// Analytics — buffers evaluation counts, flushes rollups on an interval.
 	analyticsRec := analytics.New(st, cfg.Server.AnalyticsFlushInterval, log)
@@ -183,7 +189,7 @@ func run() error {
 	}()
 
 	// HTTP server.
-	srv := server.New(cfg.Server, flagService, st, authSvc, authzSvc, analyticsRec, bus, log)
+	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, bus, log)
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- srv.Start()

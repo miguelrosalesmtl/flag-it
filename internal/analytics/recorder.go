@@ -13,9 +13,10 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-// Store is the persistence the recorder flushes to.
+// Store is the persistence the recorder flushes to and queries.
 type Store interface {
 	UpsertEvalStats(ctx context.Context, stats []models.EvalStat) error
+	QueryEvalStats(ctx context.Context, environmentID, flagKey string, since time.Time) ([]models.VariationCount, error)
 }
 
 type counterKey struct {
@@ -45,6 +46,12 @@ func New(store Store, interval time.Duration, log *slog.Logger) *Recorder {
 		log:      log,
 		counts:   make(map[counterKey]int64),
 	}
+}
+
+// QueryStats returns rolled-up per-variation counts for a flag in an environment
+// since the given time.
+func (r *Recorder) QueryStats(ctx context.Context, environmentID, flagKey string, since time.Time) ([]models.VariationCount, error) {
+	return r.store.QueryEvalStats(ctx, environmentID, flagKey, since)
 }
 
 // Record counts one evaluation (in-memory; cheap enough for the hot path).

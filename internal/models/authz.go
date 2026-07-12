@@ -86,3 +86,22 @@ func (s Subject) Can(perm Permission, res Resource) bool {
 	}
 	return false
 }
+
+// ReadableProjects filters a tenant's projects to those the subject may read.
+// tenantWide is true when a tenant-level project.read grant (or superuser status)
+// makes every project visible — in which case an empty result is legitimate,
+// not a permission failure. Otherwise only project-scoped grants apply, and an
+// empty result means the caller has no access. Keeping this here (next to Can)
+// means the visibility rule lives in one place, not in a handler.
+func (s Subject) ReadableProjects(tenantID string, projects []Project) (visible []Project, tenantWide bool) {
+	if s.Can(PermProjectRead, Resource{TenantID: tenantID}) {
+		return projects, true
+	}
+	visible = make([]Project, 0, len(projects))
+	for _, p := range projects {
+		if s.ProjectPerms[p.ID][PermProjectRead] {
+			visible = append(visible, p)
+		}
+	}
+	return visible, false
+}

@@ -123,7 +123,7 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagDelete, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		flag, err := s.store.GetFlagByKey(ctx, project.ID, in.FlagKey)
+		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
 		if err != nil {
 			return nil, storeError(err, "flag not found")
 		}
@@ -147,7 +147,7 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		flag, err := s.store.GetFlagByKey(ctx, project.ID, in.FlagKey)
+		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
 		if err != nil {
 			return nil, storeError(err, "flag not found")
 		}
@@ -187,7 +187,7 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		flag, err := s.store.GetFlagByKey(ctx, project.ID, in.FlagKey)
+		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
 		if err != nil {
 			return nil, storeError(err, "flag not found")
 		}

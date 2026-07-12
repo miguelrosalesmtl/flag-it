@@ -45,7 +45,7 @@ func (s *Server) registerTenants() {
 		if err := s.requireSuperuser(ctx); err != nil {
 			return nil, err
 		}
-		tenants, err := s.store.ListTenants(ctx)
+		tenants, err := s.catalog.ListTenants(ctx)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -65,7 +65,7 @@ func (s *Server) registerTenants() {
 		if in.Body.Slug == "" || in.Body.Name == "" {
 			return nil, huma.Error400BadRequest("slug and name are required")
 		}
-		tenant, err := s.store.CreateTenant(ctx, in.Body.Slug, in.Body.Name)
+		tenant, err := s.catalog.CreateTenant(ctx, in.Body.Slug, in.Body.Name)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -102,7 +102,7 @@ func (s *Server) registerTenants() {
 		if in.Body.Name == "" {
 			return nil, huma.Error400BadRequest("name is required")
 		}
-		updated, err := s.store.UpdateTenant(ctx, tenant.ID, in.Body.Name)
+		updated, err := s.catalog.UpdateTenant(ctx, tenant.ID, in.Body.Name)
 		if err != nil {
 			return nil, storeError(err, "tenant not found")
 		}
@@ -123,7 +123,7 @@ func (s *Server) registerTenants() {
 		if err != nil {
 			return nil, err
 		}
-		if err := s.store.DeleteTenant(ctx, tenant.ID); err != nil {
+		if err := s.catalog.DeleteTenant(ctx, tenant.ID); err != nil {
 			return nil, storeError(err, "tenant not found")
 		}
 		// Platform-level (no tenant_id): the tenant's own audit rows cascade away.

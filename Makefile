@@ -35,13 +35,13 @@ openapi: ## Regenerate docs/openapi.yaml from the code (huma-generated)
 	go run ./cmd/server openapi > docs/openapi.yaml
 
 web-install: ## Install frontend deps (web/)
-	cd web && npm install
+	cd web && pnpm install
 
 web-dev: ## Run the frontend dev server (web/)
-	cd web && npm run dev
+	cd web && pnpm dev
 
 web-build: ## Build the frontend for production (web/)
-	cd web && npm run build
+	cd web && pnpm build
 
 migrate: ## Apply goose migrations to a running local Postgres
 	go run ./cmd/server migrate up

@@ -1,0 +1,18 @@
+node_modules
+dist
+coverage
+storybook-static
+playwright-report
+test-results
+*.local
+.DS_Store
+
+# Personal overrides (Vite serves public/ as-is; keep secrets out of it entirely)
+public/config.local.json
+
+# Local env. Generated into public/config.json by vite/runtime-config.ts
+.env
+public/config.json
+
+# Local agent/editor state
+.claude/

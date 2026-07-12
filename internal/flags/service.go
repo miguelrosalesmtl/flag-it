@@ -214,6 +214,11 @@ func (s *Service) ListFlags(ctx context.Context, projectID string) ([]models.Fla
 	return s.store.ListFlagsByProject(ctx, projectID)
 }
 
+// GetFlag returns a single flag definition by key within a project.
+func (s *Service) GetFlag(ctx context.Context, projectID, key string) (models.Flag, error) {
+	return s.store.GetFlagByKey(ctx, projectID, key)
+}
+
 // SaveFlag creates or updates a flag definition and ensures it has a config row
 // in every environment of its project. Affected environments are reloaded
 // locally and broadcast to siblings.

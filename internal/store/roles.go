@@ -143,22 +143,30 @@ func (s *Store) loadRolePermissions(ctx context.Context, roleID string) ([]model
 
 // AssignTenantRole grants a user a tenant-scoped role. Idempotent.
 func (s *Store) AssignTenantRole(ctx context.Context, userID, roleID, tenantID string) (models.RoleAssignment, error) {
-	const q = `
+	return assignTenantRole(ctx, s.pool, userID, roleID, tenantID)
+}
+
+func assignTenantRole(ctx context.Context, q querier, userID, roleID, tenantID string) (models.RoleAssignment, error) {
+	const sql = `
 		INSERT INTO role_assignments (user_id, role_id, scope_type, tenant_id)
 		VALUES ($1, $2, 'tenant', $3)
 		ON CONFLICT (user_id, role_id, tenant_id, project_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + roleAssignmentColumns
-	return scanRoleAssignment(s.pool.QueryRow(ctx, q, userID, roleID, tenantID))
+	return scanRoleAssignment(q.QueryRow(ctx, sql, userID, roleID, tenantID))
 }
 
 // AssignProjectRole grants a user a project-scoped role. Idempotent.
 func (s *Store) AssignProjectRole(ctx context.Context, userID, roleID, projectID string) (models.RoleAssignment, error) {
-	const q = `
+	return assignProjectRole(ctx, s.pool, userID, roleID, projectID)
+}
+
+func assignProjectRole(ctx context.Context, q querier, userID, roleID, projectID string) (models.RoleAssignment, error) {
+	const sql = `
 		INSERT INTO role_assignments (user_id, role_id, scope_type, project_id)
 		VALUES ($1, $2, 'project', $3)
 		ON CONFLICT (user_id, role_id, tenant_id, project_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + roleAssignmentColumns
-	return scanRoleAssignment(s.pool.QueryRow(ctx, q, userID, roleID, projectID))
+	return scanRoleAssignment(q.QueryRow(ctx, sql, userID, roleID, projectID))
 }
 
 // ListPermissionGrantsByUser flattens a user's assignments into (scope,

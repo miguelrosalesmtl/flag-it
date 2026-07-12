@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
@@ -44,7 +43,7 @@ func (s *Server) registerUsers() {
 		if err := s.requireSuperuser(ctx); err != nil {
 			return nil, err
 		}
-		users, err := s.store.ListUsers(ctx)
+		users, err := s.auth.ListUsers(ctx)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -64,11 +63,7 @@ func (s *Server) registerUsers() {
 		if in.Body.Email == "" || in.Body.Password == "" {
 			return nil, huma.Error400BadRequest("email and password are required")
 		}
-		hash, err := auth.HashPassword(in.Body.Password)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
-		}
-		user, err := s.store.CreateUser(ctx, in.Body.Email, hash, in.Body.FullName, in.Body.IsSuperuser)
+		user, err := s.auth.CreateUser(ctx, in.Body.Email, in.Body.Password, in.Body.FullName, in.Body.IsSuperuser)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -84,20 +79,9 @@ func (s *Server) registerUsers() {
 		if err := s.requireSuperuser(ctx); err != nil {
 			return nil, err
 		}
-		current, err := s.store.GetUserByID(ctx, in.UserID)
+		user, err := s.auth.UpdateUser(ctx, in.UserID, in.Body.FullName, in.Body.IsActive)
 		if err != nil {
 			return nil, storeError(err, "user not found")
-		}
-		fullName, active := current.FullName, current.IsActive
-		if in.Body.FullName != nil {
-			fullName = *in.Body.FullName
-		}
-		if in.Body.IsActive != nil {
-			active = *in.Body.IsActive
-		}
-		user, err := s.store.UpdateUser(ctx, in.UserID, fullName, active)
-		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		return &userOutput{Body: user}, nil
 	})
@@ -110,7 +94,7 @@ func (s *Server) registerUsers() {
 		if err := s.requireSuperuser(ctx); err != nil {
 			return nil, err
 		}
-		if err := s.store.DeleteUser(ctx, in.UserID); err != nil {
+		if err := s.auth.DeleteUser(ctx, in.UserID); err != nil {
 			return nil, storeError(err, "user not found")
 		}
 		s.audit(ctx, models.AuditEntry{Action: "user.deleted", ResourceType: "user", ResourceKey: in.UserID})
