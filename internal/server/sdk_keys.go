@@ -1,0 +1,146 @@
+package server
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"net/http"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/miguelrosalesmtl/flag-it/internal/models"
+)
+
+// generateSDKKey mints a random bearer key. Server keys are secret; client keys
+// are public (client-side ID) and get a distinct prefix.
+func generateSDKKey(kind string) (string, error) {
+	b := make([]byte, 24)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	prefix := "sdk-"
+	if kind == "client" {
+		prefix = "client-"
+	}
+	return prefix + hex.EncodeToString(b), nil
+}
+
+type envKeyPath struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	EnvKey     string `path:"envKey"`
+}
+
+type listSdkKeysOutput struct {
+	Body struct {
+		SdkKeys []models.SdkKey `json:"sdk_keys"`
+	}
+}
+
+type createSdkKeyInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	EnvKey     string `path:"envKey"`
+	Body       struct {
+		Kind string `json:"kind" enum:"server,client"`
+		Name string `json:"name,omitempty"`
+	}
+}
+
+type sdkKeyOutput struct {
+	Body models.SdkKey
+}
+
+type revokeSdkKeyInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	EnvKey     string `path:"envKey"`
+	KeyID      string `path:"keyID"`
+}
+
+func (s *Server) registerSDKKeys() {
+	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys"
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-sdk-keys", Method: http.MethodGet, Path: base,
+		Summary: "List an environment's SDK keys (requires sdk_key.manage)", Tags: []string{"SDK Keys"}, Security: bearer,
+	}, func(ctx context.Context, in *envKeyPath) (*listSdkKeysOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermSDKKeyManage, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		keys, err := s.store.ListSdkKeysByEnvironment(ctx, env.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &listSdkKeysOutput{}
+		out.Body.SdkKeys = keys
+		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "create-sdk-key", Method: http.MethodPost, Path: base,
+		Summary: "Mint an SDK key (requires sdk_key.manage); response includes the secret", Tags: []string{"SDK Keys"}, Security: bearer,
+		DefaultStatus: http.StatusCreated,
+	}, func(ctx context.Context, in *createSdkKeyInput) (*sdkKeyOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermSDKKeyManage, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		if in.Body.Kind != "server" && in.Body.Kind != "client" {
+			return nil, huma.Error400BadRequest("kind must be 'server' or 'client'")
+		}
+		key, err := generateSDKKey(in.Body.Kind)
+		if err != nil {
+			return nil, huma.Error500InternalServerError("failed to generate key")
+		}
+		sk, err := s.store.CreateSdkKey(ctx, env.ID, key, in.Body.Kind, in.Body.Name)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		// Never log the secret key value — only its metadata.
+		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+			Action: "sdk_key.created", ResourceType: "sdk_key", ResourceKey: sk.ID,
+			Data: jsonData(map[string]any{"environment": in.EnvKey, "kind": in.Body.Kind, "name": in.Body.Name})})
+		return &sdkKeyOutput{Body: sk}, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "revoke-sdk-key", Method: http.MethodDelete, Path: base + "/{keyID}",
+		Summary: "Revoke an SDK key (requires sdk_key.manage)", Tags: []string{"SDK Keys"}, Security: bearer,
+		DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *revokeSdkKeyInput) (*noContent, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermSDKKeyManage, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.store.RevokeSdkKey(ctx, in.KeyID, env.ID); err != nil {
+			return nil, storeError(err, "sdk key not found or already revoked")
+		}
+		s.sdkCache.flush() // drop cached lookups so the revoke takes effect now
+		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+			Action: "sdk_key.revoked", ResourceType: "sdk_key", ResourceKey: in.KeyID,
+			Data: jsonData(map[string]any{"environment": in.EnvKey})})
+		return &noContent{}, nil
+	})
+}

@@ -1,0 +1,29 @@
+# Local environment
+.env
+web/.env
+web/.env.local
+
+# Go build output
+/bin/
+/dist/
+/server
+featureflag
+*.test
+*.out
+coverage.*
+
+# Frontend (web/)
+node_modules/
+web/dist/
+web/build/
+web/.output/
+web/.next/
+web/.nuxt/
+web/.svelte-kit/
+web/coverage/
+*.log
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

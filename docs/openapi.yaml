@@ -1,0 +1,2753 @@
+components:
+  schemas:
+    AddMemberInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/AddMemberInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          type: string
+        role:
+          description: optional tenant-scoped role key (e.g. tenant_admin)
+          type: string
+      required:
+        - email
+      type: object
+    AddMemberOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/AddMemberOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        assignment:
+          $ref: "#/components/schemas/RoleAssignment"
+        membership:
+          $ref: "#/components/schemas/Membership"
+      required:
+        - membership
+      type: object
+    AuditEntry:
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        actor_email:
+          type: string
+        actor_id:
+          type: string
+        comment:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        data: {}
+        id:
+          type: string
+        project_id:
+          type: string
+        resource_key:
+          type: string
+        resource_type:
+          type: string
+        tenant_id:
+          type: string
+      required:
+        - id
+        - actor_email
+        - action
+        - resource_type
+        - resource_key
+        - created_at
+      type: object
+    Clause:
+      additionalProperties: false
+      properties:
+        attribute:
+          type: string
+        contextKind:
+          type: string
+        negate:
+          type: boolean
+        op:
+          type: string
+        values:
+          items: {}
+          type:
+            - array
+            - "null"
+      required:
+        - op
+        - values
+      type: object
+    CreateProjectInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateProjectInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+      required:
+        - key
+        - name
+      type: object
+    CreateProjectOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateProjectOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        environments:
+          items:
+            $ref: "#/components/schemas/Environment"
+          type:
+            - array
+            - "null"
+        project:
+          $ref: "#/components/schemas/Project"
+      required:
+        - project
+        - environments
+      type: object
+    CreateRoleInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateRoleInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        description:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        permissions:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        scope:
+          enum:
+            - tenant
+            - project
+          type: string
+      required:
+        - key
+        - name
+        - scope
+      type: object
+    CreateSdkKeyInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateSdkKeyInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        kind:
+          enum:
+            - server
+            - client
+          type: string
+        name:
+          type: string
+      required:
+        - kind
+      type: object
+    CreateTenantInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateTenantInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+      required:
+        - slug
+        - name
+      type: object
+    CreateUserInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateUserInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          type: string
+        full_name:
+          type: string
+        is_superuser:
+          type: boolean
+        password:
+          type: string
+      required:
+        - email
+        - password
+      type: object
+    Environment:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - project_id
+        - key
+        - name
+        - created_at
+        - updated_at
+      type: object
+    ErrorDetail:
+      additionalProperties: false
+      properties:
+        location:
+          description: Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
+          type: string
+        message:
+          description: Error message text
+          type: string
+        value:
+          description: The value at the given location
+      type: object
+    ErrorModel:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ErrorModel.json
+          format: uri
+          readOnly: true
+          type: string
+        detail:
+          description: A human-readable explanation specific to this occurrence of the problem.
+          examples:
+            - Property foo is required but is missing.
+          type: string
+        errors:
+          description: Optional list of individual error details
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+          type:
+            - array
+            - "null"
+        instance:
+          description: A URI reference that identifies the specific occurrence of the problem.
+          examples:
+            - https://example.com/error-log/abc123
+          format: uri
+          type: string
+        status:
+          description: HTTP status code
+          examples:
+            - 400
+          format: int64
+          type: integer
+        title:
+          description: A short, human-readable summary of the problem type. This value should not change between occurrences of the error.
+          examples:
+            - Bad Request
+          type: string
+        type:
+          default: about:blank
+          description: A URI reference to human-readable documentation for the error.
+          examples:
+            - https://example.com/errors/example
+          format: uri
+          type: string
+      type: object
+    EvalAllInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/EvalAllInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        context:
+          additionalProperties: {}
+          description: see description
+          type: object
+      required:
+        - context
+      type: object
+    EvalAllOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/EvalAllOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        flags:
+          additionalProperties:
+            $ref: "#/components/schemas/Evaluation"
+          type: object
+      required:
+        - flags
+      type: object
+    EvalSingleInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/EvalSingleInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        context:
+          additionalProperties: {}
+          description: see description
+          type: object
+        flag_key:
+          type: string
+      required:
+        - flag_key
+        - context
+      type: object
+    Evaluation:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Evaluation.json
+          format: uri
+          readOnly: true
+          type: string
+        flag_key:
+          type: string
+        reason:
+          type: string
+        value: {}
+        variation:
+          format: int64
+          type: integer
+      required:
+        - flag_key
+        - value
+        - variation
+        - reason
+      type: object
+    Flag:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Flag.json
+          format: uri
+          readOnly: true
+          type: string
+        client_side_available:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        variations:
+          items: {}
+          type:
+            - array
+            - "null"
+      required:
+        - id
+        - project_id
+        - key
+        - name
+        - description
+        - client_side_available
+        - variations
+        - created_at
+        - updated_at
+      type: object
+    FlagConfig:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/FlagConfig.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        environment_id:
+          type: string
+        fallthrough:
+          $ref: "#/components/schemas/VariationOrRollout"
+        flag_id:
+          type: string
+        id:
+          type: string
+        off_variation:
+          format: int64
+          type: integer
+        "on":
+          type: boolean
+        prerequisites:
+          items:
+            $ref: "#/components/schemas/Prerequisite"
+          type:
+            - array
+            - "null"
+        rules:
+          items:
+            $ref: "#/components/schemas/Rule"
+          type:
+            - array
+            - "null"
+        targets:
+          items:
+            $ref: "#/components/schemas/Target"
+          type:
+            - array
+            - "null"
+        updated_at:
+          format: date-time
+          type: string
+        version:
+          format: int64
+          type: integer
+      required:
+        - id
+        - flag_id
+        - environment_id
+        - "on"
+        - off_variation
+        - prerequisites
+        - targets
+        - rules
+        - fallthrough
+        - version
+        - created_at
+        - updated_at
+      type: object
+    FlagStatsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/FlagStatsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        environment:
+          type: string
+        flag_key:
+          type: string
+        since:
+          type: string
+        total:
+          format: int64
+          type: integer
+        variations:
+          items:
+            $ref: "#/components/schemas/VariationCount"
+          type:
+            - array
+            - "null"
+      required:
+        - flag_key
+        - environment
+        - since
+        - variations
+        - total
+      type: object
+    GrantProjectRoleInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/GrantProjectRoleInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          type: string
+        role:
+          description: project-scoped role key (e.g. writer, reader)
+          type: string
+      required:
+        - email
+        - role
+      type: object
+    HealthOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/HealthOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        status:
+          type: string
+      required:
+        - status
+      type: object
+    IngestEventsInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/IngestEventsInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        flags:
+          additionalProperties:
+            $ref: "#/components/schemas/Value"
+          description: rolled-up evaluation counts per flag/variation
+          type: object
+      required:
+        - flags
+      type: object
+    Instruction:
+      additionalProperties: false
+      properties:
+        clauses:
+          items:
+            $ref: "#/components/schemas/Clause"
+          type:
+            - array
+            - "null"
+        contextKind:
+          type: string
+        key:
+          type: string
+        kind:
+          description: turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | removeRule | addPrerequisite | removePrerequisite
+          type: string
+        rollout:
+          $ref: "#/components/schemas/Rollout"
+        ruleId:
+          type: string
+        values:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        variation:
+          format: int64
+          type: integer
+      required:
+        - kind
+      type: object
+    Item:
+      additionalProperties: false
+      properties:
+        count:
+          format: int64
+          type: integer
+        variation:
+          format: int64
+          type: integer
+      required:
+        - variation
+        - count
+      type: object
+    ListAuditOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListAuditOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        entries:
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+          type:
+            - array
+            - "null"
+      required:
+        - entries
+      type: object
+    ListEnvironmentsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListEnvironmentsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        environments:
+          items:
+            $ref: "#/components/schemas/Environment"
+          type:
+            - array
+            - "null"
+      required:
+        - environments
+      type: object
+    ListFlagsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListFlagsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        flags:
+          items:
+            $ref: "#/components/schemas/Flag"
+          type:
+            - array
+            - "null"
+      required:
+        - flags
+      type: object
+    ListProjectsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListProjectsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        projects:
+          items:
+            $ref: "#/components/schemas/Project"
+          type:
+            - array
+            - "null"
+      required:
+        - projects
+      type: object
+    ListRolesOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListRolesOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        roles:
+          items:
+            $ref: "#/components/schemas/Role"
+          type:
+            - array
+            - "null"
+      required:
+        - roles
+      type: object
+    ListSdkKeysOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListSdkKeysOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        sdk_keys:
+          items:
+            $ref: "#/components/schemas/SdkKey"
+          type:
+            - array
+            - "null"
+      required:
+        - sdk_keys
+      type: object
+    ListSegmentsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListSegmentsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        segments:
+          items:
+            $ref: "#/components/schemas/Segment"
+          type:
+            - array
+            - "null"
+      required:
+        - segments
+      type: object
+    ListTenantsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListTenantsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        tenants:
+          items:
+            $ref: "#/components/schemas/Tenant"
+          type:
+            - array
+            - "null"
+      required:
+        - tenants
+      type: object
+    ListUsersOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListUsersOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        users:
+          items:
+            $ref: "#/components/schemas/User"
+          type:
+            - array
+            - "null"
+      required:
+        - users
+      type: object
+    LoginInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/LoginInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        email:
+          format: email
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+      type: object
+    LoginOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/LoginOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+      type: object
+    Membership:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        tenant_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - id
+        - user_id
+        - tenant_id
+        - created_at
+        - updated_at
+      type: object
+    PatchFlagConfigInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/PatchFlagConfigInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        comment:
+          description: optional note recorded in the audit log
+          type: string
+        instructions:
+          items:
+            $ref: "#/components/schemas/Instruction"
+          type:
+            - array
+            - "null"
+      required:
+        - instructions
+      type: object
+    Prerequisite:
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        variation:
+          format: int64
+          type: integer
+      required:
+        - key
+        - variation
+      type: object
+    Project:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Project.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        tenant_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - tenant_id
+        - key
+        - name
+        - created_at
+        - updated_at
+      type: object
+    Role:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Role.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        is_system:
+          type: boolean
+        key:
+          type: string
+        name:
+          type: string
+        permissions:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        scope:
+          type: string
+        tenant_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - tenant_id
+        - key
+        - name
+        - description
+        - scope
+        - is_system
+        - permissions
+        - created_at
+        - updated_at
+      type: object
+    RoleAssignment:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/RoleAssignment.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        project_id:
+          type: string
+        role_id:
+          type: string
+        scope_type:
+          type: string
+        tenant_id:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - id
+        - user_id
+        - role_id
+        - scope_type
+        - created_at
+        - updated_at
+      type: object
+    Rollout:
+      additionalProperties: false
+      properties:
+        bucketBy:
+          type: string
+        contextKind:
+          type: string
+        seed:
+          format: int64
+          type: integer
+        variations:
+          items:
+            $ref: "#/components/schemas/WeightedVariation"
+          type:
+            - array
+            - "null"
+      required:
+        - variations
+      type: object
+    Rule:
+      additionalProperties: false
+      properties:
+        clauses:
+          items:
+            $ref: "#/components/schemas/Clause"
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        rollout:
+          $ref: "#/components/schemas/Rollout"
+        variation:
+          format: int64
+          type: integer
+      required:
+        - clauses
+      type: object
+    SaveFlagConfigInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SaveFlagConfigInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        fallthrough:
+          $ref: "#/components/schemas/VariationOrRollout"
+        off_variation:
+          format: int64
+          type: integer
+        "on":
+          type: boolean
+        prerequisites:
+          items:
+            $ref: "#/components/schemas/Prerequisite"
+          type:
+            - array
+            - "null"
+        rules:
+          items:
+            $ref: "#/components/schemas/Rule"
+          type:
+            - array
+            - "null"
+        targets:
+          items:
+            $ref: "#/components/schemas/Target"
+          type:
+            - array
+            - "null"
+      required:
+        - "on"
+        - off_variation
+        - fallthrough
+      type: object
+    SaveFlagInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SaveFlagInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        client_side_available:
+          description: expose to client (public) SDK keys; default false = server-only
+          type: boolean
+        description:
+          type: string
+        name:
+          type: string
+        variations:
+          items: {}
+          type:
+            - array
+            - "null"
+      required:
+        - variations
+      type: object
+    SaveSegmentInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SaveSegmentInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        description:
+          type: string
+        excluded:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        excluded_contexts:
+          items:
+            $ref: "#/components/schemas/SegmentTarget"
+          type:
+            - array
+            - "null"
+        included:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        included_contexts:
+          items:
+            $ref: "#/components/schemas/SegmentTarget"
+          type:
+            - array
+            - "null"
+        name:
+          type: string
+        rules:
+          items:
+            $ref: "#/components/schemas/SegmentRule"
+          type:
+            - array
+            - "null"
+      type: object
+    SdkKey:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SdkKey.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        environment_id:
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        kind:
+          type: string
+        last_used_at:
+          format: date-time
+          type: string
+        name:
+          type: string
+        revoked_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - environment_id
+        - key
+        - kind
+        - name
+        - created_at
+      type: object
+    Segment:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Segment.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        description:
+          type: string
+        excluded:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        excluded_contexts:
+          items:
+            $ref: "#/components/schemas/SegmentTarget"
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        included:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        included_contexts:
+          items:
+            $ref: "#/components/schemas/SegmentTarget"
+          type:
+            - array
+            - "null"
+        key:
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        rules:
+          items:
+            $ref: "#/components/schemas/SegmentRule"
+          type:
+            - array
+            - "null"
+        updated_at:
+          format: date-time
+          type: string
+        version:
+          format: int64
+          type: integer
+      required:
+        - id
+        - project_id
+        - key
+        - name
+        - description
+        - included
+        - excluded
+        - included_contexts
+        - excluded_contexts
+        - rules
+        - version
+        - created_at
+        - updated_at
+      type: object
+    SegmentRule:
+      additionalProperties: false
+      properties:
+        bucketBy:
+          type: string
+        clauses:
+          items:
+            $ref: "#/components/schemas/Clause"
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        rolloutContextKind:
+          type: string
+        weight:
+          format: int64
+          type: integer
+      required:
+        - clauses
+      type: object
+    SegmentTarget:
+      additionalProperties: false
+      properties:
+        contextKind:
+          type: string
+        values:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+      required:
+        - contextKind
+        - values
+      type: object
+    Target:
+      additionalProperties: false
+      properties:
+        contextKind:
+          type: string
+        values:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        variation:
+          format: int64
+          type: integer
+      required:
+        - values
+        - variation
+      type: object
+    Tenant:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Tenant.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - slug
+        - name
+        - created_at
+        - updated_at
+      type: object
+    UpdateProjectInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/UpdateProjectInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        name:
+          type: string
+      required:
+        - name
+      type: object
+    UpdateTenantInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/UpdateTenantInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        name:
+          type: string
+      required:
+        - name
+      type: object
+    UpdateUserInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/UpdateUserInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        full_name:
+          type: string
+        is_active:
+          type: boolean
+      type: object
+    User:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/User.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        id:
+          type: string
+        is_active:
+          type: boolean
+        is_superuser:
+          type: boolean
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - email
+        - full_name
+        - is_superuser
+        - is_active
+        - created_at
+        - updated_at
+      type: object
+    Value:
+      additionalProperties: false
+      properties:
+        counters:
+          items:
+            $ref: "#/components/schemas/Item"
+          type:
+            - array
+            - "null"
+      required:
+        - counters
+      type: object
+    VariationCount:
+      additionalProperties: false
+      properties:
+        count:
+          format: int64
+          type: integer
+        variation:
+          format: int64
+          type: integer
+      required:
+        - variation
+        - count
+      type: object
+    VariationOrRollout:
+      additionalProperties: false
+      properties:
+        rollout:
+          $ref: "#/components/schemas/Rollout"
+        variation:
+          format: int64
+          type: integer
+      type: object
+    WeightedVariation:
+      additionalProperties: false
+      properties:
+        variation:
+          format: int64
+          type: integer
+        weight:
+          format: int64
+          type: integer
+      required:
+        - variation
+        - weight
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+    sdkKeyAuth:
+      in: header
+      name: X-SDK-Key
+      type: apiKey
+info:
+  description: Multi-tenant feature-flag service (LaunchDarkly-style, server-side evaluation).
+  title: Feature-Flag Platform API
+  version: 0.1.0
+openapi: 3.1.0
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Exchange credentials for a JWT
+      tags:
+        - Auth
+  /api/v1/eval:
+    post:
+      description: "Evaluation context. Single-kind: {\"kind\":\"user\",\"key\":\"u1\",\"country\":\"US\"}. Multi-kind: {\"kind\":\"multi\",\"user\":{\"key\":\"u1\"},\"org\":{\"key\":\"o1\"}}. No kind = user."
+      operationId: evaluate
+      parameters:
+        - in: header
+          name: X-SDK-Key
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvalSingleInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - sdkKeyAuth: []
+      summary: Evaluate one flag for a context (SDK key auth)
+      tags:
+        - Evaluation
+  /api/v1/eval/all:
+    post:
+      description: "Evaluation context. Single-kind: {\"kind\":\"user\",\"key\":\"u1\",\"country\":\"US\"}. Multi-kind: {\"kind\":\"multi\",\"user\":{\"key\":\"u1\"},\"org\":{\"key\":\"o1\"}}. No kind = user."
+      operationId: evaluate-all
+      parameters:
+        - in: header
+          name: X-SDK-Key
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvalAllInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvalAllOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - sdkKeyAuth: []
+      summary: Evaluate all flags in the environment for a context (SDK key auth)
+      tags:
+        - Evaluation
+  /api/v1/events:
+    post:
+      description: For clients that evaluate from a local cache (streaming) and so must report their own usage. Server-side eval is counted automatically.
+      operationId: ingest-events
+      parameters:
+        - in: header
+          name: X-SDK-Key
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestEventsInputBody"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - sdkKeyAuth: []
+      summary: Ingest rolled-up evaluation summaries from a client (SDK key auth)
+      tags:
+        - Analytics
+  /api/v1/me:
+    get:
+      operationId: me
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Current authenticated user
+      tags:
+        - Auth
+  /api/v1/tenants:
+    get:
+      operationId: list-tenants
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTenantsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List all tenants (superuser only)
+      tags:
+        - Tenants
+    post:
+      operationId: create-tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTenantInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a tenant (superuser only); seeds default roles
+      tags:
+        - Tenants
+  /api/v1/tenants/{tenantSlug}:
+    delete:
+      operationId: delete-tenant
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a tenant (superuser only); cascades
+      tags:
+        - Tenants
+    get:
+      operationId: get-tenant
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a tenant by slug (requires tenant.read)
+      tags:
+        - Tenants
+    patch:
+      operationId: update-tenant
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Update tenant name (requires tenant.update)
+      tags:
+        - Tenants
+  /api/v1/tenants/{tenantSlug}/audit:
+    get:
+      operationId: list-audit
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - description: max entries (default 50, max 200)
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: max entries (default 50, max 200)
+            format: int64
+            type: integer
+        - description: filter by project UUID
+          explode: false
+          in: query
+          name: project_id
+          schema:
+            description: filter by project UUID
+            type: string
+        - description: e.g. flag, segment, sdk_key, role
+          explode: false
+          in: query
+          name: resource_type
+          schema:
+            description: e.g. flag, segment, sdk_key, role
+            type: string
+        - explode: false
+          in: query
+          name: resource_key
+          schema:
+            type: string
+        - description: "id cursor: return entries older than this id"
+          explode: false
+          in: query
+          name: before
+          schema:
+            description: "id cursor: return entries older than this id"
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAuditOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a tenant's change history (requires audit.read)
+      tags:
+        - Audit
+  /api/v1/tenants/{tenantSlug}/members:
+    post:
+      operationId: add-member
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemberInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddMemberOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Add a member to a tenant (requires member.manage)
+      tags:
+        - Members
+  /api/v1/tenants/{tenantSlug}/projects:
+    get:
+      operationId: list-projects
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProjectsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List projects the caller can read
+      tags:
+        - Projects
+    post:
+      operationId: create-project
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProjectOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a project (requires project.create); seeds production + staging
+      tags:
+        - Projects
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}:
+    delete:
+      operationId: delete-project
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a project (requires project.delete); cascades
+      tags:
+        - Projects
+    get:
+      operationId: get-project
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a project (requires project.read)
+      tags:
+        - Projects
+    patch:
+      operationId: update-project
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Update project name (requires project.update)
+      tags:
+        - Projects
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments:
+    get:
+      operationId: list-environments
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvironmentsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's environments (requires project.read)
+      tags:
+        - Environments
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys:
+    get:
+      operationId: list-sdk-keys
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSdkKeysOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List an environment's SDK keys (requires sdk_key.manage)
+      tags:
+        - SDK Keys
+    post:
+      operationId: create-sdk-key
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSdkKeyInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SdkKey"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Mint an SDK key (requires sdk_key.manage); response includes the secret
+      tags:
+        - SDK Keys
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys/{keyID}:
+    delete:
+      operationId: revoke-sdk-key
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: keyID
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Revoke an SDK key (requires sdk_key.manage)
+      tags:
+        - SDK Keys
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags:
+    get:
+      operationId: list-flags
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListFlagsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flag definitions (requires flag.read)
+      tags:
+        - Flags
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}:
+    delete:
+      operationId: delete-flag
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a flag (requires flag.delete); cascades its configs
+      tags:
+        - Flags
+    put:
+      operationId: save-flag
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFlagInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flag"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create or update a flag definition (requires flag.write)
+      tags:
+        - Flags
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}:
+    patch:
+      description: Surgical, concurrency-friendly edits (turnFlagOn, addRule, addTargets, …) instead of replacing the whole config.
+      operationId: patch-flag-config
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchFlagConfigInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Apply semantic instructions to a flag's env config (requires flag.write)
+      tags:
+        - Flags
+    put:
+      operationId: save-flag-config
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFlagConfigInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Set a flag's targeting config in an environment (requires flag.write)
+      tags:
+        - Flags
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats:
+    get:
+      operationId: flag-stats
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - description: lookback window, e.g. 1h, 24h (default 24h)
+          explode: false
+          in: query
+          name: since
+          schema:
+            description: lookback window, e.g. 1h, 24h (default 24h)
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagStatsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Evaluation counts per variation for a flag in an environment (requires flag.read)
+      tags:
+        - Analytics
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/roles:
+    post:
+      operationId: grant-project-role
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantProjectRoleInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleAssignment"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Grant a user a project-scoped role (requires member.manage)
+      tags:
+        - Members
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/segments:
+    get:
+      operationId: list-segments
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSegmentsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's segments (requires flag.read)
+      tags:
+        - Segments
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/segments/{segKey}:
+    delete:
+      operationId: delete-segment
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a segment (requires flag.write)
+      tags:
+        - Segments
+    put:
+      operationId: save-segment
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSegmentInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Segment"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create or update a segment (requires flag.write)
+      tags:
+        - Segments
+  /api/v1/tenants/{tenantSlug}/roles:
+    get:
+      operationId: list-roles
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListRolesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a tenant's roles (requires role.manage)
+      tags:
+        - Roles
+    post:
+      operationId: create-role
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a custom role (requires role.manage)
+      tags:
+        - Roles
+  /api/v1/users:
+    get:
+      operationId: list-users
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListUsersOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List users (superuser only)
+      tags:
+        - Users
+    post:
+      operationId: create-user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a user (superuser only)
+      tags:
+        - Users
+  /api/v1/users/{userID}:
+    delete:
+      operationId: delete-user
+      parameters:
+        - in: path
+          name: userID
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a user (superuser only)
+      tags:
+        - Users
+    patch:
+      operationId: update-user
+      parameters:
+        - in: path
+          name: userID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Update a user (superuser only)
+      tags:
+        - Users
+  /healthz:
+    get:
+      operationId: healthz
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Liveness probe
+      tags:
+        - Health
+  /readyz:
+    get:
+      operationId: readyz
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Readiness probe (pings Postgres + Redis)
+      tags:
+        - Health
+servers:
+  - url: http://localhost:8080

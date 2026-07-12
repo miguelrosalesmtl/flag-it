@@ -1,0 +1,82 @@
+# Local development stack. `docker compose up` brings up Postgres, Redis, and
+# two app replicas behind their own ports so you can watch pub/sub keep their
+# in-memory caches consistent.
+
+services:
+  postgres:
+    image: docker.io/library/postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18+ images place data in a subdirectory of this path; mount the
+      # whole dir (not .../data) per the official image guidance.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: docker.io/library/redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-shot: apply goose migrations, then exit. The app replicas wait for this
+  # to complete successfully before starting.
+  migrate:
+    build: .
+    command: ["migrate", "up"]
+    environment:
+      APP_ENV: development
+      POSTGRES_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Replica 1
+  app: &app
+    build: .
+    environment:
+      APP_ENV: development
+      APP_DEBUG: "true"
+      INSTANCE_ID: app-1
+      SERVER_PORT: "8080"
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # Replica 2 — same image, different instance id and host port, to demonstrate
+  # horizontal scaling and cache propagation over Redis pub/sub.
+  app2:
+    <<: *app
+    environment:
+      APP_ENV: development
+      APP_DEBUG: "true"
+      INSTANCE_ID: app-2
+      SERVER_PORT: "8080"
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    ports:
+      - "8081:8080"
+
+volumes:
+  pgdata:
