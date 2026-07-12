@@ -22,20 +22,29 @@ cmd  →  server  →  services  →  store  →  models
 | **domain** | `internal/models` | structs + pure methods on them (e.g. `Subject.Can`) | any I/O, any dependency on other internal packages |
 | **repository** | `internal/store` | SQL, transactions, row scanning | business rules, huma, HTTP |
 | **service** | `internal/auth`, `internal/authz`, `internal/flags`, `internal/analytics` | business logic, orchestration, caching, the pure eval engine | huma/HTTP, hand-written SQL |
-| **transport** | `internal/server` | huma operations, request/response mapping, authn/authz **enforcement**, audit calls | business workflows, domain policy, crypto, direct multi-write orchestration |
+| **transport** | `internal/server` | huma operations, request/response mapping, authn/authz **enforcement**, audit calls | business workflows, domain policy, crypto, **any `store` access** |
 
 `models` imports nothing. `store` speaks only SQL. Services never import `huma`.
 The `server` package is the only place that knows HTTP exists.
+
+**Handlers never touch the store — no exceptions.** The `Server` struct holds
+*services*, not the `*store.Store`, so a handler literally cannot reach the store:
+there is no field to call. Every domain has a service (`auth`, `authz`, `catalog`,
+`audit`, `flags`, `analytics`); even a one-line read goes through it. If you find
+yourself wanting `s.store.X()` in a handler, add the method to the owning service
+instead. New resource with no obvious home? It belongs in `catalog` (the
+tenant→project→environment→sdk-key hierarchy) or a new service — never inline.
 
 ## What a handler may do (and nothing more)
 
 A `server/*.go` operation handler is an adapter. Its entire job:
 
 1. **Validate input shape** (presence, format — much of it via huma struct tags).
-2. **Resolve** the URL to entities (`resolveTenant`/`resolveScope`/`resolveEnv`).
+2. **Resolve** the URL to entities (`resolveTenant`/`resolveScope`/`resolveEnv`,
+   which themselves call the `catalog` service).
 3. **Authorize** (`s.authorize(...)` / `s.requireSuperuser(...)`).
-4. **Call ONE service method** — or a single trivial store CRUD for a plain
-   read/write with no rules attached.
+4. **Call a service method** — always a service, never `s.store`. Even a plain
+   one-row read goes through the owning service.
 5. **Map** the result to the response DTO and record an **audit** entry.
 
 If a handler does more than this, logic has leaked. In particular, a handler MUST NOT:
@@ -77,7 +86,9 @@ all-or-nothing.
 - "It hashes a password / signs a token" → `auth`
 - "It decides whether a subject may do something" → `models.Subject` (pure) or `authz`
 - "It writes two rows that must both succeed" → a `store` method with a tx, called by a service
-- "It reads/writes one row, no rules" → a `store` method, called directly by the handler
+- "It reads/writes one row, no rules" → a thin method on the owning service (`catalog`/`auth`/`authz`/…), which calls the `store`; the handler calls the service, never the store
+- "It's a tenant/project/environment/sdk-key operation" → `catalog`
+- "It records or lists an audit entry" → `audit`
 - "It evaluates a flag" → `flags` (pure functions; the `Service` loads data and calls them)
 - "It turns an error into a 4xx/5xx" → the handler (via a mapper); never the service
 - "It parses JSON / registers a route / writes an audit entry" → `server`

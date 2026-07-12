@@ -128,7 +128,7 @@ func (s *Server) registerAuth() {
 		OperationID: "me", Method: http.MethodGet, Path: "/api/v1/me",
 		Summary: "Current authenticated user", Tags: []string{"Auth"}, Security: bearer,
 	}, func(ctx context.Context, _ *struct{}) (*userOutput, error) {
-		user, err := s.store.GetUserByID(ctx, userID(ctx))
+		user, err := s.auth.GetUser(ctx, userID(ctx))
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}

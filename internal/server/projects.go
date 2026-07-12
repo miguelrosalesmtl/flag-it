@@ -66,11 +66,10 @@ func (s *Server) registerProjects() {
 		if err != nil {
 			return nil, huma.Error500InternalServerError("authorization failed")
 		}
-		projects, err := s.store.ListProjectsByTenant(ctx, tenant.ID)
+		visible, tenantWide, err := s.catalog.ListReadableProjects(ctx, subject, tenant.ID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
-		visible, tenantWide := subject.ReadableProjects(tenant.ID, projects)
 		if !tenantWide && len(visible) == 0 {
 			return nil, huma.Error403Forbidden("forbidden")
 		}
@@ -94,7 +93,7 @@ func (s *Server) registerProjects() {
 		if in.Body.Key == "" || in.Body.Name == "" {
 			return nil, huma.Error400BadRequest("key and name are required")
 		}
-		project, envs, err := s.store.CreateProject(ctx, tenant.ID, in.Body.Key, in.Body.Name)
+		project, envs, err := s.catalog.CreateProject(ctx, tenant.ID, in.Body.Key, in.Body.Name)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -134,7 +133,7 @@ func (s *Server) registerProjects() {
 		if in.Body.Name == "" {
 			return nil, huma.Error400BadRequest("name is required")
 		}
-		updated, err := s.store.UpdateProject(ctx, project.ID, in.Body.Name)
+		updated, err := s.catalog.UpdateProject(ctx, project.ID, in.Body.Name)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -155,7 +154,7 @@ func (s *Server) registerProjects() {
 		if err := s.authorize(ctx, models.PermProjectDelete, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		if err := s.store.DeleteProject(ctx, project.ID); err != nil {
+		if err := s.catalog.DeleteProject(ctx, project.ID); err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		// project_id omitted (the project is gone); keep the entry under the tenant.
@@ -175,7 +174,7 @@ func (s *Server) registerProjects() {
 		if err := s.authorize(ctx, models.PermProjectRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		envs, err := s.store.ListEnvironmentsByProject(ctx, project.ID)
+		envs, err := s.catalog.ListEnvironments(ctx, project.ID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}

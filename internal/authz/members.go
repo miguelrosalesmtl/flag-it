@@ -56,6 +56,16 @@ func (s *Service) GrantProjectRole(ctx context.Context, tenantID, projectID, ema
 	return s.store.GrantProjectRole(ctx, user.ID, tenantID, projectID, role.ID)
 }
 
+// CreateRole creates a custom (non-system) role for a tenant.
+func (s *Service) CreateRole(ctx context.Context, tenantID, key, name, description string, scope models.ScopeType, perms []models.Permission) (models.Role, error) {
+	return s.store.CreateRole(ctx, tenantID, key, name, description, scope, perms)
+}
+
+// ListRoles returns a tenant's roles.
+func (s *Service) ListRoles(ctx context.Context, tenantID string) ([]models.Role, error) {
+	return s.store.ListRolesByTenant(ctx, tenantID)
+}
+
 // resolveRole looks a role up by key and enforces the expected scope.
 func (s *Service) resolveRole(ctx context.Context, tenantID, key string, want models.ScopeType) (models.Role, error) {
 	role, err := s.store.GetRoleByKey(ctx, tenantID, key)

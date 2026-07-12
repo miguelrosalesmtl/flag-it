@@ -131,7 +131,7 @@ func (s *Server) resolveSDKKey(ctx context.Context, sdkKey string) (models.SdkKe
 		}
 		return sk, nil
 	}
-	sk, err := s.store.GetActiveSdkKey(ctx, sdkKey)
+	sk, err := s.catalog.ActiveSdkKey(ctx, sdkKey)
 	if errors.Is(err, store.ErrNotFound) {
 		s.sdkCache.put(sdkKey, models.SdkKey{}, false) // negative cache
 		return models.SdkKey{}, store.ErrNotFound

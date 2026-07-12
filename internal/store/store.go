@@ -3,6 +3,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,4 +25,9 @@ func New(pool *pgxpool.Pool) *Store {
 // Pool exposes the underlying pool for health checks and advanced callers.
 func (s *Store) Pool() *pgxpool.Pool {
 	return s.pool
+}
+
+// Ping checks database connectivity (readiness probe).
+func (s *Store) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
 }

@@ -69,7 +69,7 @@ func (s *Server) registerRoles() {
 		if err := s.authorize(ctx, models.PermRoleManage, models.Resource{TenantID: tenant.ID}); err != nil {
 			return nil, err
 		}
-		roles, err := s.store.ListRolesByTenant(ctx, tenant.ID)
+		roles, err := s.authz.ListRoles(ctx, tenant.ID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -93,7 +93,7 @@ func (s *Server) registerRoles() {
 		if in.Body.Key == "" || in.Body.Name == "" {
 			return nil, huma.Error400BadRequest("key and name are required")
 		}
-		role, err := s.store.CreateRole(ctx, tenant.ID, in.Body.Key, in.Body.Name, in.Body.Description, in.Body.Scope, in.Body.Permissions)
+		role, err := s.authz.CreateRole(ctx, tenant.ID, in.Body.Key, in.Body.Name, in.Body.Description, in.Body.Scope, in.Body.Permissions)
 		if err != nil {
 			return nil, huma.Error400BadRequest(err.Error())
 		}

@@ -56,6 +56,48 @@ func (s *Service) CreateUser(ctx context.Context, email, password, fullName stri
 	return s.store.CreateUser(ctx, email, hash, fullName, isSuperuser)
 }
 
+// ListUsers returns all users (superuser view).
+func (s *Service) ListUsers(ctx context.Context) ([]models.User, error) {
+	return s.store.ListUsers(ctx)
+}
+
+// GetUser looks a user up by id.
+func (s *Service) GetUser(ctx context.Context, id string) (models.User, error) {
+	return s.store.GetUserByID(ctx, id)
+}
+
+// UpdateUser applies the given optional changes (nil means leave unchanged),
+// reading the current row first so a partial patch is well-defined.
+func (s *Service) UpdateUser(ctx context.Context, id string, fullName *string, isActive *bool) (models.User, error) {
+	current, err := s.store.GetUserByID(ctx, id)
+	if err != nil {
+		return models.User{}, err
+	}
+	name, active := current.FullName, current.IsActive
+	if fullName != nil {
+		name = *fullName
+	}
+	if isActive != nil {
+		active = *isActive
+	}
+	return s.store.UpdateUser(ctx, id, name, active)
+}
+
+// DeleteUser removes a user.
+func (s *Service) DeleteUser(ctx context.Context, id string) error {
+	return s.store.DeleteUser(ctx, id)
+}
+
+// NeedsSetup reports whether the install still needs first-run setup (no
+// superuser exists yet).
+func (s *Service) NeedsSetup(ctx context.Context) (bool, error) {
+	n, err := s.store.CountSuperusers(ctx)
+	if err != nil {
+		return false, err
+	}
+	return n == 0, nil
+}
+
 // BootstrapInput is the payload for first-run setup. Tenant fields are optional
 // but must be provided together.
 type BootstrapInput struct {

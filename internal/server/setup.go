@@ -50,12 +50,12 @@ func (s *Server) registerSetup() {
 		OperationID: "setup-status", Method: http.MethodGet, Path: "/api/v1/setup",
 		Summary: "Whether the install still needs first-run setup", Tags: []string{"Setup"},
 	}, func(ctx context.Context, _ *struct{}) (*setupStatusOutput, error) {
-		n, err := s.store.CountSuperusers(ctx)
+		needs, err := s.auth.NeedsSetup(ctx)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		out := &setupStatusOutput{}
-		out.Body.NeedsSetup = n == 0
+		out.Body.NeedsSetup = needs
 		return out, nil
 	})
 

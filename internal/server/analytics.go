@@ -89,7 +89,7 @@ func (s *Server) registerAnalytics() {
 		}
 		since := time.Now().Add(-window)
 
-		vcs, err := s.store.QueryEvalStats(ctx, env.ID, in.FlagKey, since)
+		vcs, err := s.analytics.QueryStats(ctx, env.ID, in.FlagKey, since)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
