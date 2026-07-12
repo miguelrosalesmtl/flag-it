@@ -46,6 +46,23 @@ test('a configured install shows login, signs in, and lists tenants', async ({ p
   await expect(page.getByText('Sign in to flag-it')).toBeVisible()
 })
 
+test('drills from a tenant into its projects and a project into its flags', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  // Tenant -> Projects
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Checkout' })).toBeVisible()
+
+  // Project -> Flags
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByText('New checkout')).toBeVisible()
+  await expect(page.getByText('pricing-tier')).toBeVisible()
+})
+
 test('bad credentials show an error and keep you on the login screen', async ({ page }) => {
   await page.goto('/?scenario=login-error')
 

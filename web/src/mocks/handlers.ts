@@ -1,6 +1,8 @@
 import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
+import type { Flag } from '@/types/flag'
+import type { Project } from '@/types/project'
 import type { SetupInput } from '@/types/setup'
 import type { Tenant } from '@/types/tenant'
 import type { CreateUserInput, User } from '@/types/user'
@@ -34,6 +36,50 @@ const seedTenants: Tenant[] = [
     id: 't1',
     slug: 'acme',
     name: 'Acme Inc',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+]
+
+const mockProjects: Project[] = [
+  {
+    id: 'p1',
+    tenant_id: 't1',
+    key: 'checkout',
+    name: 'Checkout',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+  {
+    id: 'p2',
+    tenant_id: 't1',
+    key: 'mobile-app',
+    name: 'Mobile App',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+]
+
+const mockFlags: Flag[] = [
+  {
+    id: 'f1',
+    project_id: 'p1',
+    key: 'new-checkout',
+    name: 'New checkout',
+    description: 'Rolls out the redesigned checkout flow.',
+    client_side_available: true,
+    variations: [true, false],
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+  {
+    id: 'f2',
+    project_id: 'p1',
+    key: 'pricing-tier',
+    name: 'Pricing tier',
+    description: '',
+    client_side_available: false,
+    variations: ['free', 'pro', 'enterprise'],
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
   },
@@ -102,4 +148,18 @@ export const handlers = [
   http.get('*/api/v1/me', () => HttpResponse.json(mockUser)),
 
   http.get('*/api/v1/tenants', () => HttpResponse.json({ tenants })),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects', () =>
+    HttpResponse.json({ projects: mockProjects }),
+  ),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey', ({ params }) => {
+    const project = mockProjects.find((p) => p.key === params.projectKey)
+    if (!project) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json(project)
+  }),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags', () =>
+    HttpResponse.json({ flags: mockFlags }),
+  ),
 ]

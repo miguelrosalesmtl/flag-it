@@ -1,39 +1,41 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
-import { TenantList } from '@/features/tenants/components/TenantList'
-import type { Tenant } from '@/types/tenant'
+import { ProjectList } from '@/features/projects/components/ProjectList'
+import type { Project } from '@/types/project'
 
-const tenants: Tenant[] = [
+const projects: Project[] = [
   {
     id: '1',
-    slug: 'acme',
-    name: 'Acme Inc',
+    tenant_id: 't1',
+    key: 'checkout',
+    name: 'Checkout',
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
   },
   {
     id: '2',
-    slug: 'globex',
-    name: 'Globex Corporation',
+    tenant_id: 't1',
+    key: 'mobile-app',
+    name: 'Mobile App',
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
   },
 ]
 
 const meta = {
-  title: 'Tenants/TenantList',
-  component: TenantList,
+  title: 'Projects/ProjectList',
+  component: ProjectList,
   args: { onOpen: fn() },
-} satisfies Meta<typeof TenantList>
+} satisfies Meta<typeof ProjectList>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: { tenants },
+  args: { projects },
 }
 
 export const Empty: Story = {
-  args: { tenants: [] },
+  args: { projects: [] },
 }

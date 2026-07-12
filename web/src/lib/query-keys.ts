@@ -11,4 +11,8 @@ export const queryKeys = {
   me: ['auth', 'me'] as const,
   setupStatus: ['setup', 'status'] as const,
   tenants: ['tenants', 'list'] as const,
+  projects: (tenantSlug: string) => ['projects', tenantSlug] as const,
+  project: (tenantSlug: string, projectKey: string) =>
+    ['projects', tenantSlug, projectKey] as const,
+  flags: (tenantSlug: string, projectKey: string) => ['flags', tenantSlug, projectKey] as const,
 }
