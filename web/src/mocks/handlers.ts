@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
+import type { SeenContext } from '@/types/context'
 import type { Environment } from '@/types/environment'
 import type { Flag, FlagConfig } from '@/types/flag'
 import type { Project } from '@/types/project'
@@ -131,6 +132,27 @@ let mockSegments: Segment[] = [
 ]
 
 const seedSegments: Segment[] = [...mockSegments]
+
+const mockContexts: SeenContext[] = [
+  {
+    id: 'c1',
+    environment_id: 'env-prod',
+    kind: 'user',
+    key: 'alice',
+    attributes: { plan: 'pro', country: 'US' },
+    first_seen: '2026-07-12T00:00:00Z',
+    last_seen: '2026-07-12T09:20:00Z',
+  },
+  {
+    id: 'c2',
+    environment_id: 'env-prod',
+    kind: 'account',
+    key: 'acme-corp',
+    attributes: { tier: 'enterprise' },
+    first_seen: '2026-07-12T00:00:00Z',
+    last_seen: '2026-07-12T09:10:00Z',
+  },
+]
 
 function newConfig(): FlagConfig {
   return { on: false, off_variation: 1, fallthrough: { variation: 0 }, targets: [], rules: [], version: 1 }
@@ -305,6 +327,33 @@ export const handlers = [
       }
       mockEnvironments.push(env)
       return HttpResponse.json(env, { status: 201 })
+    },
+  ),
+
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/contexts',
+    ({ request }) => {
+      const q = searchParam(request)
+      return HttpResponse.json({
+        contexts: mockContexts.filter((c) => includesAny(q, c.kind, c.key)),
+      })
+    },
+  ),
+
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/contexts/:kind/:key',
+    ({ params }) => {
+      const context = mockContexts.find(
+        (c) => c.kind === params.kind && c.key === decodeURIComponent(String(params.key)),
+      )
+      if (!context) return new HttpResponse(null, { status: 404 })
+      const evaluations = mockFlags.map((f) => ({
+        flag_key: f.key,
+        variation: 0,
+        value: f.variations[0],
+        reason: 'FALLTHROUGH',
+      }))
+      return HttpResponse.json({ context, evaluations })
     },
   ),
 

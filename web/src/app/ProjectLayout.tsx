@@ -1,4 +1,4 @@
-import { FlagIcon, LayersIcon, UsersIcon, type LucideIcon } from 'lucide-react'
+import { BoxIcon, FlagIcon, LayersIcon, UsersIcon, type LucideIcon } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router'
 
 import { EnvironmentBanner } from '@/components/environment-banner'
@@ -61,6 +61,7 @@ export function ProjectLayout() {
           <p className="text-muted-foreground px-2 py-1 text-xs font-medium uppercase">Features</p>
           <NavItem to={base} end icon={FlagIcon} label="Flags" />
           <NavItem to={`${base}/segments`} icon={UsersIcon} label="Segments" />
+          <NavItem to={`${base}/contexts`} icon={BoxIcon} label="Contexts" />
           <p className="text-muted-foreground px-2 pt-3 pb-1 text-xs font-medium uppercase">
             Project settings
           </p>

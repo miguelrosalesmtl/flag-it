@@ -181,6 +181,25 @@ test('creates a segment and adds an included target', async ({ page }) => {
   await expect(page.getByText('user-42')).toBeVisible()
 })
 
+test('inspects a context and its expected variations', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Contexts' }).click()
+  await expect(page.getByRole('heading', { name: 'Contexts' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'alice' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'alice' }).click()
+  // Context detail: attributes + how every flag evaluates for it.
+  await expect(page.getByRole('heading', { name: 'alice' })).toBeVisible()
+  await expect(page.getByText('Expected variations')).toBeVisible()
+  await expect(page.getByText('new-checkout')).toBeVisible()
+})
+
 test('creates an environment from the Environments settings', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

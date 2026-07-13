@@ -27,4 +27,8 @@ export const queryKeys = {
     ['segments', tenantSlug, projectKey] as const,
   segment: (tenantSlug: string, projectKey: string, segKey: string) =>
     ['segments', tenantSlug, projectKey, segKey] as const,
+  contexts: (tenantSlug: string, projectKey: string, envKey: string) =>
+    ['contexts', tenantSlug, projectKey, envKey] as const,
+  context: (tenantSlug: string, projectKey: string, envKey: string, kind: string, key: string) =>
+    ['contexts', tenantSlug, projectKey, envKey, kind, key] as const,
 }

@@ -3,6 +3,8 @@ import { createBrowserRouter } from 'react-router'
 import { AppLayout } from '@/app/AppLayout'
 import { ProjectLayout } from '@/app/ProjectLayout'
 import { LoginRoute, ProtectedLayout, SetupRoute } from '@/app/guards'
+import { ContextDetailPage } from '@/features/contexts/ContextDetailPage'
+import { ContextsPage } from '@/features/contexts/ContextsPage'
 import { EnvironmentsPage } from '@/features/environments/EnvironmentsPage'
 import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
@@ -35,6 +37,8 @@ export const router = createBrowserRouter([
           { path: 'flags/:flagKey', Component: FlagDetailPage },
           { path: 'segments', Component: SegmentsPage },
           { path: 'segments/:segKey', Component: SegmentDetailPage },
+          { path: 'contexts', Component: ContextsPage },
+          { path: 'contexts/:kind/:key', Component: ContextDetailPage },
           { path: 'environments', Component: EnvironmentsPage },
         ],
       },
