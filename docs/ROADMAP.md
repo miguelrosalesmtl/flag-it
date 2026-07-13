@@ -14,7 +14,9 @@ order). Check items off as we go.
 **Where we are (2026-07):** backend milestones complete through **Phase 6**. The
 **Web UI dashboard** (a Phase 8 item) is built for the full management surface, plus
 a **Contexts inspector** (new work beyond the original phases — migration 00013).
-Not started: **Phase 7 (governance)** and the rest of **Phase 8** (integrations,
+**Phase 7 (governance)** has begun: **approval workflows** ship (change requests,
+reviewed before they apply — migration 00014). Not started: the rest of Phase 7
+(scheduled changes, flag lifecycle) and the rest of **Phase 8** (integrations,
 SSO/SCIM, teams, data export, CLI). Deferred: A/B experimentation (P6), JS SDK (P4),
 private attributes (P1), and the scaling/hardening list.
 
@@ -118,7 +120,7 @@ internal, and centralizes audit/control. Implications:
 - ❌ Event ingestion pipeline (summary / index / feature events)
 
 ### 3.6 Workflow & governance
-- ❌ Approval workflows
+- ✅ Approval workflows
 - ❌ Scheduled changes / flag triggers
 - ❌ Audit log / change history
 - ❌ Comments on changes
@@ -269,7 +271,13 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       on these counters + a metrics model)
 
 ### Phase 7 — Governance
-- [ ] Approval workflows
+- [x] **Approval workflows** — propose a flag change as a set of semantic
+      instructions (a change request) that a reviewer must approve before it is
+      applied. Backend `governance` service + `change_requests` table; management
+      API create/list/approve/reject under a project; approving reuses the flag
+      service's instruction path. UI: project **Approvals** screen (filter by
+      status, approve/reject) + "Request change" dialog on the flag detail page.
+      Audited as `change.requested` / `change.approved` / `change.rejected`.
 - [ ] Scheduled changes / flag triggers
 - [ ] Flag lifecycle (temporary flags, stale detection, code references)
 

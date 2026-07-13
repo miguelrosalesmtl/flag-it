@@ -1,6 +1,7 @@
 import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
+import type { ChangeRequest, ChangeStatus } from '@/types/change'
 import type { SeenContext } from '@/types/context'
 import type { Member } from '@/types/member'
 import type { Role } from '@/types/role'
@@ -207,6 +208,49 @@ function newConfig(): FlagConfig {
 let flagConfigs: Record<string, FlagConfig> = {}
 const configKey = (flagKey: string, envKey: string) => `${flagKey}:${envKey}`
 
+// Change requests (approval workflow), applied to flagConfigs on approval.
+let changeRequests: ChangeRequest[] = []
+
+type Instruction = {
+  kind: string
+  variation?: number
+  contextKind?: string
+  values?: string[]
+  clauses?: FlagRule['clauses']
+  ruleId?: string
+}
+
+// Applies semantic instructions to a config in place; bumps the version once.
+function applyInstructions(current: FlagConfig, instructions: Instruction[]) {
+  for (const ins of instructions) {
+    if (ins.kind === 'turnFlagOn') current.on = true
+    else if (ins.kind === 'turnFlagOff') current.on = false
+    else if (ins.kind === 'addRule' && ins.clauses)
+      current.rules.push({ id: crypto.randomUUID(), clauses: ins.clauses, variation: ins.variation })
+    else if (ins.kind === 'removeRule' && ins.ruleId)
+      current.rules = current.rules.filter((r) => r.id !== ins.ruleId)
+    else if (ins.kind === 'updateOffVariation' && ins.variation !== undefined)
+      current.off_variation = ins.variation
+    else if (ins.kind === 'updateFallthroughVariation' && ins.variation !== undefined)
+      current.fallthrough = { variation: ins.variation }
+    else if (ins.kind === 'addTargets' && ins.variation !== undefined && ins.values) {
+      const kind = ins.contextKind ?? 'user'
+      let t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
+      if (!t) {
+        t = { contextKind: kind, variation: ins.variation, values: [] }
+        current.targets.push(t)
+      }
+      for (const v of ins.values) if (!t.values.includes(v)) t.values.push(v)
+    } else if (ins.kind === 'removeTargets' && ins.variation !== undefined && ins.values) {
+      const kind = ins.contextKind ?? 'user'
+      const t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
+      if (t) t.values = t.values.filter((v) => !ins.values!.includes(v))
+      current.targets = current.targets.filter((x) => x.values.length > 0)
+    }
+  }
+  current.version += 1
+}
+
 // Lower-cased ?search= value, for the mock server-side filters.
 const searchParam = (request: Request) =>
   (new URL(request.url).searchParams.get('search') ?? '').toLowerCase()
@@ -230,6 +274,7 @@ export function resetBackend() {
   mockMembers = [{ user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' }]
   mockRoles = [...seedRoles]
   flagConfigs = {}
+  changeRequests = []
 }
 
 export const handlers = [
@@ -539,44 +584,80 @@ export const handlers = [
     async ({ params, request }) => {
       const k = configKey(String(params.flagKey), String(params.envKey))
       const current = (flagConfigs[k] ??= newConfig())
-      const body = (await request.json()) as {
-        instructions: Array<{
-          kind: string
-          variation?: number
-          contextKind?: string
-          values?: string[]
-          clauses?: FlagRule['clauses']
-          ruleId?: string
-        }>
-      }
-      for (const ins of body.instructions) {
-        if (ins.kind === 'turnFlagOn') current.on = true
-        else if (ins.kind === 'turnFlagOff') current.on = false
-        else if (ins.kind === 'addRule' && ins.clauses)
-          current.rules.push({ id: crypto.randomUUID(), clauses: ins.clauses, variation: ins.variation })
-        else if (ins.kind === 'removeRule' && ins.ruleId)
-          current.rules = current.rules.filter((r) => r.id !== ins.ruleId)
-        else if (ins.kind === 'updateOffVariation' && ins.variation !== undefined)
-          current.off_variation = ins.variation
-        else if (ins.kind === 'updateFallthroughVariation' && ins.variation !== undefined)
-          current.fallthrough = { variation: ins.variation }
-        else if (ins.kind === 'addTargets' && ins.variation !== undefined && ins.values) {
-          const kind = ins.contextKind ?? 'user'
-          let t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
-          if (!t) {
-            t = { contextKind: kind, variation: ins.variation, values: [] }
-            current.targets.push(t)
-          }
-          for (const v of ins.values) if (!t.values.includes(v)) t.values.push(v)
-        } else if (ins.kind === 'removeTargets' && ins.variation !== undefined && ins.values) {
-          const kind = ins.contextKind ?? 'user'
-          const t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
-          if (t) t.values = t.values.filter((v) => !ins.values!.includes(v))
-          current.targets = current.targets.filter((x) => x.values.length > 0)
-        }
-      }
-      current.version += 1
+      const body = (await request.json()) as { instructions: Instruction[] }
+      applyInstructions(current, body.instructions)
       return HttpResponse.json(current)
+    },
+  ),
+
+  // --- Approvals (change requests) ---
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes',
+    ({ request }) => {
+      const status = new URL(request.url).searchParams.get('status') as ChangeStatus | null
+      const changes = changeRequests.filter((c) => !status || c.status === status)
+      return HttpResponse.json({ changes })
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/changes',
+    async ({ params, request }) => {
+      const body = (await request.json()) as { comment?: string; instructions: Instruction[] }
+      if (!body.instructions?.length) {
+        return HttpResponse.json({ detail: 'at least one instruction is required' }, { status: 400 })
+      }
+      const cr: ChangeRequest = {
+        id: crypto.randomUUID(),
+        project_id: String(params.projectKey),
+        environment_id: String(params.envKey),
+        environment_key: String(params.envKey),
+        flag_key: String(params.flagKey),
+        instructions: body.instructions,
+        comment: body.comment ?? '',
+        status: 'pending',
+        requested_by: mockUser.id,
+        requested_by_email: mockUser.email,
+        created_at: new Date().toISOString(),
+      }
+      changeRequests = [cr, ...changeRequests]
+      return HttpResponse.json(cr)
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes/:changeId/approve',
+    async ({ params, request }) => {
+      const cr = changeRequests.find((c) => c.id === String(params.changeId))
+      if (!cr) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      if (cr.status !== 'pending')
+        return HttpResponse.json({ detail: 'not pending' }, { status: 409 })
+      const body = (await request.json().catch(() => ({}))) as { comment?: string }
+      const config = (flagConfigs[configKey(cr.flag_key, cr.environment_key)] ??= newConfig())
+      applyInstructions(config, cr.instructions)
+      cr.status = 'approved'
+      cr.reviewed_by = mockUser.id
+      cr.reviewed_by_email = mockUser.email
+      cr.review_comment = body.comment ?? ''
+      cr.reviewed_at = new Date().toISOString()
+      return HttpResponse.json(cr)
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes/:changeId/reject',
+    async ({ params, request }) => {
+      const cr = changeRequests.find((c) => c.id === String(params.changeId))
+      if (!cr) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      if (cr.status !== 'pending')
+        return HttpResponse.json({ detail: 'not pending' }, { status: 409 })
+      const body = (await request.json().catch(() => ({}))) as { comment?: string }
+      cr.status = 'rejected'
+      cr.reviewed_by = mockUser.id
+      cr.reviewed_by_email = mockUser.email
+      cr.review_comment = body.comment ?? ''
+      cr.reviewed_at = new Date().toISOString()
+      return HttpResponse.json(cr)
     },
   ),
 ]

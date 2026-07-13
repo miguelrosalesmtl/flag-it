@@ -7,6 +7,8 @@ import { EnvironmentTabs } from '@/features/environments/components/EnvironmentT
 import { FlagConfigCard } from '@/features/flags/components/FlagConfigCard'
 import { FlagRules } from '@/features/flags/components/FlagRules'
 import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
+import { RequestChangeDialog } from '@/features/flags/components/RequestChangeDialog'
+import { useCreateChange } from '@/features/approvals/hooks/useChanges'
 import {
   useFlag,
   useFlagConfig,
@@ -32,6 +34,7 @@ export function FlagDetailPage() {
   const envKey = picked || environments.data?.[0]?.key || ''
   const config = useFlagConfig(tenantSlug, projectKey, flagKey, envKey)
   const patch = usePatchFlagConfig(tenantSlug, projectKey, flagKey, envKey)
+  const requestChange = useCreateChange(tenantSlug, projectKey, flagKey, envKey)
 
   return (
     <section className="space-y-6">
@@ -68,6 +71,16 @@ export function FlagDetailPage() {
             <ErrorState message={config.error.message} onRetry={() => void config.refetch()} />
           ) : (
             <>
+              <div className="flex justify-end">
+                <RequestChangeDialog
+                  currentOn={config.data.on}
+                  envKey={envKey}
+                  onSubmit={(instructions, comment) =>
+                    requestChange.mutate({ instructions, comment })
+                  }
+                  isSubmitting={requestChange.isPending}
+                />
+              </div>
               <FlagConfigCard
                 flag={flag.data}
                 config={config.data}

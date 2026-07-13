@@ -23,6 +23,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/contexts"
 	"github.com/miguelrosalesmtl/flag-it/internal/database"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
+	"github.com/miguelrosalesmtl/flag-it/internal/governance"
 	"github.com/miguelrosalesmtl/flag-it/internal/logger"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
 	"github.com/miguelrosalesmtl/flag-it/internal/server"
@@ -130,7 +131,8 @@ func runOpenAPI() error {
 	analyticsRec := analytics.New(st, 0, log)
 	contextsRec := contexts.New(st, 0, log)
 	flagSvc := flags.NewService(st, nil, log)
-	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, contextsRec, nil, log)
+	governanceSvc := governance.New(st, flagSvc)
+	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, nil, log)
 
 	spec, err := srv.OpenAPIYAML()
 	if err != nil {
@@ -194,8 +196,11 @@ func run() error {
 		}
 	}()
 
+	// Governance — approval workflows (change requests applied on approval).
+	governanceSvc := governance.New(st, flagService)
+
 	// HTTP server.
-	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, contextsRec, bus, log)
+	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, bus, log)
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- srv.Start()
