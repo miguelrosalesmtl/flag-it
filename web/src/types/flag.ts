@@ -52,6 +52,8 @@ export interface VariationOrRollout {
   rollout?: {
     variations: { variation: number; weight: number }[]
     bucketBy?: string
+    /** Which context kind's attribute to bucket by (default "user"). */
+    contextKind?: string
     /** Stable hash seed; set to re-randomize (reshuffle) the bucketing. */
     seed?: number
   }

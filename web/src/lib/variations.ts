@@ -22,13 +22,18 @@ export function evenPercents(count: number): number[] {
  */
 export function rolloutFromPercents(
   percents: number[],
-  bucketBy?: string,
-  seed?: number,
-): { variations: { variation: number; weight: number }[]; bucketBy?: string; seed?: number } {
+  opts: { bucketBy?: string; contextKind?: string; seed?: number } = {},
+): {
+  variations: { variation: number; weight: number }[]
+  bucketBy?: string
+  contextKind?: string
+  seed?: number
+} {
   return {
     variations: percents.map((p, i) => ({ variation: i, weight: Math.round(p * 1000) })),
-    ...(bucketBy ? { bucketBy } : {}),
-    ...(seed !== undefined ? { seed } : {}),
+    ...(opts.bucketBy ? { bucketBy: opts.bucketBy } : {}),
+    ...(opts.contextKind ? { contextKind: opts.contextKind } : {}),
+    ...(opts.seed !== undefined ? { seed: opts.seed } : {}),
   }
 }
 

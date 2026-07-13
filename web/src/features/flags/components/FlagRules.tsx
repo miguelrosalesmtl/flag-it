@@ -28,7 +28,12 @@ function rolloutSummary(flag: Flag, rule: FlagRule): string {
     .map((p, i) => (p > 0 ? `${p}% ${variationLabel(flag.variations, i)}` : null))
     .filter(Boolean)
   const summary = parts.join(', ') || 'a rollout'
-  return rule.rollout?.bucketBy ? `${summary} (by ${rule.rollout.bucketBy})` : summary
+
+  const { bucketBy, contextKind } = rule.rollout ?? {}
+  // A context kind matters even at the default "key" bucket (e.g. by organization).
+  if (contextKind) return `${summary} (by ${contextKind} ${bucketBy || 'key'})`
+  if (bucketBy) return `${summary} (by ${bucketBy})`
+  return summary
 }
 
 /** The served value of an existing rule, for pre-filling the edit form. */
