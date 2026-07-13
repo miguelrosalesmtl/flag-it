@@ -154,6 +154,27 @@ test('toggles a flag on from the flag list', async ({ page }) => {
   await expect(toggle).toHaveAttribute('data-state', 'checked')
 })
 
+test('adds a targeting rule with a clause to a segment', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Segments' }).click()
+  await page.getByRole('button', { name: 'Beta users' }).click()
+
+  await page.getByRole('button', { name: 'Add rule' }).click()
+  await page.getByLabel('Attribute').fill('country')
+  await page.getByLabel('Values').fill('US, CA')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+
+  // Re-seeded from the saved segment: the clause persists.
+  await expect(page.getByLabel('Attribute')).toHaveValue('country')
+  await expect(page.getByLabel('Values')).toHaveValue('US, CA')
+})
+
 test('creates a segment and adds an included target', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
