@@ -2,6 +2,7 @@ import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
 import type { ChangeRequest, ChangeStatus } from '@/types/change'
+import type { ScheduledChange, ScheduledStatus } from '@/types/scheduled-change'
 import type { SeenContext } from '@/types/context'
 import type { Member } from '@/types/member'
 import type { Role } from '@/types/role'
@@ -211,6 +212,23 @@ const configKey = (flagKey: string, envKey: string) => `${flagKey}:${envKey}`
 // Change requests (approval workflow), applied to flagConfigs on approval.
 let changeRequests: ChangeRequest[] = []
 
+// Scheduled changes, applied to flagConfigs once their time passes.
+let scheduledChanges: ScheduledChange[] = []
+
+// Lazily apply any pending scheduled changes whose time has come (the mock's
+// stand-in for the backend scheduler). Called before every scheduled read.
+function runDueScheduledChanges() {
+  const now = Date.now()
+  for (const sc of scheduledChanges) {
+    if (sc.status === 'pending' && new Date(sc.scheduled_for).getTime() <= now) {
+      const config = (flagConfigs[configKey(sc.flag_key, sc.environment_key)] ??= newConfig())
+      applyInstructions(config, sc.instructions)
+      sc.status = 'applied'
+      sc.applied_at = new Date().toISOString()
+    }
+  }
+}
+
 type Instruction = {
   kind: string
   variation?: number
@@ -275,6 +293,7 @@ export function resetBackend() {
   mockRoles = [...seedRoles]
   flagConfigs = {}
   changeRequests = []
+  scheduledChanges = []
 }
 
 export const handlers = [
@@ -658,6 +677,69 @@ export const handlers = [
       cr.review_comment = body.comment ?? ''
       cr.reviewed_at = new Date().toISOString()
       return HttpResponse.json(cr)
+    },
+  ),
+
+  // --- Scheduled changes ---
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/scheduled-changes',
+    ({ request }) => {
+      runDueScheduledChanges()
+      const url = new URL(request.url)
+      const status = url.searchParams.get('status') as ScheduledStatus | null
+      const flag = url.searchParams.get('flag')
+      const env = url.searchParams.get('env')
+      const list = scheduledChanges.filter(
+        (c) =>
+          (!status || c.status === status) &&
+          (!flag || c.flag_key === flag) &&
+          (!env || c.environment_key === env),
+      )
+      return HttpResponse.json({ scheduled_changes: list })
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/scheduled-changes',
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        comment?: string
+        scheduled_for: string
+        instructions: Instruction[]
+      }
+      if (!body.instructions?.length) {
+        return HttpResponse.json({ detail: 'at least one instruction is required' }, { status: 400 })
+      }
+      if (!body.scheduled_for || new Date(body.scheduled_for).getTime() <= Date.now()) {
+        return HttpResponse.json({ detail: 'scheduled_for must be in the future' }, { status: 400 })
+      }
+      const sc: ScheduledChange = {
+        id: crypto.randomUUID(),
+        project_id: String(params.projectKey),
+        environment_id: String(params.envKey),
+        environment_key: String(params.envKey),
+        flag_key: String(params.flagKey),
+        instructions: body.instructions,
+        comment: body.comment ?? '',
+        scheduled_for: body.scheduled_for,
+        status: 'pending',
+        created_by: mockUser.id,
+        created_by_email: mockUser.email,
+        created_at: new Date().toISOString(),
+      }
+      scheduledChanges = [sc, ...scheduledChanges]
+      return HttpResponse.json(sc)
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/scheduled-changes/:scheduledId/cancel',
+    ({ params }) => {
+      const sc = scheduledChanges.find((c) => c.id === String(params.scheduledId))
+      if (!sc || sc.status !== 'pending')
+        return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      sc.status = 'cancelled'
+      return HttpResponse.json(sc)
     },
   ),
 ]

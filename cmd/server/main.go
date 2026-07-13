@@ -131,7 +131,7 @@ func runOpenAPI() error {
 	analyticsRec := analytics.New(st, 0, log)
 	contextsRec := contexts.New(st, 0, log)
 	flagSvc := flags.NewService(st, nil, log)
-	governanceSvc := governance.New(st, flagSvc)
+	governanceSvc := governance.New(st, flagSvc, log)
 	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, nil, log)
 
 	spec, err := srv.OpenAPIYAML()
@@ -196,8 +196,10 @@ func run() error {
 		}
 	}()
 
-	// Governance — approval workflows (change requests applied on approval).
-	governanceSvc := governance.New(st, flagService)
+	// Governance — approval workflows + scheduled changes. The scheduler applies
+	// due scheduled changes on an interval until the context is cancelled.
+	governanceSvc := governance.New(st, flagService, log)
+	go governanceSvc.StartScheduler(ctx, cfg.Server.ScheduledChangeInterval)
 
 	// HTTP server.
 	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, bus, log)

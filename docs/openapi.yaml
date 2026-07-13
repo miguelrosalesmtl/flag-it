@@ -69,6 +69,60 @@ components:
         - resource_key
         - created_at
       type: object
+    ChangeRequest:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ChangeRequest.json
+          format: uri
+          readOnly: true
+          type: string
+        comment:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        environment_id:
+          type: string
+        environment_key:
+          type: string
+        flag_key:
+          type: string
+        id:
+          type: string
+        instructions: {}
+        project_id:
+          type: string
+        requested_by:
+          type: string
+        requested_by_email:
+          type: string
+        review_comment:
+          type: string
+        reviewed_at:
+          format: date-time
+          type: string
+        reviewed_by:
+          type: string
+        reviewed_by_email:
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - project_id
+        - environment_id
+        - environment_key
+        - flag_key
+        - instructions
+        - comment
+        - status
+        - requested_by
+        - requested_by_email
+        - created_at
+      type: object
     Clause:
       additionalProperties: false
       properties:
@@ -105,6 +159,28 @@ components:
         - variation
         - value
         - reason
+      type: object
+    CreateChangeInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateChangeInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        comment:
+          description: why this change is proposed
+          type: string
+        instructions:
+          items:
+            $ref: "#/components/schemas/Instruction"
+          type:
+            - array
+            - "null"
+      required:
+        - instructions
       type: object
     CreateEnvironmentInputBody:
       additionalProperties: false
@@ -195,6 +271,33 @@ components:
         - key
         - name
         - scope
+      type: object
+    CreateScheduledInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateScheduledInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        comment:
+          description: why this change is scheduled
+          type: string
+        instructions:
+          items:
+            $ref: "#/components/schemas/Instruction"
+          type:
+            - array
+            - "null"
+        scheduled_for:
+          description: when to apply the change (RFC3339)
+          format: date-time
+          type: string
+      required:
+        - scheduled_for
+        - instructions
       type: object
     CreateSdkKeyInputBody:
       additionalProperties: false
@@ -745,6 +848,25 @@ components:
       required:
         - entries
       type: object
+    ListChangesOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListChangesOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        changes:
+          items:
+            $ref: "#/components/schemas/ChangeRequest"
+          type:
+            - array
+            - "null"
+      required:
+        - changes
+      type: object
     ListContextsOutputBody:
       additionalProperties: false
       properties:
@@ -896,6 +1018,25 @@ components:
             - "null"
       required:
         - roles
+      type: object
+    ListScheduledOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListScheduledOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        scheduled_changes:
+          items:
+            $ref: "#/components/schemas/ScheduledChange"
+          type:
+            - array
+            - "null"
+      required:
+        - scheduled_changes
       type: object
     ListSdkKeysOutputBody:
       additionalProperties: false
@@ -1114,6 +1255,20 @@ components:
         - name
         - created_at
         - updated_at
+      type: object
+    ReviewChangeInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ReviewChangeInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        comment:
+          description: reviewer note
+          type: string
       type: object
     Role:
       additionalProperties: false
@@ -1346,6 +1501,60 @@ components:
           type:
             - array
             - "null"
+      type: object
+    ScheduledChange:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ScheduledChange.json
+          format: uri
+          readOnly: true
+          type: string
+        applied_at:
+          format: date-time
+          type: string
+        comment:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          type: string
+        created_by_email:
+          type: string
+        environment_id:
+          type: string
+        environment_key:
+          type: string
+        error:
+          type: string
+        flag_key:
+          type: string
+        id:
+          type: string
+        instructions: {}
+        project_id:
+          type: string
+        scheduled_for:
+          format: date-time
+          type: string
+        status:
+          type: string
+      required:
+        - id
+        - project_id
+        - environment_id
+        - environment_key
+        - flag_key
+        - instructions
+        - comment
+        - scheduled_for
+        - status
+        - created_by
+        - created_by_email
+        - created_at
       type: object
     SdkKey:
       additionalProperties: false
@@ -2384,6 +2593,131 @@ paths:
       summary: Update project name (requires project.update)
       tags:
         - Projects
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes:
+    get:
+      operationId: list-change-requests
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: "filter by status: pending, approved, or rejected"
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: "filter by status: pending, approved, or rejected"
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListChangesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's change requests (requires flag.read)
+      tags:
+        - Approvals
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes/{changeId}/approve:
+    post:
+      operationId: approve-change-request
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: changeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Approve a change request and apply it (requires flag.write)
+      tags:
+        - Approvals
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes/{changeId}/reject:
+    post:
+      operationId: reject-change-request
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: changeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reject a change request without applying it (requires flag.write)
+      tags:
+        - Approvals
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments:
     get:
       operationId: list-environments
@@ -3000,6 +3334,104 @@ paths:
       summary: Set a flag's targeting config in an environment (requires flag.write)
       tags:
         - Flags
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/changes:
+    post:
+      description: Records a set of semantic instructions as a pending change request. The change is applied only when a reviewer approves it.
+      operationId: create-change-request
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Propose a flag change for review (requires flag.read)
+      tags:
+        - Approvals
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/scheduled-changes:
+    post:
+      description: Records semantic instructions to be applied automatically once scheduled_for passes. Cancel it before then to prevent it.
+      operationId: create-scheduled-change
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledChange"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Schedule a flag change to apply at a future time (requires flag.write)
+      tags:
+        - Scheduled changes
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats:
     get:
       operationId: flag-stats
@@ -3087,6 +3519,96 @@ paths:
       summary: Grant a user a project-scoped role (requires member.manage)
       tags:
         - Members
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/scheduled-changes:
+    get:
+      operationId: list-scheduled-changes
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: "filter by status: pending, applied, cancelled, or failed"
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: "filter by status: pending, applied, cancelled, or failed"
+            type: string
+        - description: filter by flag key
+          explode: false
+          in: query
+          name: flag
+          schema:
+            description: filter by flag key
+            type: string
+        - description: filter by environment key
+          explode: false
+          in: query
+          name: env
+          schema:
+            description: filter by environment key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListScheduledOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's scheduled changes (requires flag.read)
+      tags:
+        - Scheduled changes
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/scheduled-changes/{scheduledId}/cancel:
+    post:
+      operationId: cancel-scheduled-change
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: scheduledId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledChange"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Cancel a pending scheduled change (requires flag.write)
+      tags:
+        - Scheduled changes
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/segments:
     get:
       operationId: list-segments

@@ -6,25 +6,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
 )
 
-// ErrNotPending is returned when reviewing a request that isn't pending.
-var ErrNotPending = errors.New("governance: change request is not pending")
+// ErrNotPending is returned when reviewing/cancelling something not pending.
+var ErrNotPending = errors.New("governance: not pending")
 
-// Service creates and reviews change requests. Applying an approved request
-// reuses the flag service's semantic-instruction path.
+// Service creates and reviews change requests and applies scheduled changes.
+// Applying reuses the flag service's semantic-instruction path.
 type Service struct {
 	store *store.Store
 	flags *flags.Service
+	log   *slog.Logger
 }
 
 // New returns a governance Service.
-func New(st *store.Store, flagSvc *flags.Service) *Service {
-	return &Service{store: st, flags: flagSvc}
+func New(st *store.Store, flagSvc *flags.Service, log *slog.Logger) *Service {
+	return &Service{store: st, flags: flagSvc, log: log}
 }
 
 // Create records a new pending change request.
@@ -53,18 +55,26 @@ func (s *Service) Approve(ctx context.Context, id, reviewerID, reviewerEmail, co
 		return models.ChangeRequest{}, ErrNotPending
 	}
 
-	flag, err := s.flags.GetFlag(ctx, cr.ProjectID, cr.FlagKey)
-	if err != nil {
-		return models.ChangeRequest{}, err
-	}
-	var instructions []flags.Instruction
-	if err := json.Unmarshal(cr.Instructions, &instructions); err != nil {
-		return models.ChangeRequest{}, err
-	}
-	if _, err := s.flags.PatchFlagConfig(ctx, flag.ID, cr.EnvironmentID, instructions); err != nil {
+	if err := s.applyInstructions(ctx, cr.ProjectID, cr.FlagKey, cr.EnvironmentID, cr.Instructions); err != nil {
 		return models.ChangeRequest{}, err
 	}
 	return s.store.ReviewChangeRequest(ctx, id, models.ChangeStatusApproved, reviewerID, reviewerEmail, comment)
+}
+
+// applyInstructions resolves the flag and applies a JSON instruction set to its
+// config in one environment. Shared by change-request approval and the
+// scheduled-change executor.
+func (s *Service) applyInstructions(ctx context.Context, projectID, flagKey, environmentID string, raw json.RawMessage) error {
+	flag, err := s.flags.GetFlag(ctx, projectID, flagKey)
+	if err != nil {
+		return err
+	}
+	var instructions []flags.Instruction
+	if err := json.Unmarshal(raw, &instructions); err != nil {
+		return err
+	}
+	_, err = s.flags.PatchFlagConfig(ctx, flag.ID, environmentID, instructions)
+	return err
 }
 
 // Reject marks a pending request rejected without applying it.

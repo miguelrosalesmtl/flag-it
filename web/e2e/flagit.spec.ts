@@ -424,3 +424,32 @@ test('proposes a flag change and approves it through the approvals screen', asyn
   await page.getByRole('tab', { name: 'Approved' }).click()
   await expect(page.getByText('Launch for GA')).toBeVisible()
 })
+
+test('schedules a flag change and then cancels it', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // No scheduled changes yet.
+  await expect(page.getByText('No scheduled changes.')).toBeVisible()
+
+  // Schedule a change (the dialog seeds a future time by default).
+  await page.getByRole('button', { name: 'Schedule change' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Comment').fill('Ramp for launch')
+  await dialog.getByRole('button', { name: 'Schedule', exact: true }).click()
+  await expect(dialog).toBeHidden()
+
+  // It appears in the card as pending; cancel it.
+  await expect(page.getByText('Ramp for launch')).toBeVisible()
+  await expect(page.getByText('pending')).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByText('cancelled')).toBeVisible()
+})

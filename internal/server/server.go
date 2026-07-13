@@ -113,6 +113,7 @@ func New(
 	s.registerSegments()
 	s.registerFlags()
 	s.registerChanges()
+	s.registerScheduled()
 	s.registerAudit()
 	s.registerEval()
 	s.registerAnalytics()
