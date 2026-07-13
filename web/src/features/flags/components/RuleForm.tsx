@@ -56,6 +56,7 @@ export function RuleForm({
       : evenPercents(variations.length),
   )
   const [bucketBy, setBucketBy] = useState(() => initialServe?.rollout?.bucketBy ?? '')
+  const [contextKind, setContextKind] = useState(() => initialServe?.rollout?.contextKind ?? '')
   const [seed, setSeed] = useState<number | undefined>(() => initialServe?.rollout?.seed)
 
   const rolloutValid = percents.reduce((a, b) => a + b, 0) === 100
@@ -67,7 +68,13 @@ export function RuleForm({
     const served: VariationOrRollout =
       serve === 'variation'
         ? { variation }
-        : { rollout: rolloutFromPercents(percents, bucketBy.trim() || undefined, seed) }
+        : {
+            rollout: rolloutFromPercents(percents, {
+              bucketBy: bucketBy.trim() || undefined,
+              contextKind: contextKind.trim() || undefined,
+              seed,
+            }),
+          }
     onSubmit(draft, served)
     // Reset for reuse (the add builder). The inline editor is unmounted on save.
     setDraft(initialClauses && initialClauses.length > 0 ? initialClauses : [newClause()])
@@ -79,6 +86,7 @@ export function RuleForm({
         : evenPercents(variations.length),
     )
     setBucketBy(initialServe?.rollout?.bucketBy ?? '')
+    setContextKind(initialServe?.rollout?.contextKind ?? '')
     setSeed(initialServe?.rollout?.seed)
   }
 
@@ -136,18 +144,33 @@ export function RuleForm({
               onChange={setPercents}
               disabled={busy}
             />
-            <div className="flex items-center gap-2">
-              <Label htmlFor="bucket-by" className="text-muted-foreground font-normal">
-                Bucket by
-              </Label>
-              <Input
-                id="bucket-by"
-                value={bucketBy}
-                onChange={(e) => setBucketBy(e.target.value)}
-                placeholder="key"
-                disabled={busy}
-                className="w-40"
-              />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="bucket-by" className="text-muted-foreground font-normal">
+                  Bucket by
+                </Label>
+                <Input
+                  id="bucket-by"
+                  value={bucketBy}
+                  onChange={(e) => setBucketBy(e.target.value)}
+                  placeholder="key"
+                  disabled={busy}
+                  className="w-36"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="rollout-kind" className="text-muted-foreground font-normal">
+                  of kind
+                </Label>
+                <Input
+                  id="rollout-kind"
+                  value={contextKind}
+                  onChange={(e) => setContextKind(e.target.value)}
+                  placeholder="user"
+                  disabled={busy}
+                  className="w-36"
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">
