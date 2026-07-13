@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router'
 import { AppLayout } from '@/app/AppLayout'
 import { ProjectLayout } from '@/app/ProjectLayout'
 import { LoginRoute, ProtectedLayout, SetupRoute } from '@/app/guards'
+import { EnvironmentsPage } from '@/features/environments/EnvironmentsPage'
 import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
           { index: true, Component: FlagsPage },
           { path: 'flags/:flagKey', Component: FlagDetailPage },
           { path: 'segments', Component: SegmentsPage },
+          { path: 'environments', Component: EnvironmentsPage },
         ],
       },
     ],

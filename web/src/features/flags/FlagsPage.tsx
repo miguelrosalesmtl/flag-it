@@ -4,17 +4,28 @@ import { useNavigate, useParams } from 'react-router'
 import { ErrorState } from '@/components/error-state'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
+import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
 import { CreateFlagDialog } from '@/features/flags/components/CreateFlagDialog'
 import { FlagList } from '@/features/flags/components/FlagList'
-import { useCreateFlag, useFlags } from '@/features/flags/hooks/useFlags'
+import { useCreateFlag, useEnvFlags, useToggleEnvFlag } from '@/features/flags/hooks/useFlags'
 
-/** Container. Lists a project's flag definitions. */
+/**
+ * Container. A project's flags, shown for a selected environment: each row has
+ * an inline on/off switch that toggles the flag in that environment.
+ */
 export function FlagsPage() {
   const { tenantSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const { data: flags, isPending, isError, error, refetch } = useFlags(tenantSlug, projectKey)
+  const environments = useEnvironments(tenantSlug, projectKey)
   const createFlag = useCreateFlag(tenantSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  // Default to the first environment until the user picks another.
+  const [picked, setPicked] = useState('')
+  const envKey = picked || environments.data?.[0]?.key || ''
+  const flags = useEnvFlags(tenantSlug, projectKey, envKey)
+  const toggle = useToggleEnvFlag(tenantSlug, projectKey, envKey)
 
   return (
     <section className="space-y-6">
@@ -40,20 +51,38 @@ export function FlagsPage() {
         }
       />
 
-      {isPending ? (
-        <div className="space-y-2">
-          <Skeleton className="h-12" />
-          <Skeleton className="h-12" />
-        </div>
-      ) : isError ? (
-        <ErrorState message={error.message} onRetry={() => void refetch()} />
-      ) : (
-        <FlagList
-          flags={flags}
-          onOpen={(key) =>
-            void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
-          }
+      {environments.isPending ? (
+        <Skeleton className="h-40" />
+      ) : environments.isError ? (
+        <ErrorState
+          message={environments.error.message}
+          onRetry={() => void environments.refetch()}
         />
+      ) : (
+        <div className="space-y-4">
+          <EnvironmentTabs
+            environments={environments.data}
+            selectedKey={envKey}
+            onSelect={setPicked}
+          />
+          {flags.isPending ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+            </div>
+          ) : flags.isError ? (
+            <ErrorState message={flags.error.message} onRetry={() => void flags.refetch()} />
+          ) : (
+            <FlagList
+              flags={flags.data}
+              onOpen={(key) =>
+                void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+              }
+              onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
+              togglingKey={toggle.isPending ? toggle.variables.flagKey : null}
+            />
+          )}
+        </div>
       )}
     </section>
   )

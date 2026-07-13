@@ -16,6 +16,18 @@ type listFlagsOutput struct {
 	}
 }
 
+// flagInEnv is a flag definition plus its on/off state in one environment.
+type flagInEnv struct {
+	models.Flag
+	On bool `json:"on"`
+}
+
+type listEnvFlagsOutput struct {
+	Body struct {
+		Flags []flagInEnv `json:"flags"`
+	}
+}
+
 type saveFlagInput struct {
 	TenantSlug string `path:"tenantSlug"`
 	ProjectKey string `path:"projectKey"`
@@ -96,6 +108,39 @@ func (s *Server) registerFlags() {
 		}
 		out := &listFlagsOutput{}
 		out.Body.Flags = list
+		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-env-flags", Method: http.MethodGet,
+		Path:    base + "/environments/{envKey}/flags",
+		Summary: "List a project's flags with their on/off state in one environment (requires flag.read)",
+		Tags:    []string{"Flags"}, Security: bearer,
+	}, func(ctx context.Context, in *envKeyPath) (*listEnvFlagsOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		list, err := s.flags.ListFlags(ctx, project.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		states, err := s.flags.FlagOnStates(ctx, project.ID, env.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &listEnvFlagsOutput{}
+		out.Body.Flags = make([]flagInEnv, 0, len(list))
+		for _, f := range list {
+			out.Body.Flags = append(out.Body.Flags, flagInEnv{Flag: f, On: states[f.ID]})
+		}
 		return out, nil
 	})
 

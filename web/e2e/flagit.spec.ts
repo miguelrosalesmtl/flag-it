@@ -121,6 +121,44 @@ test('creates a boolean flag and lands on its detail page', async ({ page }) => 
   )
 })
 
+test('toggles a flag on from the flag list', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+
+  // Inline per-row switch, operating on the selected environment.
+  const toggle = page.getByRole('switch', { name: 'Toggle New checkout' })
+  await expect(toggle).toHaveAttribute('data-state', 'unchecked')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('data-state', 'checked')
+})
+
+test('creates an environment from the Environments settings', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+
+  await page.getByRole('link', { name: 'Environments' }).click()
+  await expect(page.getByRole('heading', { name: 'Environments' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'Production', exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New environment' }).click()
+  await page.getByLabel('Name').fill('QA')
+  await expect(page.getByLabel('Key')).toHaveValue('qa')
+  await page.getByRole('button', { name: 'Create environment' }).click()
+
+  await expect(page.getByRole('cell', { name: 'QA', exact: true })).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

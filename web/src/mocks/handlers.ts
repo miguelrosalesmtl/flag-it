@@ -91,7 +91,7 @@ let mockFlags: Flag[] = [
 
 const seedFlags: Flag[] = [...mockFlags]
 
-const mockEnvironments: Environment[] = [
+let mockEnvironments: Environment[] = [
   {
     id: 'env-prod',
     project_id: 'p1',
@@ -109,6 +109,8 @@ const mockEnvironments: Environment[] = [
     updated_at: '2026-07-12T00:00:00Z',
   },
 ]
+
+const seedEnvironments: Environment[] = [...mockEnvironments]
 
 const mockSegments: Segment[] = [
   {
@@ -144,6 +146,7 @@ export function resetBackend() {
   tenants = [...seedTenants]
   mockProjects = [...seedProjects]
   mockFlags = [...seedFlags]
+  mockEnvironments = [...seedEnvironments]
   flagConfigs = {}
 }
 
@@ -229,6 +232,19 @@ export const handlers = [
     HttpResponse.json({ flags: mockFlags }),
   ),
 
+  // Flags with per-environment on/off state (the env-aware flag list).
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/flags',
+    ({ params }) => {
+      const envKey = String(params.envKey)
+      const flags = mockFlags.map((f) => ({
+        ...f,
+        on: flagConfigs[configKey(f.key, envKey)]?.on ?? false,
+      }))
+      return HttpResponse.json({ flags })
+    },
+  ),
+
   http.put(
     '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
     async ({ params, request }) => {
@@ -258,6 +274,23 @@ export const handlers = [
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', () =>
     HttpResponse.json({ environments: mockEnvironments }),
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments',
+    async ({ request }) => {
+      const input = (await request.json()) as { key: string; name: string }
+      const env: Environment = {
+        id: crypto.randomUUID(),
+        project_id: 'p1',
+        key: input.key,
+        name: input.name,
+        created_at: '2026-07-12T00:00:00Z',
+        updated_at: '2026-07-12T00:00:00Z',
+      }
+      mockEnvironments.push(env)
+      return HttpResponse.json(env, { status: 201 })
+    },
   ),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments', () =>

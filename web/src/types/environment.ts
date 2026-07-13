@@ -7,3 +7,9 @@ export interface Environment {
   created_at: string
   updated_at: string
 }
+
+/** Payload to create an environment. */
+export interface CreateEnvironmentInput {
+  key: string
+  name: string
+}

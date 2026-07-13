@@ -89,6 +89,10 @@ func (s *Service) ListEnvironments(ctx context.Context, projectID string) ([]mod
 	return s.store.ListEnvironmentsByProject(ctx, projectID)
 }
 
+func (s *Service) CreateEnvironment(ctx context.Context, projectID, key, name string) (models.Environment, error) {
+	return s.store.CreateEnvironment(ctx, projectID, key, name)
+}
+
 func (s *Service) EnvByKey(ctx context.Context, projectID, key string) (models.Environment, error) {
 	return s.store.GetEnvironmentByKey(ctx, projectID, key)
 }

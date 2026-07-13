@@ -53,6 +53,19 @@ type listEnvironmentsOutput struct {
 	}
 }
 
+type environmentOutput struct {
+	Body models.Environment
+}
+
+type createEnvironmentInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	Body       struct {
+		Key  string `json:"key"`
+		Name string `json:"name"`
+	}
+}
+
 func (s *Server) registerProjects() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-projects", Method: http.MethodGet, Path: "/api/v1/tenants/{tenantSlug}/projects",
@@ -181,5 +194,29 @@ func (s *Server) registerProjects() {
 		out := &listEnvironmentsOutput{}
 		out.Body.Environments = envs
 		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "create-environment", Method: http.MethodPost, Path: "/api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments",
+		Summary: "Create an environment (requires project.update); backfills flag configs", Tags: []string{"Environments"}, Security: bearer,
+		DefaultStatus: http.StatusCreated,
+	}, func(ctx context.Context, in *createEnvironmentInput) (*environmentOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermProjectUpdate, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		if in.Body.Key == "" || in.Body.Name == "" {
+			return nil, huma.Error400BadRequest("key and name are required")
+		}
+		env, err := s.catalog.CreateEnvironment(ctx, project.ID, in.Body.Key, in.Body.Name)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+			Action: "environment.created", ResourceType: "environment", ResourceKey: env.Key})
+		return &environmentOutput{Body: env}, nil
 	})
 }

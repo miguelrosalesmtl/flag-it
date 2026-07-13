@@ -147,6 +147,31 @@ func (s *Store) UpsertFlagConfig(ctx context.Context, cfg models.FlagConfig) (mo
 }
 
 // GetFlagConfig returns a flag's config for one environment.
+// FlagOnStatesByEnvironment returns, for every flag in a project, whether it is
+// on in the given environment (keyed by flag id). One query for the whole list.
+func (s *Store) FlagOnStatesByEnvironment(ctx context.Context, projectID, environmentID string) (map[string]bool, error) {
+	const q = `
+		SELECT fe.flag_id, fe.enabled
+		FROM flag_environments fe
+		JOIN flags f ON f.id = fe.flag_id
+		WHERE f.project_id = $1 AND fe.environment_id = $2`
+	rows, err := s.pool.Query(ctx, q, projectID, environmentID)
+	if err != nil {
+		return nil, fmt.Errorf("store: flag on-states: %w", err)
+	}
+	defer rows.Close()
+	out := make(map[string]bool)
+	for rows.Next() {
+		var id string
+		var on bool
+		if err := rows.Scan(&id, &on); err != nil {
+			return nil, err
+		}
+		out[id] = on
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) GetFlagConfig(ctx context.Context, flagID, environmentID string) (models.FlagConfig, error) {
 	row := s.pool.QueryRow(ctx,
 		`SELECT `+flagConfigColumns+` FROM flag_environments WHERE flag_id = $1 AND environment_id = $2`,

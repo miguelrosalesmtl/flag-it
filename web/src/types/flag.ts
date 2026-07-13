@@ -18,6 +18,11 @@ export interface Flag {
   updated_at: string
 }
 
+/** A flag definition plus its on/off state in a specific environment. */
+export interface FlagWithState extends Flag {
+  on: boolean
+}
+
 /** Payload to create/update a flag definition. Variations are opaque JSON values. */
 export interface CreateFlagInput {
   key: string

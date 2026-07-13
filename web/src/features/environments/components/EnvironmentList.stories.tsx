@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { fn } from 'storybook/test'
 
-import { EnvironmentTabs } from '@/features/flags/components/EnvironmentTabs'
+import { EnvironmentList } from '@/features/environments/components/EnvironmentList'
 import type { Environment } from '@/types/environment'
 
 const environments: Environment[] = [
@@ -24,16 +23,17 @@ const environments: Environment[] = [
 ]
 
 const meta = {
-  title: 'Flags/EnvironmentTabs',
-  component: EnvironmentTabs,
-  args: { environments, selectedKey: 'production', onSelect: fn() },
-} satisfies Meta<typeof EnvironmentTabs>
+  title: 'Environments/EnvironmentList',
+  component: EnvironmentList,
+} satisfies Meta<typeof EnvironmentList>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Default: Story = {}
+export const Default: Story = {
+  args: { environments },
+}
 
-export const StagingSelected: Story = {
-  args: { selectedKey: 'staging' },
+export const Empty: Story = {
+  args: { environments: [] },
 }

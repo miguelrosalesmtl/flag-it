@@ -1,5 +1,5 @@
 import { api } from '@/api/client'
-import type { CreateFlagInput, Flag, FlagConfig } from '@/types/flag'
+import type { CreateFlagInput, Flag, FlagConfig, FlagWithState } from '@/types/flag'
 
 const flagBase = (tenantSlug: string, projectKey: string) =>
   `/tenants/${tenantSlug}/projects/${projectKey}/flags`
@@ -8,6 +8,13 @@ export const flagsApi = {
   list: (tenantSlug: string, projectKey: string) =>
     api
       .get<{ flags: Flag[] | null }>(flagBase(tenantSlug, projectKey))
+      .then((r) => r.flags ?? []),
+  // Flags with their on/off state in one environment (for the flag list).
+  listInEnv: (tenantSlug: string, projectKey: string, envKey: string) =>
+    api
+      .get<{ flags: FlagWithState[] | null }>(
+        `/tenants/${tenantSlug}/projects/${projectKey}/environments/${envKey}/flags`,
+      )
       .then((r) => r.flags ?? []),
   // Create/update a flag definition. The key is addressed in the path (PUT).
   create: (tenantSlug: string, projectKey: string, input: CreateFlagInput) =>

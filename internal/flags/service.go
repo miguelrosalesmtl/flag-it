@@ -225,6 +225,12 @@ func (s *Service) GetFlagConfig(ctx context.Context, flagID, environmentID strin
 	return s.store.GetFlagConfig(ctx, flagID, environmentID)
 }
 
+// FlagOnStates returns each flag's on/off state in an environment, keyed by flag
+// id — for rendering a per-environment flag list in one query.
+func (s *Service) FlagOnStates(ctx context.Context, projectID, environmentID string) (map[string]bool, error) {
+	return s.store.FlagOnStatesByEnvironment(ctx, projectID, environmentID)
+}
+
 // SaveFlag creates or updates a flag definition and ensures it has a config row
 // in every environment of its project. Affected environments are reloaded
 // locally and broadcast to siblings.

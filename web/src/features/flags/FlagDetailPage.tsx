@@ -3,14 +3,10 @@ import { Link, useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EnvironmentTabs } from '@/features/flags/components/EnvironmentTabs'
+import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
 import { FlagConfigCard } from '@/features/flags/components/FlagConfigCard'
-import {
-  useEnvironments,
-  useFlag,
-  useFlagConfig,
-  useToggleFlag,
-} from '@/features/flags/hooks/useFlags'
+import { useFlag, useFlagConfig, useToggleFlag } from '@/features/flags/hooks/useFlags'
+import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
 
 /**
  * Container. A flag's per-environment configuration: pick an environment, see
