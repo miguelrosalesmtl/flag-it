@@ -14,6 +14,12 @@ type listRolesOutput struct {
 	}
 }
 
+type listPermissionsOutput struct {
+	Body struct {
+		Permissions []models.Permission `json:"permissions"`
+	}
+}
+
 type createRoleInput struct {
 	TenantSlug string `path:"tenantSlug"`
 	Body       struct {
@@ -64,6 +70,15 @@ type roleAssignmentOutput struct {
 }
 
 func (s *Server) registerRoles() {
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-permissions", Method: http.MethodGet, Path: "/api/v1/permissions",
+		Summary: "The permission vocabulary roles can grant", Tags: []string{"Roles"}, Security: bearer,
+	}, func(ctx context.Context, _ *struct{}) (*listPermissionsOutput, error) {
+		out := &listPermissionsOutput{}
+		out.Body.Permissions = models.AllPermissions
+		return out, nil
+	})
+
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-roles", Method: http.MethodGet, Path: "/api/v1/tenants/{tenantSlug}/roles",
 		Summary: "List a tenant's roles (requires role.manage)", Tags: []string{"Roles"}, Security: bearer,

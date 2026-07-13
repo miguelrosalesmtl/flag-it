@@ -246,6 +246,27 @@ test('shows roles and members in settings and adds a member', async ({ page }) =
   await expect(page.getByText('dev@flag-it.dev')).toBeVisible()
 })
 
+test('creates a custom role with picked permissions', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Settings' }).click()
+  await page.getByRole('link', { name: 'Roles' }).click()
+
+  await page.getByRole('button', { name: 'New role' }).click()
+  await page.getByLabel('Name').fill('QA')
+  await expect(page.getByLabel('Key')).toHaveValue('qa')
+  // Pick a permission (Create role is disabled until at least one is chosen).
+  await page.getByRole('checkbox').first().click()
+  await page.getByRole('button', { name: 'Create role' }).click()
+
+  await expect(page.getByRole('cell', { name: 'QA', exact: true })).toBeVisible()
+})
+
 test('signs out from the project sidebar avatar', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

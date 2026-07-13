@@ -136,11 +136,30 @@ let mockSegments: Segment[] = [
 
 const seedSegments: Segment[] = [...mockSegments]
 
-const mockRoles: Role[] = [
+const allPermissions = [
+  'tenant.read',
+  'tenant.update',
+  'member.manage',
+  'role.manage',
+  'audit.read',
+  'project.create',
+  'project.read',
+  'project.update',
+  'project.delete',
+  'environment.manage',
+  'sdk_key.manage',
+  'flag.read',
+  'flag.write',
+  'flag.delete',
+]
+
+let mockRoles: Role[] = [
   { id: 'r1', tenant_id: 't1', key: 'tenant_admin', name: 'Tenant Admin', description: 'Full control of the tenant.', scope: 'tenant', is_system: true, permissions: ['*'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
   { id: 'r2', tenant_id: 't1', key: 'writer', name: 'Writer', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read', 'flag.write', 'flag.delete'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
   { id: 'r3', tenant_id: 't1', key: 'reader', name: 'Reader', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
 ]
+
+const seedRoles: Role[] = [...mockRoles]
 
 let mockMembers: Member[] = [
   { user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' },
@@ -209,6 +228,7 @@ export function resetBackend() {
   mockSegments = [...seedSegments]
   mockSdkKeys = [...seedSdkKeys]
   mockMembers = [{ user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' }]
+  mockRoles = [...seedRoles]
   flagConfigs = {}
 }
 
@@ -266,7 +286,33 @@ export const handlers = [
 
   http.get('*/api/v1/tenants', () => HttpResponse.json({ tenants })),
 
+  http.get('*/api/v1/permissions', () => HttpResponse.json({ permissions: allPermissions })),
+
   http.get('*/api/v1/tenants/:tenantSlug/roles', () => HttpResponse.json({ roles: mockRoles })),
+
+  http.post('*/api/v1/tenants/:tenantSlug/roles', async ({ request }) => {
+    const input = (await request.json()) as {
+      key: string
+      name: string
+      description?: string
+      scope: 'tenant' | 'project'
+      permissions: string[]
+    }
+    const role: Role = {
+      id: crypto.randomUUID(),
+      tenant_id: 't1',
+      key: input.key,
+      name: input.name,
+      description: input.description ?? '',
+      scope: input.scope,
+      is_system: false,
+      permissions: input.permissions,
+      created_at: '2026-07-12T00:00:00Z',
+      updated_at: '2026-07-12T00:00:00Z',
+    }
+    mockRoles.push(role)
+    return HttpResponse.json(role, { status: 201 })
+  }),
 
   http.get('*/api/v1/tenants/:tenantSlug/members', () =>
     HttpResponse.json({ members: mockMembers }),
