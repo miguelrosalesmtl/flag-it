@@ -56,6 +56,7 @@ export function RuleForm({
       : evenPercents(variations.length),
   )
   const [bucketBy, setBucketBy] = useState(() => initialServe?.rollout?.bucketBy ?? '')
+  const [seed, setSeed] = useState<number | undefined>(() => initialServe?.rollout?.seed)
 
   const rolloutValid = percents.reduce((a, b) => a + b, 0) === 100
   const clausesValid = draft.length > 0 && draft.every((c) => c.attribute && c.values.length > 0)
@@ -66,7 +67,7 @@ export function RuleForm({
     const served: VariationOrRollout =
       serve === 'variation'
         ? { variation }
-        : { rollout: rolloutFromPercents(percents, bucketBy.trim() || undefined) }
+        : { rollout: rolloutFromPercents(percents, bucketBy.trim() || undefined, seed) }
     onSubmit(draft, served)
     // Reset for reuse (the add builder). The inline editor is unmounted on save.
     setDraft(initialClauses && initialClauses.length > 0 ? initialClauses : [newClause()])
@@ -78,6 +79,13 @@ export function RuleForm({
         : evenPercents(variations.length),
     )
     setBucketBy(initialServe?.rollout?.bucketBy ?? '')
+    setSeed(initialServe?.rollout?.seed)
+  }
+
+  // A fresh seed reshuffles which contexts land in which bucket, independent of
+  // the flag's default (salt-based) bucketing. Math.random in a handler is fine.
+  function reshuffle() {
+    setSeed(Math.floor(Math.random() * 1_000_000_000))
   }
 
   return (
@@ -140,6 +148,25 @@ export function RuleForm({
                 disabled={busy}
                 className="w-40"
               />
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                {seed === undefined ? 'Bucketing: default' : `Bucketing: reshuffled (seed ${seed})`}
+              </span>
+              <Button type="button" variant="outline" size="sm" onClick={reshuffle} disabled={busy}>
+                Reshuffle
+              </Button>
+              {seed !== undefined ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSeed(undefined)}
+                  disabled={busy}
+                >
+                  Reset
+                </Button>
+              ) : null}
             </div>
           </div>
         )}

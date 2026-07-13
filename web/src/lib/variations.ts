@@ -23,10 +23,12 @@ export function evenPercents(count: number): number[] {
 export function rolloutFromPercents(
   percents: number[],
   bucketBy?: string,
-): { variations: { variation: number; weight: number }[]; bucketBy?: string } {
+  seed?: number,
+): { variations: { variation: number; weight: number }[]; bucketBy?: string; seed?: number } {
   return {
     variations: percents.map((p, i) => ({ variation: i, weight: Math.round(p * 1000) })),
     ...(bucketBy ? { bucketBy } : {}),
+    ...(seed !== undefined ? { seed } : {}),
   }
 }
 
