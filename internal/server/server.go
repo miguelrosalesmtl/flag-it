@@ -20,26 +20,28 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
 	"github.com/miguelrosalesmtl/flag-it/internal/contexts"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
+	"github.com/miguelrosalesmtl/flag-it/internal/governance"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
 	"github.com/miguelrosalesmtl/flag-it/internal/settings"
 )
 
 // Server holds the HTTP server, the huma API, and dependencies.
 type Server struct {
-	http      *http.Server
-	api       huma.API
-	flags     *flags.Service
-	catalog   *catalog.Service
-	auditSvc  *audit.Service
-	auth      *auth.Service // issues tokens (login)
-	verifier  tokenVerifier // verifies tokens (OIDC seam; defaults to auth)
-	authz     *authz.Service
-	analytics *analytics.Recorder
-	contexts  *contexts.Recorder
-	bus       *pubsub.Bus
-	log       *slog.Logger
-	config    settings.Server
-	sdkCache  *sdkKeyCache
+	http       *http.Server
+	api        huma.API
+	flags      *flags.Service
+	catalog    *catalog.Service
+	auditSvc   *audit.Service
+	auth       *auth.Service // issues tokens (login)
+	verifier   tokenVerifier // verifies tokens (OIDC seam; defaults to auth)
+	authz      *authz.Service
+	governance *governance.Service
+	analytics  *analytics.Recorder
+	contexts   *contexts.Recorder
+	bus        *pubsub.Bus
+	log        *slog.Logger
+	config     settings.Server
+	sdkCache   *sdkKeyCache
 }
 
 // New builds a Server with all routes registered on a huma API over chi. It is
@@ -51,24 +53,26 @@ func New(
 	auditSvc *audit.Service,
 	authSvc *auth.Service,
 	authzSvc *authz.Service,
+	governanceSvc *governance.Service,
 	analyticsRec *analytics.Recorder,
 	contextsRec *contexts.Recorder,
 	bus *pubsub.Bus,
 	log *slog.Logger,
 ) *Server {
 	s := &Server{
-		flags:     flagService,
-		catalog:   catalogSvc,
-		auditSvc:  auditSvc,
-		auth:      authSvc,
-		verifier:  authSvc,
-		authz:     authzSvc,
-		analytics: analyticsRec,
-		contexts:  contextsRec,
-		bus:       bus,
-		log:       log,
-		config:    cfg,
-		sdkCache:  newSDKKeyCache(cfg.SDKKeyCacheTTL),
+		flags:      flagService,
+		catalog:    catalogSvc,
+		auditSvc:   auditSvc,
+		auth:       authSvc,
+		verifier:   authSvc,
+		authz:      authzSvc,
+		governance: governanceSvc,
+		analytics:  analyticsRec,
+		contexts:   contextsRec,
+		bus:        bus,
+		log:        log,
+		config:     cfg,
+		sdkCache:   newSDKKeyCache(cfg.SDKKeyCacheTTL),
 	}
 
 	r := chi.NewRouter()
@@ -108,6 +112,7 @@ func New(
 	s.registerSDKKeys()
 	s.registerSegments()
 	s.registerFlags()
+	s.registerChanges()
 	s.registerAudit()
 	s.registerEval()
 	s.registerAnalytics()

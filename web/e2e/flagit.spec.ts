@@ -389,3 +389,38 @@ test('bad credentials show an error and keep you on the login screen', async ({ 
   await expect(page.getByRole('alert')).toHaveText('Invalid email or password.')
   await expect(page.getByText('Sign in to flag-it')).toBeVisible()
 })
+
+test('proposes a flag change and approves it through the approvals screen', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+
+  // Open a flag and request a change instead of toggling directly.
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Request change' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Comment').fill('Launch for GA')
+  await dialog.getByRole('button', { name: 'Submit request' }).click()
+  await expect(dialog).toBeHidden()
+
+  // The request shows up as pending on the Approvals screen.
+  await page.getByRole('link', { name: 'Approvals' }).click()
+  await expect(page.getByRole('heading', { name: 'Approvals' })).toBeVisible()
+  await expect(page.getByText('Launch for GA')).toBeVisible()
+  await expect(page.getByText('Turn targeting on')).toBeVisible()
+
+  // Approve it; it moves out of Pending and into Approved.
+  await page.getByRole('button', { name: 'Approve' }).click()
+  await expect(page.getByText('Launch for GA')).toBeHidden()
+
+  await page.getByRole('tab', { name: 'Approved' }).click()
+  await expect(page.getByText('Launch for GA')).toBeVisible()
+})
