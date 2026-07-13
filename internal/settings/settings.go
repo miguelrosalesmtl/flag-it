@@ -64,6 +64,9 @@ type Server struct {
 	// AnalyticsFlushInterval is how often buffered evaluation counts are flushed
 	// to the rollup table.
 	AnalyticsFlushInterval time.Duration `env:"ANALYTICS_FLUSH_INTERVAL" envDefault:"30s"`
+	// ScheduledChangeInterval is how often the scheduler wakes to apply
+	// scheduled flag changes whose time has come.
+	ScheduledChangeInterval time.Duration `env:"SCHEDULED_CHANGE_INTERVAL" envDefault:"15s"`
 	// CORSAllowedOrigins lists browser origins allowed to call the API (comma
 	// separated). "*" allows any (fine for dev; restrict in production). Auth is
 	// via the Authorization header, not cookies, so credentials are not shared.

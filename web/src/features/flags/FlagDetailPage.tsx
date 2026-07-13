@@ -8,6 +8,8 @@ import { FlagConfigCard } from '@/features/flags/components/FlagConfigCard'
 import { FlagRules } from '@/features/flags/components/FlagRules'
 import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
 import { RequestChangeDialog } from '@/features/flags/components/RequestChangeDialog'
+import { ScheduleChangeDialog } from '@/features/flags/components/ScheduleChangeDialog'
+import { ScheduledChangesCard } from '@/features/flags/components/ScheduledChangesCard'
 import { useCreateChange } from '@/features/approvals/hooks/useChanges'
 import {
   useFlag,
@@ -15,6 +17,11 @@ import {
   usePatchFlagConfig,
   useToggleFlag,
 } from '@/features/flags/hooks/useFlags'
+import {
+  useCancelScheduledChange,
+  useCreateScheduledChange,
+  useScheduledChanges,
+} from '@/features/flags/hooks/useScheduledChanges'
 import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
 
 /**
@@ -35,6 +42,9 @@ export function FlagDetailPage() {
   const config = useFlagConfig(tenantSlug, projectKey, flagKey, envKey)
   const patch = usePatchFlagConfig(tenantSlug, projectKey, flagKey, envKey)
   const requestChange = useCreateChange(tenantSlug, projectKey, flagKey, envKey)
+  const scheduledChanges = useScheduledChanges(tenantSlug, projectKey, flagKey, envKey)
+  const scheduleChange = useCreateScheduledChange(tenantSlug, projectKey, flagKey, envKey)
+  const cancelScheduled = useCancelScheduledChange(tenantSlug, projectKey)
 
   return (
     <section className="space-y-6">
@@ -71,7 +81,15 @@ export function FlagDetailPage() {
             <ErrorState message={config.error.message} onRetry={() => void config.refetch()} />
           ) : (
             <>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <ScheduleChangeDialog
+                  currentOn={config.data.on}
+                  envKey={envKey}
+                  onSubmit={(instructions, scheduledFor, comment) =>
+                    scheduleChange.mutate({ instructions, scheduled_for: scheduledFor, comment })
+                  }
+                  isSubmitting={scheduleChange.isPending}
+                />
                 <RequestChangeDialog
                   currentOn={config.data.on}
                   envKey={envKey}
@@ -124,6 +142,13 @@ export function FlagDetailPage() {
                   busy={patch.isPending}
                 />
               </section>
+              {scheduledChanges.data ? (
+                <ScheduledChangesCard
+                  changes={scheduledChanges.data}
+                  onCancel={(id) => cancelScheduled.mutate(id)}
+                  busy={cancelScheduled.isPending}
+                />
+              ) : null}
             </>
           )}
         </div>

@@ -14,9 +14,11 @@ order). Check items off as we go.
 **Where we are (2026-07):** backend milestones complete through **Phase 6**. The
 **Web UI dashboard** (a Phase 8 item) is built for the full management surface, plus
 a **Contexts inspector** (new work beyond the original phases — migration 00013).
-**Phase 7 (governance)** has begun: **approval workflows** ship (change requests,
-reviewed before they apply — migration 00014). Not started: the rest of Phase 7
-(scheduled changes, flag lifecycle) and the rest of **Phase 8** (integrations,
+**Phase 7 (governance)** is underway: **approval workflows** (change requests,
+reviewed before they apply — migration 00014) and **scheduled changes** (applied
+automatically at a future time by a background scheduler — migration 00015) both
+ship. Not started: the rest of Phase 7 (flag triggers, flag lifecycle) and the
+rest of **Phase 8** (integrations,
 SSO/SCIM, teams, data export, CLI). Deferred: A/B experimentation (P6), JS SDK (P4),
 private attributes (P1), and the scaling/hardening list.
 
@@ -121,7 +123,7 @@ internal, and centralizes audit/control. Implications:
 
 ### 3.6 Workflow & governance
 - ✅ Approval workflows
-- ❌ Scheduled changes / flag triggers
+- ✅ Scheduled changes (flag triggers / inbound webhooks still pending)
 - ❌ Audit log / change history
 - ❌ Comments on changes
 - ❌ Code references
@@ -278,7 +280,14 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       service's instruction path. UI: project **Approvals** screen (filter by
       status, approve/reject) + "Request change" dialog on the flag detail page.
       Audited as `change.requested` / `change.approved` / `change.rejected`.
-- [ ] Scheduled changes / flag triggers
+- [x] **Scheduled changes** — schedule a set of semantic instructions to apply
+      to a flag's environment config at a future time (migration 00015). A
+      background scheduler in the `governance` service applies due changes on an
+      interval (`SCHEDULED_CHANGE_INTERVAL`); pending ones can be cancelled.
+      Management API create/list/cancel under a project. UI: "Schedule change"
+      dialog + a scheduled-changes card on the flag detail page. Audited as
+      `change.scheduled` / `change.schedule.cancelled`. (Flag *triggers* — inbound
+      webhook URLs — still pending.)
 - [ ] Flag lifecycle (temporary flags, stale detection, code references)
 
 ### Phase 8 — Platform

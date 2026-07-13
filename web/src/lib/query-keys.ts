@@ -35,6 +35,8 @@ export const queryKeys = {
     ['sdk-keys', tenantSlug, projectKey, envKey] as const,
   changes: (tenantSlug: string, projectKey: string) =>
     ['changes', tenantSlug, projectKey] as const,
+  scheduledChanges: (tenantSlug: string, projectKey: string) =>
+    ['scheduled-changes', tenantSlug, projectKey] as const,
   roles: (tenantSlug: string) => ['roles', tenantSlug] as const,
   permissions: ['permissions'] as const,
   members: (tenantSlug: string) => ['members', tenantSlug] as const,
