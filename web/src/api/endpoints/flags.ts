@@ -1,5 +1,11 @@
 import { api } from '@/api/client'
-import type { CreateFlagInput, Flag, FlagConfig, FlagWithState } from '@/types/flag'
+import type {
+  CreateFlagInput,
+  Flag,
+  FlagConfig,
+  FlagInstruction,
+  FlagWithState,
+} from '@/types/flag'
 
 const flagBase = (tenantSlug: string, projectKey: string) =>
   `/tenants/${tenantSlug}/projects/${projectKey}/flags`
@@ -35,5 +41,17 @@ export const flagsApi = {
     api.patch<FlagConfig>(
       `${flagBase(tenantSlug, projectKey)}/${flagKey}/environments/${envKey}`,
       { instructions: [{ kind: on ? 'turnFlagOn' : 'turnFlagOff' }] },
+    ),
+  // Apply semantic instructions (updateOffVariation, addTargets, …) to a config.
+  patchConfig: (
+    tenantSlug: string,
+    projectKey: string,
+    flagKey: string,
+    envKey: string,
+    instructions: FlagInstruction[],
+  ) =>
+    api.patch<FlagConfig>(
+      `${flagBase(tenantSlug, projectKey)}/${flagKey}/environments/${envKey}`,
+      { instructions },
     ),
 }

@@ -5,7 +5,13 @@ import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
 import { FlagConfigCard } from '@/features/flags/components/FlagConfigCard'
-import { useFlag, useFlagConfig, useToggleFlag } from '@/features/flags/hooks/useFlags'
+import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
+import {
+  useFlag,
+  useFlagConfig,
+  usePatchFlagConfig,
+  useToggleFlag,
+} from '@/features/flags/hooks/useFlags'
 import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
 
 /**
@@ -24,6 +30,7 @@ export function FlagDetailPage() {
   const [picked, setPicked] = useState('')
   const envKey = picked || environments.data?.[0]?.key || ''
   const config = useFlagConfig(tenantSlug, projectKey, flagKey, envKey)
+  const patch = usePatchFlagConfig(tenantSlug, projectKey, flagKey, envKey)
 
   return (
     <section className="space-y-6">
@@ -59,12 +66,35 @@ export function FlagDetailPage() {
           ) : config.isError ? (
             <ErrorState message={config.error.message} onRetry={() => void config.refetch()} />
           ) : (
-            <FlagConfigCard
-              flag={flag.data}
-              config={config.data}
-              onToggle={(on) => toggle.mutate({ envKey, on })}
-              isToggling={toggle.isPending}
-            />
+            <>
+              <FlagConfigCard
+                flag={flag.data}
+                config={config.data}
+                onToggle={(on) => toggle.mutate({ envKey, on })}
+                isToggling={toggle.isPending}
+              />
+              <FlagTargeting
+                flag={flag.data}
+                config={config.data}
+                onSetFallthrough={(v) =>
+                  patch.mutate([{ kind: 'updateFallthroughVariation', variation: v }])
+                }
+                onSetOffVariation={(v) =>
+                  patch.mutate([{ kind: 'updateOffVariation', variation: v }])
+                }
+                onAddTarget={(variation, key) =>
+                  patch.mutate([
+                    { kind: 'addTargets', contextKind: 'user', variation, values: [key] },
+                  ])
+                }
+                onRemoveTarget={(variation, key) =>
+                  patch.mutate([
+                    { kind: 'removeTargets', contextKind: 'user', variation, values: [key] },
+                  ])
+                }
+                busy={patch.isPending}
+              />
+            </>
           )}
         </div>
       )}

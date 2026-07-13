@@ -1,3 +1,12 @@
+/** Payload to create a custom role. */
+export interface CreateRoleInput {
+  key: string
+  name: string
+  description?: string
+  scope: 'tenant' | 'project'
+  permissions: string[]
+}
+
 /** A role: a named permission bundle, scoped to a tenant or its projects. */
 export interface Role {
   id: string

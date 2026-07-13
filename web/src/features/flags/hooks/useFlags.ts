@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { flagsApi } from '@/api/endpoints/flags'
 import { queryKeys } from '@/lib/query-keys'
-import type { CreateFlagInput } from '@/types/flag'
+import type { CreateFlagInput, FlagInstruction } from '@/types/flag'
 
 export function useFlags(tenantSlug: string, projectKey: string) {
   return useQuery({
@@ -85,6 +85,30 @@ export function useToggleFlag(tenantSlug: string, projectKey: string, flagKey: s
         queryKeys.flagConfig(tenantSlug, projectKey, flagKey, envKey),
         config,
       )
+    },
+  })
+}
+
+/**
+ * Apply semantic instructions to a flag's config in one environment (off/
+ * fallthrough variation, individual targets). Writes the returned config to the
+ * cache and refreshes the env-flag list (on/off may have shifted).
+ */
+export function usePatchFlagConfig(
+  tenantSlug: string,
+  projectKey: string,
+  flagKey: string,
+  envKey: string,
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (instructions: FlagInstruction[]) =>
+      flagsApi.patchConfig(tenantSlug, projectKey, flagKey, envKey, instructions),
+    onSuccess: (config) => {
+      queryClient.setQueryData(queryKeys.flagConfig(tenantSlug, projectKey, flagKey, envKey), config)
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.envFlags(tenantSlug, projectKey, envKey),
+      })
     },
   })
 }
