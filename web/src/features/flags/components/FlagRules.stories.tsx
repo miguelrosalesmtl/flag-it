@@ -6,7 +6,7 @@ import type { Flag, FlagRule } from '@/types/flag'
 
 const flag: Flag = {
   id: 'f1', project_id: 'p1', key: 'promo', name: 'Promo', description: '',
-  client_side_available: true, variations: [true, false],
+  client_side_available: true, temporary: false, variations: [true, false],
   created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z',
 }
 

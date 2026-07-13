@@ -24,6 +24,36 @@ func (s *Store) UpsertEvalStats(ctx context.Context, stats []models.EvalStat) er
 	return nil
 }
 
+// LastEvaluatedByProject returns, per flag key in a project, the most recent
+// evaluation window seen across all of the project's environments. Flags with no
+// evaluations are absent from the map. Used for stale-flag detection.
+func (s *Store) LastEvaluatedByProject(ctx context.Context, projectID string) (map[string]time.Time, error) {
+	const q = `
+		SELECT s.flag_key, MAX(s.window_start)
+		FROM flag_eval_stats s
+		JOIN environments e ON e.id = s.environment_id
+		WHERE e.project_id = $1
+		GROUP BY s.flag_key`
+	rows, err := s.pool.Query(ctx, q, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("store: last evaluated by project: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[string]time.Time)
+	for rows.Next() {
+		var (
+			key  string
+			last time.Time
+		)
+		if err := rows.Scan(&key, &last); err != nil {
+			return nil, err
+		}
+		out[key] = last
+	}
+	return out, rows.Err()
+}
+
 // QueryEvalStats returns per-variation totals for a flag in an environment since
 // a given time.
 func (s *Store) QueryEvalStats(ctx context.Context, environmentID, flagKey string, since time.Time) ([]models.VariationCount, error) {

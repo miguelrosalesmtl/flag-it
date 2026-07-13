@@ -453,3 +453,27 @@ test('schedules a flag change and then cancels it', async ({ page }) => {
   await page.getByRole('button', { name: 'Cancel' }).click()
   await expect(page.getByText('cancelled')).toBeVisible()
 })
+
+test('shows flag lifecycle and flags stale flags', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Lifecycle' }).click()
+  await expect(page.getByRole('heading', { name: 'Flag lifecycle' })).toBeVisible()
+
+  // Both flags listed with statuses; pricing-tier is stale, new-checkout active.
+  await expect(page.getByRole('cell', { name: 'New checkout' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'Active' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'Stale' })).toBeVisible()
+
+  // The Stale filter narrows to the inactive flag only.
+  await page.getByRole('tab', { name: 'Stale' }).click()
+  await expect(page.getByRole('cell', { name: 'Pricing tier' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'New checkout' })).toBeHidden()
+})

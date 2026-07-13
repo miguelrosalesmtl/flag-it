@@ -10,26 +10,27 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-const flagColumns = `id, project_id, key, name, description, salt, client_side_available, variations, created_at, updated_at`
+const flagColumns = `id, project_id, key, name, description, salt, client_side_available, temporary, variations, created_at, updated_at`
 
 // UpsertFlag creates or updates a flag definition (keyed by project + key). The
 // salt is set only on insert (it must stay stable across updates for bucketing).
-func (s *Store) UpsertFlag(ctx context.Context, projectID, key, name, description, salt string, clientSideAvailable bool, variations []json.RawMessage) (models.Flag, error) {
+func (s *Store) UpsertFlag(ctx context.Context, projectID, key, name, description, salt string, clientSideAvailable, temporary bool, variations []json.RawMessage) (models.Flag, error) {
 	raw, err := json.Marshal(variations)
 	if err != nil {
 		return models.Flag{}, fmt.Errorf("store: marshal variations: %w", err)
 	}
 	const q = `
-		INSERT INTO flags (project_id, key, name, description, salt, client_side_available, variations)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO flags (project_id, key, name, description, salt, client_side_available, temporary, variations)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (project_id, key) DO UPDATE SET
 			name = EXCLUDED.name,
 			description = EXCLUDED.description,
 			client_side_available = EXCLUDED.client_side_available,
+			temporary = EXCLUDED.temporary,
 			variations = EXCLUDED.variations,
 			updated_at = now()
 		RETURNING ` + flagColumns
-	row := s.pool.QueryRow(ctx, q, projectID, key, name, description, salt, clientSideAvailable, raw)
+	row := s.pool.QueryRow(ctx, q, projectID, key, name, description, salt, clientSideAvailable, temporary, raw)
 	return scanFlag(row)
 }
 
@@ -251,7 +252,7 @@ func scanFlag(row pgx.Row) (models.Flag, error) {
 		variations []byte
 	)
 	if err := row.Scan(&f.ID, &f.ProjectID, &f.Key, &f.Name, &f.Description,
-		&f.Salt, &f.ClientSideAvailable, &variations, &f.CreatedAt, &f.UpdatedAt); err != nil {
+		&f.Salt, &f.ClientSideAvailable, &f.Temporary, &variations, &f.CreatedAt, &f.UpdatedAt); err != nil {
 		return models.Flag{}, err
 	}
 	if err := json.Unmarshal(variations, &f.Variations); err != nil {

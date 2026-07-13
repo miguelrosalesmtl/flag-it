@@ -4,6 +4,7 @@ import type {
   Flag,
   FlagConfig,
   FlagInstruction,
+  FlagLifecycle,
   FlagWithState,
 } from '@/types/flag'
 
@@ -29,8 +30,15 @@ export const flagsApi = {
       name: input.name,
       description: input.description ?? '',
       client_side_available: input.client_side_available ?? false,
+      temporary: input.temporary ?? false,
       variations: input.variations,
     }),
+  // Flags annotated with a lifecycle status (new/active/inactive) for stale
+  // detection.
+  listLifecycle: (tenantSlug: string, projectKey: string) =>
+    api
+      .get<{ flags: FlagLifecycle[] | null }>(`${flagBase(tenantSlug, projectKey)}/lifecycle`)
+      .then((r) => r.flags ?? []),
   get: (tenantSlug: string, projectKey: string, flagKey: string) =>
     api.get<Flag>(`${flagBase(tenantSlug, projectKey)}/${flagKey}`),
   getConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>

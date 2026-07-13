@@ -64,6 +64,7 @@ export function FlagList({ flags, onOpen, onToggle, togglingKey }: FlagListProps
                 {flag.client_side_available ? (
                   <Badge variant="secondary">Client-side</Badge>
                 ) : null}
+                {flag.temporary ? <Badge variant="outline">Temporary</Badge> : null}
               </div>
               {flag.description ? (
                 <p className="text-muted-foreground text-sm">{flag.description}</p>

@@ -554,6 +554,8 @@ components:
           type: string
         project_id:
           type: string
+        temporary:
+          type: boolean
         updated_at:
           format: date-time
           type: string
@@ -569,6 +571,7 @@ components:
         - name
         - description
         - client_side_available
+        - temporary
         - variations
         - created_at
         - updated_at
@@ -657,6 +660,8 @@ components:
           type: boolean
         project_id:
           type: string
+        temporary:
+          type: boolean
         updated_at:
           format: date-time
           type: string
@@ -673,6 +678,53 @@ components:
         - name
         - description
         - client_side_available
+        - temporary
+        - variations
+        - created_at
+        - updated_at
+      type: object
+    FlagLifecycle:
+      additionalProperties: false
+      properties:
+        client_side_available:
+          type: boolean
+        created_at:
+          format: date-time
+          type: string
+        description:
+          type: string
+        id:
+          type: string
+        key:
+          type: string
+        last_evaluated:
+          format: date-time
+          type: string
+        name:
+          type: string
+        project_id:
+          type: string
+        status:
+          type: string
+        temporary:
+          type: boolean
+        updated_at:
+          format: date-time
+          type: string
+        variations:
+          items: {}
+          type:
+            - array
+            - "null"
+      required:
+        - status
+        - id
+        - project_id
+        - key
+        - name
+        - description
+        - client_side_available
+        - temporary
         - variations
         - created_at
         - updated_at
@@ -923,6 +975,25 @@ components:
             - "null"
       required:
         - environments
+      type: object
+    ListFlagLifecycleOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListFlagLifecycleOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        flags:
+          items:
+            $ref: "#/components/schemas/FlagLifecycle"
+          type:
+            - array
+            - "null"
+      required:
+        - flags
       type: object
     ListFlagsOutputBody:
       additionalProperties: false
@@ -1449,6 +1520,9 @@ components:
           type: string
         name:
           type: string
+        temporary:
+          description: short-lived flag meant to be removed once launched
+          type: boolean
         variations:
           items: {}
           type:
@@ -3084,6 +3158,39 @@ paths:
       security:
         - bearerAuth: []
       summary: List a project's flag definitions (requires flag.read)
+      tags:
+        - Flags
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/lifecycle:
+    get:
+      description: Each flag is annotated with new/active/inactive derived from age and evaluation activity, plus its last-evaluated time and temporary marker.
+      operationId: list-flag-lifecycle
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListFlagLifecycleOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flags with a lifecycle status for stale detection (requires flag.read)
       tags:
         - Flags
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}:

@@ -15,9 +15,20 @@ export interface Flag {
   name: string
   description: string
   client_side_available: boolean
+  /** A short-lived flag (e.g. a release toggle) meant to be removed once launched. */
+  temporary: boolean
   variations: unknown[]
   created_at: string
   updated_at: string
+}
+
+/** A flag's lifecycle status, derived from age and evaluation activity. */
+export type LifecycleStatus = 'new' | 'active' | 'inactive'
+
+/** A flag plus its derived lifecycle status and last-evaluated time. */
+export interface FlagLifecycle extends Flag {
+  status: LifecycleStatus
+  last_evaluated?: string | null
 }
 
 /** A flag definition plus its on/off state in a specific environment. */
@@ -31,6 +42,7 @@ export interface CreateFlagInput {
   name: string
   description?: string
   client_side_available?: boolean
+  temporary?: boolean
   variations: unknown[]
 }
 

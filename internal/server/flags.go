@@ -16,6 +16,12 @@ type listFlagsOutput struct {
 	}
 }
 
+type listFlagLifecycleOutput struct {
+	Body struct {
+		Flags []flags.FlagLifecycle `json:"flags"`
+	}
+}
+
 // flagInEnv is a flag definition plus its on/off state in one environment.
 type flagInEnv struct {
 	models.Flag
@@ -43,6 +49,7 @@ type saveFlagInput struct {
 		Name                string            `json:"name,omitempty"`
 		Description         string            `json:"description,omitempty"`
 		ClientSideAvailable bool              `json:"client_side_available,omitempty" doc:"expose to client (public) SDK keys; default false = server-only"`
+		Temporary           bool              `json:"temporary,omitempty" doc:"short-lived flag meant to be removed once launched"`
 		Variations          []json.RawMessage `json:"variations"`
 	}
 }
@@ -152,6 +159,29 @@ func (s *Server) registerFlags() {
 	})
 
 	huma.Register(s.api, huma.Operation{
+		OperationID: "list-flag-lifecycle", Method: http.MethodGet, Path: base + "/flags/lifecycle",
+		Summary: "List a project's flags with a lifecycle status for stale detection (requires flag.read)",
+		Description: "Each flag is annotated with new/active/inactive derived from age and " +
+			"evaluation activity, plus its last-evaluated time and temporary marker.",
+		Tags: []string{"Flags"}, Security: bearer,
+	}, func(ctx context.Context, in *projectPath) (*listFlagLifecycleOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		list, err := s.flags.ListFlagLifecycle(ctx, project.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &listFlagLifecycleOutput{}
+		out.Body.Flags = list
+		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
 		OperationID: "get-flag", Method: http.MethodGet, Path: base + "/flags/{flagKey}",
 		Summary: "Get a flag definition (requires flag.read)", Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *flagPath) (*flagOutput, error) {
@@ -208,7 +238,7 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		flag, err := s.flags.SaveFlag(ctx, project.ID, in.FlagKey, in.Body.Name, in.Body.Description, in.Body.ClientSideAvailable, in.Body.Variations)
+		flag, err := s.flags.SaveFlag(ctx, project.ID, in.FlagKey, in.Body.Name, in.Body.Description, in.Body.ClientSideAvailable, in.Body.Temporary, in.Body.Variations)
 		if err != nil {
 			return nil, flagError(err)
 		}

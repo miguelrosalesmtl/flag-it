@@ -11,6 +11,7 @@ const flag: Flag = {
   name: 'Dark mode',
   description: '',
   client_side_available: true,
+    temporary: false,
   variations: [true, false],
   created_at: '2026-07-12T00:00:00Z',
   updated_at: '2026-07-12T00:00:00Z',
