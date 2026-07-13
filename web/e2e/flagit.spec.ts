@@ -398,6 +398,34 @@ test('adds a percentage-rollout rule and reorders the rules', async ({ page }) =
   await expect(items.first()).toContainText('plan')
 })
 
+test('edits a targeting rule in place', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // Add a rule, then edit its clause value in place.
+  await page.getByLabel('Attribute').fill('country')
+  await page.getByLabel('Values').fill('US')
+  await page.getByRole('button', { name: 'Add rule' }).click()
+  await expect(page.getByText('user.country is one of [US]')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Edit' }).click()
+  const editForm = page
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('button', { name: 'Save' }) })
+  await editForm.getByLabel('Values').fill('CA')
+  await editForm.getByRole('button', { name: 'Save' }).click()
+
+  await expect(page.getByText('user.country is one of [CA]')).toBeVisible()
+  await expect(page.getByText('user.country is one of [US]')).toBeHidden()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

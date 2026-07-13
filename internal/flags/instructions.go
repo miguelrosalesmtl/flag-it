@@ -13,7 +13,7 @@ import (
 // list of instructions surgically edits the config (vs replacing the whole
 // object), which is concurrency-friendlier and records intent for auditing.
 type Instruction struct {
-	Kind string `json:"kind" doc:"turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | removeRule | reorderRules | addPrerequisite | removePrerequisite"`
+	Kind string `json:"kind" doc:"turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | updateRule | removeRule | reorderRules | addPrerequisite | removePrerequisite"`
 
 	Variation   *int            `json:"variation,omitempty"`
 	Values      []string        `json:"values,omitempty"`
@@ -35,6 +35,7 @@ const (
 	InsAddTargets                 = "addTargets"
 	InsRemoveTargets              = "removeTargets"
 	InsAddRule                    = "addRule"
+	InsUpdateRule                 = "updateRule"
 	InsRemoveRule                 = "removeRule"
 	InsReorderRules               = "reorderRules"
 	InsAddPrerequisite            = "addPrerequisite"
@@ -98,6 +99,17 @@ func applyInstruction(cfg *models.FlagConfig, in Instruction) error {
 			Clauses:            in.Clauses,
 			VariationOrRollout: models.VariationOrRollout{Variation: in.Variation, Rollout: in.Rollout},
 		})
+	case InsUpdateRule:
+		if in.RuleID == "" {
+			return fmt.Errorf("ruleId is required")
+		}
+		if len(in.Clauses) == 0 {
+			return fmt.Errorf("clauses are required")
+		}
+		if in.Variation == nil && in.Rollout == nil {
+			return fmt.Errorf("variation or rollout is required")
+		}
+		return updateRule(cfg, in.RuleID, in.Clauses, in.Variation, in.Rollout)
 	case InsRemoveRule:
 		if in.RuleID == "" {
 			return fmt.Errorf("ruleId is required")
@@ -153,6 +165,19 @@ func removeTargets(cfg *models.FlagConfig, kind string, variation int, values []
 		kept = append(kept, t)
 	}
 	cfg.Targets = kept
+}
+
+// updateRule replaces a rule's clauses and served value in place, keeping its id
+// and position, so an edit doesn't reshuffle rule priority.
+func updateRule(cfg *models.FlagConfig, id string, clauses []models.Clause, variation *int, rollout *models.Rollout) error {
+	for i := range cfg.Rules {
+		if cfg.Rules[i].ID == id {
+			cfg.Rules[i].Clauses = clauses
+			cfg.Rules[i].VariationOrRollout = models.VariationOrRollout{Variation: variation, Rollout: rollout}
+			return nil
+		}
+	}
+	return fmt.Errorf("updateRule: unknown rule id %q", id)
 }
 
 func removeRule(rules []models.Rule, id string) []models.Rule {

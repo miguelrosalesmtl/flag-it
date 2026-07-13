@@ -971,7 +971,7 @@ components:
         key:
           type: string
         kind:
-          description: turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | removeRule | reorderRules | addPrerequisite | removePrerequisite
+          description: turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | updateRule | removeRule | reorderRules | addPrerequisite | removePrerequisite
           type: string
         rollout:
           $ref: "#/components/schemas/Rollout"

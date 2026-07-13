@@ -66,6 +66,51 @@ func TestInstructions_AddRuleWithRollout(t *testing.T) {
 	}
 }
 
+func TestInstructions_UpdateRule(t *testing.T) {
+	cfg, err := ApplyInstructions(baseConfig(), []Instruction{
+		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "a", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},
+		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "b", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	targetID := cfg.Rules[0].ID
+
+	// Edit the first rule: new clause + switch to a rollout. Id and position stay.
+	updated, err := ApplyInstructions(cfg, []Instruction{{
+		Kind:    InsUpdateRule,
+		RuleID:  targetID,
+		Clauses: []models.Clause{{Attribute: "country", Op: models.OpIn, Values: []any{"US"}}},
+		Rollout: &models.Rollout{Variations: []models.WeightedVariation{
+			{Variation: 0, Weight: 50000}, {Variation: 1, Weight: 50000},
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := updated.Rules[0]
+	if r.ID != targetID {
+		t.Fatalf("id changed: %s -> %s", targetID, r.ID)
+	}
+	if len(r.Clauses) != 1 || r.Clauses[0].Attribute != "country" {
+		t.Fatalf("clauses not updated: %+v", r.Clauses)
+	}
+	if r.Variation != nil || r.Rollout == nil {
+		t.Fatalf("served value not switched to rollout: %+v", r.VariationOrRollout)
+	}
+	if updated.Rules[1].Clauses[0].Attribute != "b" {
+		t.Fatalf("second rule disturbed: %+v", updated.Rules[1])
+	}
+
+	// Unknown id is rejected.
+	if _, err := ApplyInstructions(cfg, []Instruction{{
+		Kind: InsUpdateRule, RuleID: "nope",
+		Clauses: []models.Clause{{Attribute: "a", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0),
+	}}); err == nil {
+		t.Fatal("expected error for unknown rule id")
+	}
+}
+
 func TestInstructions_ReorderRules(t *testing.T) {
 	cfg, err := ApplyInstructions(baseConfig(), []Instruction{
 		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "a", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},

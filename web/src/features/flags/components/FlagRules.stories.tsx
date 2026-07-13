@@ -26,7 +26,7 @@ const rules: FlagRule[] = [
 const meta = {
   title: 'Flags/FlagRules',
   component: FlagRules,
-  args: { flag, rules, onAddRule: fn(), onRemoveRule: fn(), onReorderRules: fn() },
+  args: { flag, rules, onAddRule: fn(), onUpdateRule: fn(), onRemoveRule: fn(), onReorderRules: fn() },
 } satisfies Meta<typeof FlagRules>
 
 export default meta
