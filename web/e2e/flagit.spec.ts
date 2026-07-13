@@ -447,6 +447,25 @@ test('adds a rollout rule bucketed by an attribute', async ({ page }) => {
   await expect(page.getByText(/50% true.*by accountId/)).toBeVisible()
 })
 
+test('reshuffles a rollout with a seed', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  await page.getByRole('tab', { name: 'A rollout' }).click()
+  await expect(page.getByText('Bucketing: default')).toBeVisible()
+  await page.getByRole('button', { name: 'Reshuffle' }).click()
+  await expect(page.getByText(/Bucketing: reshuffled \(seed \d+\)/)).toBeVisible()
+  await page.getByRole('button', { name: 'Reset' }).click()
+  await expect(page.getByText('Bucketing: default')).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
