@@ -14,14 +14,15 @@ order). Check items off as we go.
 **Where we are (2026-07):** backend milestones complete through **Phase 6**. The
 **Web UI dashboard** (a Phase 8 item) is built for the full management surface, plus
 a **Contexts inspector** (new work beyond the original phases — migration 00013).
-**Phase 7 (governance)** is underway: **approval workflows** (change requests,
-reviewed before they apply — migration 00014) and **scheduled changes** (applied
-automatically at a future time by a background scheduler — migration 00015) both
-ship, as do **temporary flags + stale detection** (flag lifecycle — migration
-00016). Not started: the remaining Phase 7 tails (flag triggers, code-reference
-scanning) and the rest of **Phase 8** (integrations,
-SSO/SCIM, teams, data export, CLI). Deferred: A/B experimentation (P6), JS SDK (P4),
-private attributes (P1), and the scaling/hardening list.
+**Phase 7 (governance)** is largely done: **approval workflows** (change
+requests reviewed before they apply — migration 00014), **scheduled changes**
+(applied at a future time by a background scheduler — migration 00015),
+**temporary flags + stale detection** (flag lifecycle — migration 00016), and
+**flag triggers** (inbound webhook URLs — migration 00017) all ship. The only
+Phase 7 tail left is code-reference scanning (needs an external CLI). Not started:
+the rest of **Phase 8** (integrations, SSO/SCIM, teams, data export, CLI).
+Deferred: A/B experimentation (P6), JS SDK (P4), private attributes (P1), and the
+scaling/hardening list.
 
 ---
 
@@ -124,7 +125,8 @@ internal, and centralizes audit/control. Implications:
 
 ### 3.6 Workflow & governance
 - ✅ Approval workflows
-- ✅ Scheduled changes (flag triggers / inbound webhooks still pending)
+- ✅ Scheduled changes
+- ✅ Flag triggers (inbound webhooks)
 - ❌ Audit log / change history
 - ❌ Comments on changes
 - ❌ Code references
@@ -287,8 +289,16 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       interval (`SCHEDULED_CHANGE_INTERVAL`); pending ones can be cancelled.
       Management API create/list/cancel under a project. UI: "Schedule change"
       dialog + a scheduled-changes card on the flag detail page. Audited as
-      `change.scheduled` / `change.schedule.cancelled`. (Flag *triggers* — inbound
-      webhook URLs — still pending.)
+      `change.scheduled` / `change.schedule.cancelled`.
+- [x] **Flag triggers (inbound webhooks)** — an unguessable webhook URL
+      (migration 00017) that, when POSTed to with no auth (the URL token *is* the
+      credential — a third API surface), applies a fixed on/off action to a flag
+      in one environment. Managed via `governance`: create (returns the URL once),
+      list (token withheld), enable/disable, reset token, delete; the public
+      `POST /api/v1/triggers/{token}` fires it. UI: a triggers card + create
+      dialog on the flag detail page. Audited as `trigger.created` /
+      `trigger.fired` / `trigger.enabled` / `trigger.disabled` / `trigger.reset` /
+      `trigger.deleted`.
 - [x] **Flag lifecycle — temporary flags + stale detection** — a `temporary`
       marker on the flag definition (migration 00016) plus a derived lifecycle
       status (new/active/inactive) computed from flag age and evaluation activity

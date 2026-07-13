@@ -8,6 +8,7 @@ package settings
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
@@ -71,11 +72,24 @@ type Server struct {
 	// separated). "*" allows any (fine for dev; restrict in production). Auth is
 	// via the Authorization header, not cookies, so credentials are not shared.
 	CORSAllowedOrigins []string `env:"CORS_ALLOWED_ORIGINS" envSeparator:"," envDefault:"*"`
+	// PublicURL is the externally reachable base URL of the API (scheme + host,
+	// no trailing slash), used to build trigger webhook URLs. Empty falls back to
+	// http://localhost:{port} — set it in production.
+	PublicURL string `env:"PUBLIC_URL" envDefault:""`
 }
 
 // Addr returns the host:port the HTTP server should bind to.
 func (s Server) Addr() string {
 	return fmt.Sprintf("%s:%d", s.Host, s.Port)
+}
+
+// PublicBaseURL returns the externally reachable base URL of the API (no
+// trailing slash), falling back to localhost for local development.
+func (s Server) PublicBaseURL() string {
+	if s.PublicURL != "" {
+		return strings.TrimRight(s.PublicURL, "/")
+	}
+	return fmt.Sprintf("http://localhost:%d", s.Port)
 }
 
 // Postgres holds the connection settings for the source-of-truth database.

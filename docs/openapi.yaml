@@ -337,6 +337,28 @@ components:
         - slug
         - name
       type: object
+    CreateTriggerInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateTriggerInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        action:
+          description: what firing the webhook does
+          enum:
+            - "on"
+            - "off"
+          type: string
+        description:
+          description: e.g. the integration that fires it
+          type: string
+      required:
+        - action
+      type: object
     CreateUserInputBody:
       additionalProperties: false
       properties:
@@ -528,6 +550,30 @@ components:
         - value
         - variation
         - reason
+      type: object
+    FireTriggerOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/FireTriggerOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        action:
+          type: string
+        environment:
+          type: string
+        flag_key:
+          type: string
+        status:
+          type: string
+      required:
+        - flag_key
+        - environment
+        - action
+        - status
       type: object
     Flag:
       additionalProperties: false
@@ -760,6 +806,54 @@ components:
         - since
         - variations
         - total
+      type: object
+    FlagTrigger:
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          type: string
+        created_by_email:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        environment_id:
+          type: string
+        environment_key:
+          type: string
+        exec_count:
+          format: int64
+          type: integer
+        flag_key:
+          type: string
+        id:
+          type: string
+        last_executed_at:
+          format: date-time
+          type: string
+        project_id:
+          type: string
+        token:
+          type: string
+      required:
+        - id
+        - project_id
+        - environment_id
+        - environment_key
+        - flag_key
+        - action
+        - description
+        - enabled
+        - exec_count
+        - created_by
+        - created_by_email
+        - created_at
       type: object
     GetContextOutputBody:
       additionalProperties: false
@@ -1165,6 +1259,25 @@ components:
             - "null"
       required:
         - tenants
+      type: object
+    ListTriggersOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListTriggersOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        triggers:
+          items:
+            $ref: "#/components/schemas/FlagTrigger"
+          type:
+            - array
+            - "null"
+      required:
+        - triggers
       type: object
     ListUsersOutputBody:
       additionalProperties: false
@@ -1804,6 +1917,21 @@ components:
         - contextKind
         - values
       type: object
+    SetTriggerEnabledInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SetTriggerEnabledInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - enabled
+      type: object
     SetupInputBody:
       additionalProperties: false
       properties:
@@ -1916,6 +2044,64 @@ components:
         - name
         - created_at
         - updated_at
+      type: object
+    TriggerBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/TriggerBody.json
+          format: uri
+          readOnly: true
+          type: string
+        action:
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          type: string
+        created_by_email:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        environment_id:
+          type: string
+        environment_key:
+          type: string
+        exec_count:
+          format: int64
+          type: integer
+        flag_key:
+          type: string
+        id:
+          type: string
+        last_executed_at:
+          format: date-time
+          type: string
+        project_id:
+          type: string
+        token:
+          type: string
+        url:
+          description: the webhook URL to POST to; shown once on create/reset
+          type: string
+      required:
+        - id
+        - project_id
+        - environment_id
+        - environment_key
+        - flag_key
+        - action
+        - description
+        - enabled
+        - exec_count
+        - created_by
+        - created_by_email
+        - created_at
       type: object
     UpdateProjectInputBody:
       additionalProperties: false
@@ -3588,6 +3774,55 @@ paths:
       summary: Evaluation counts per variation for a flag in an environment (requires flag.read)
       tags:
         - Analytics
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/triggers:
+    post:
+      description: Returns a one-time URL. POST to it (no auth — the token is the credential) to apply the action. The URL is shown only on create and reset.
+      operationId: create-trigger
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTriggerInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a flag trigger webhook (requires flag.write)
+      tags:
+        - Triggers
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/roles:
     post:
       operationId: grant-project-role
@@ -3866,6 +4101,165 @@ paths:
       summary: Create or update a segment (requires flag.write)
       tags:
         - Segments
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers:
+    get:
+      operationId: list-triggers
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: filter by flag key
+          explode: false
+          in: query
+          name: flag
+          schema:
+            description: filter by flag key
+            type: string
+        - description: filter by environment key
+          explode: false
+          in: query
+          name: env
+          schema:
+            description: filter by environment key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTriggersOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flag triggers, without their secret URLs (requires flag.read)
+      tags:
+        - Triggers
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}:
+    delete:
+      operationId: delete-trigger
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a flag trigger (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}/enabled:
+    post:
+      operationId: set-trigger-enabled
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTriggerEnabledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Enable or disable a flag trigger (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}/reset:
+    post:
+      operationId: reset-trigger
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reset a trigger's URL token, invalidating the old URL (requires flag.write)
+      tags:
+        - Triggers
   /api/v1/tenants/{tenantSlug}/roles:
     get:
       operationId: list-roles
@@ -3925,6 +4319,32 @@ paths:
       summary: Create a custom role (requires role.manage)
       tags:
         - Roles
+  /api/v1/triggers/{token}:
+    post:
+      description: POST here — typically from an alerting or CI system — to apply the trigger's action.
+      operationId: fire-trigger
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FireTriggerOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Fire a flag trigger (authenticated by the URL token only)
+      tags:
+        - Triggers
   /api/v1/users:
     get:
       operationId: list-users

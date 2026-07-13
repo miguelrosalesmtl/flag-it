@@ -10,6 +10,8 @@ import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
 import { RequestChangeDialog } from '@/features/flags/components/RequestChangeDialog'
 import { ScheduleChangeDialog } from '@/features/flags/components/ScheduleChangeDialog'
 import { ScheduledChangesCard } from '@/features/flags/components/ScheduledChangesCard'
+import { CreateTriggerDialog } from '@/features/flags/components/CreateTriggerDialog'
+import { TriggersCard } from '@/features/flags/components/TriggersCard'
 import { useCreateChange } from '@/features/approvals/hooks/useChanges'
 import {
   useFlag,
@@ -22,6 +24,13 @@ import {
   useCreateScheduledChange,
   useScheduledChanges,
 } from '@/features/flags/hooks/useScheduledChanges'
+import {
+  useCreateTrigger,
+  useDeleteTrigger,
+  useResetTrigger,
+  useSetTriggerEnabled,
+  useTriggers,
+} from '@/features/flags/hooks/useTriggers'
 import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
 
 /**
@@ -45,6 +54,14 @@ export function FlagDetailPage() {
   const scheduledChanges = useScheduledChanges(tenantSlug, projectKey, flagKey, envKey)
   const scheduleChange = useCreateScheduledChange(tenantSlug, projectKey, flagKey, envKey)
   const cancelScheduled = useCancelScheduledChange(tenantSlug, projectKey)
+
+  const triggers = useTriggers(tenantSlug, projectKey, flagKey, envKey)
+  const createTrigger = useCreateTrigger(tenantSlug, projectKey, flagKey, envKey)
+  const setTriggerEnabled = useSetTriggerEnabled(tenantSlug, projectKey)
+  const resetTrigger = useResetTrigger(tenantSlug, projectKey)
+  const deleteTrigger = useDeleteTrigger(tenantSlug, projectKey)
+  // A just-minted webhook URL to reveal once (create/reset return it).
+  const [revealedUrl, setRevealedUrl] = useState<string | null>(null)
 
   return (
     <section className="space-y-6">
@@ -82,6 +99,16 @@ export function FlagDetailPage() {
           ) : (
             <>
               <div className="flex justify-end gap-2">
+                <CreateTriggerDialog
+                  envKey={envKey}
+                  onCreate={(action, description) =>
+                    createTrigger.mutate(
+                      { action, description },
+                      { onSuccess: (t) => setRevealedUrl(t.url ?? null) },
+                    )
+                  }
+                  isSubmitting={createTrigger.isPending}
+                />
                 <ScheduleChangeDialog
                   currentOn={config.data.on}
                   envKey={envKey}
@@ -147,6 +174,23 @@ export function FlagDetailPage() {
                   changes={scheduledChanges.data}
                   onCancel={(id) => cancelScheduled.mutate(id)}
                   busy={cancelScheduled.isPending}
+                />
+              ) : null}
+              {triggers.data ? (
+                <TriggersCard
+                  triggers={triggers.data}
+                  revealedUrl={revealedUrl}
+                  onDismissUrl={() => setRevealedUrl(null)}
+                  onToggleEnabled={(id, enabled) => setTriggerEnabled.mutate({ id, enabled })}
+                  onReset={(id) =>
+                    resetTrigger.mutate(id, { onSuccess: (t) => setRevealedUrl(t.url ?? null) })
+                  }
+                  onDelete={(id) => deleteTrigger.mutate(id)}
+                  busy={
+                    setTriggerEnabled.isPending ||
+                    resetTrigger.isPending ||
+                    deleteTrigger.isPending
+                  }
                 />
               ) : null}
             </>

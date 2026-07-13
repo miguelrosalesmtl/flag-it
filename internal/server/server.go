@@ -112,6 +112,7 @@ func New(
 	s.registerFlags()
 	s.registerChanges()
 	s.registerScheduled()
+	s.registerTriggers()
 	s.registerAudit()
 	s.registerEval()
 	s.registerAnalytics()
