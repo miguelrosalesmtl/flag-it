@@ -11,8 +11,12 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Development: Story = {
-  args: { environment: 'development' },
+export const DevelopmentLiveApi: Story = {
+  args: { environment: 'development', mocking: false },
+}
+
+export const DevelopmentMocked: Story = {
+  args: { environment: 'development', mocking: true },
 }
 
 export const Staging: Story = {

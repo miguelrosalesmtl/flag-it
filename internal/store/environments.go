@@ -46,7 +46,7 @@ func (s *Store) ListEnvironmentsByProject(ctx context.Context, projectID string)
 	}
 	defer rows.Close()
 
-	var out []models.Environment
+	out := make([]models.Environment, 0)
 	for rows.Next() {
 		e, err := scanEnvironment(rows)
 		if err != nil {

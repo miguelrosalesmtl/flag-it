@@ -79,7 +79,7 @@ func (s *Store) ListTenants(ctx context.Context) ([]models.Tenant, error) {
 	}
 	defer rows.Close()
 
-	var out []models.Tenant
+	out := make([]models.Tenant, 0)
 	for rows.Next() {
 		t, err := scanTenant(rows)
 		if err != nil {

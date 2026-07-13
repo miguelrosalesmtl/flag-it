@@ -36,7 +36,7 @@ func (s *Store) ListMembershipsByUser(ctx context.Context, userID string) ([]mod
 	}
 	defer rows.Close()
 
-	var out []models.Membership
+	out := make([]models.Membership, 0)
 	for rows.Next() {
 		m, err := scanMembership(rows)
 		if err != nil {

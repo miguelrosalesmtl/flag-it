@@ -70,7 +70,7 @@ func (s *Store) ListSegmentsByProject(ctx context.Context, projectID string) ([]
 		return nil, fmt.Errorf("store: list segments: %w", err)
 	}
 	defer rows.Close()
-	var out []models.Segment
+	out := make([]models.Segment, 0)
 	for rows.Next() {
 		seg, err := scanSegment(rows)
 		if err != nil {

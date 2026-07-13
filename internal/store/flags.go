@@ -68,7 +68,7 @@ func (s *Store) ListFlagsByProject(ctx context.Context, projectID string) ([]mod
 	}
 	defer rows.Close()
 
-	var out []models.Flag
+	out := make([]models.Flag, 0)
 	for rows.Next() {
 		f, err := scanFlag(rows)
 		if err != nil {
@@ -185,7 +185,7 @@ func (s *Store) queryEvalFlags(ctx context.Context, q string, args ...any) ([]mo
 	}
 	defer rows.Close()
 
-	var out []models.EvalFlag
+	out := make([]models.EvalFlag, 0)
 	for rows.Next() {
 		var (
 			ef            models.EvalFlag

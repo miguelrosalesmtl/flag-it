@@ -6,7 +6,9 @@ const flagBase = (tenantSlug: string, projectKey: string) =>
 
 export const flagsApi = {
   list: (tenantSlug: string, projectKey: string) =>
-    api.get<{ flags: Flag[] }>(flagBase(tenantSlug, projectKey)).then((r) => r.flags),
+    api
+      .get<{ flags: Flag[] | null }>(flagBase(tenantSlug, projectKey))
+      .then((r) => r.flags ?? []),
   get: (tenantSlug: string, projectKey: string, flagKey: string) =>
     api.get<Flag>(`${flagBase(tenantSlug, projectKey)}/${flagKey}`),
   getConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
