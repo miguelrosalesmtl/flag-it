@@ -5,9 +5,11 @@ const envBase = (tenantSlug: string, projectKey: string) =>
   `/tenants/${tenantSlug}/projects/${projectKey}/environments`
 
 export const environmentsApi = {
-  list: (tenantSlug: string, projectKey: string) =>
+  list: (tenantSlug: string, projectKey: string, search = '') =>
     api
-      .get<{ environments: Environment[] | null }>(envBase(tenantSlug, projectKey))
+      .get<{ environments: Environment[] | null }>(
+        `${envBase(tenantSlug, projectKey)}?search=${encodeURIComponent(search)}`,
+      )
       .then((r) => r.environments ?? []),
   create: (tenantSlug: string, projectKey: string, input: CreateEnvironmentInput) =>
     api.post<Environment>(envBase(tenantSlug, projectKey), input),

@@ -28,6 +28,13 @@ type listEnvFlagsOutput struct {
 	}
 }
 
+type listEnvFlagsInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	EnvKey     string `path:"envKey"`
+	Search     string `query:"search" doc:"filter by flag name, key, or description"`
+}
+
 type saveFlagInput struct {
 	TenantSlug string `path:"tenantSlug"`
 	ProjectKey string `path:"projectKey"`
@@ -102,7 +109,7 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		list, err := s.flags.ListFlags(ctx, project.ID)
+		list, err := s.flags.ListFlags(ctx, project.ID, "")
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -116,7 +123,7 @@ func (s *Server) registerFlags() {
 		Path:    base + "/environments/{envKey}/flags",
 		Summary: "List a project's flags with their on/off state in one environment (requires flag.read)",
 		Tags:    []string{"Flags"}, Security: bearer,
-	}, func(ctx context.Context, in *envKeyPath) (*listEnvFlagsOutput, error) {
+	}, func(ctx context.Context, in *listEnvFlagsInput) (*listEnvFlagsOutput, error) {
 		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
@@ -128,7 +135,7 @@ func (s *Server) registerFlags() {
 		if err != nil {
 			return nil, err
 		}
-		list, err := s.flags.ListFlags(ctx, project.ID)
+		list, err := s.flags.ListFlags(ctx, project.ID, in.Search)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}

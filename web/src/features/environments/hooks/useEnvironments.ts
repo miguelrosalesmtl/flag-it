@@ -4,10 +4,10 @@ import { environmentsApi } from '@/api/endpoints/environments'
 import { queryKeys } from '@/lib/query-keys'
 import type { CreateEnvironmentInput } from '@/types/environment'
 
-export function useEnvironments(tenantSlug: string, projectKey: string) {
+export function useEnvironments(tenantSlug: string, projectKey: string, search = '') {
   return useQuery({
-    queryKey: queryKeys.environments(tenantSlug, projectKey),
-    queryFn: () => environmentsApi.list(tenantSlug, projectKey),
+    queryKey: [...queryKeys.environments(tenantSlug, projectKey), search],
+    queryFn: () => environmentsApi.list(tenantSlug, projectKey, search),
   })
 }
 

@@ -47,6 +47,12 @@ type updateProjectInput struct {
 	}
 }
 
+type listEnvironmentsInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	Search     string `query:"search" doc:"filter by environment name or key"`
+}
+
 type listEnvironmentsOutput struct {
 	Body struct {
 		Environments []models.Environment `json:"environments"`
@@ -179,7 +185,7 @@ func (s *Server) registerProjects() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-environments", Method: http.MethodGet, Path: "/api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments",
 		Summary: "List a project's environments (requires project.read)", Tags: []string{"Environments"}, Security: bearer,
-	}, func(ctx context.Context, in *projectPath) (*listEnvironmentsOutput, error) {
+	}, func(ctx context.Context, in *listEnvironmentsInput) (*listEnvironmentsOutput, error) {
 		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
@@ -187,7 +193,7 @@ func (s *Server) registerProjects() {
 		if err := s.authorize(ctx, models.PermProjectRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		envs, err := s.catalog.ListEnvironments(ctx, project.ID)
+		envs, err := s.catalog.ListEnvironments(ctx, project.ID, in.Search)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}

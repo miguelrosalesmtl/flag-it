@@ -136,6 +136,13 @@ function newConfig(): FlagConfig {
 let flagConfigs: Record<string, FlagConfig> = {}
 const configKey = (flagKey: string, envKey: string) => `${flagKey}:${envKey}`
 
+// Lower-cased ?search= value, for the mock server-side filters.
+const searchParam = (request: Request) =>
+  (new URL(request.url).searchParams.get('search') ?? '').toLowerCase()
+
+const includesAny = (q: string, ...fields: string[]) =>
+  !q || fields.some((f) => f.toLowerCase().includes(q))
+
 // Default to a configured install (shows login). Flip `needsSetup` in a scenario
 // to exercise the wizard.
 let needsSetup = false
@@ -235,12 +242,12 @@ export const handlers = [
   // Flags with per-environment on/off state (the env-aware flag list).
   http.get(
     '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/flags',
-    ({ params }) => {
+    ({ params, request }) => {
       const envKey = String(params.envKey)
-      const flags = mockFlags.map((f) => ({
-        ...f,
-        on: flagConfigs[configKey(f.key, envKey)]?.on ?? false,
-      }))
+      const q = searchParam(request)
+      const flags = mockFlags
+        .filter((f) => includesAny(q, f.key, f.name, f.description))
+        .map((f) => ({ ...f, on: flagConfigs[configKey(f.key, envKey)]?.on ?? false }))
       return HttpResponse.json({ flags })
     },
   ),
@@ -272,9 +279,12 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', () =>
-    HttpResponse.json({ environments: mockEnvironments }),
-  ),
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', ({ request }) => {
+    const q = searchParam(request)
+    return HttpResponse.json({
+      environments: mockEnvironments.filter((e) => includesAny(q, e.key, e.name)),
+    })
+  }),
 
   http.post(
     '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments',
@@ -293,9 +303,12 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments', () =>
-    HttpResponse.json({ segments: mockSegments }),
-  ),
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments', ({ request }) => {
+    const q = searchParam(request)
+    return HttpResponse.json({
+      segments: mockSegments.filter((s) => includesAny(q, s.key, s.name, s.description)),
+    })
+  }),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
     const flag = mockFlags.find((f) => f.key === params.flagKey)

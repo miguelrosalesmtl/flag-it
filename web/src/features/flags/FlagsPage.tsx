@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
@@ -13,7 +13,8 @@ import { useCreateFlag, useEnvFlags, useToggleEnvFlag } from '@/features/flags/h
 
 /**
  * Container. A project's flags, shown for a selected environment: each row has
- * an inline on/off switch that toggles the flag in that environment.
+ * an inline on/off switch that toggles the flag in that environment. Search is
+ * server-side (debounced), so the list scales past what a client can hold.
  */
 export function FlagsPage() {
   const { tenantSlug = '', projectKey = '' } = useParams()
@@ -25,21 +26,17 @@ export function FlagsPage() {
   // Default to the first environment until the user picks another.
   const [picked, setPicked] = useState('')
   const envKey = picked || environments.data?.[0]?.key || ''
-  const flags = useEnvFlags(tenantSlug, projectKey, envKey)
-  const toggle = useToggleEnvFlag(tenantSlug, projectKey, envKey)
 
-  // Client-side filter over the already-loaded list (name, key, description).
+  // Debounce the search box, then send it to the server as a query.
   const [query, setQuery] = useState('')
-  const q = query.trim().toLowerCase()
-  const allFlags = flags.data ?? []
-  const filtered = q
-    ? allFlags.filter(
-        (f) =>
-          f.key.toLowerCase().includes(q) ||
-          f.name.toLowerCase().includes(q) ||
-          f.description.toLowerCase().includes(q),
-      )
-    : allFlags
+  const [search, setSearch] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(query), 250)
+    return () => clearTimeout(t)
+  }, [query])
+
+  const flags = useEnvFlags(tenantSlug, projectKey, envKey, search)
+  const toggle = useToggleEnvFlag(tenantSlug, projectKey, envKey)
 
   return (
     <section className="space-y-6">
@@ -79,6 +76,17 @@ export function FlagsPage() {
             selectedKey={envKey}
             onSelect={setPicked}
           />
+
+          {/* Show search whenever the project has flags (or a search is active). */}
+          {flags.data && (flags.data.length > 0 || search) ? (
+            <Input
+              type="search"
+              placeholder="Search flags by name, key, or description"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          ) : null}
+
           {flags.isPending ? (
             <div className="space-y-2">
               <Skeleton className="h-12" />
@@ -86,31 +94,19 @@ export function FlagsPage() {
             </div>
           ) : flags.isError ? (
             <ErrorState message={flags.error.message} onRetry={() => void flags.refetch()} />
-          ) : allFlags.length === 0 ? (
-            <FlagList flags={[]} />
+          ) : flags.data.length === 0 && search ? (
+            <p className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
+              No flags match “{search}”.
+            </p>
           ) : (
-            <>
-              <Input
-                type="search"
-                placeholder="Search flags by name, key, or description"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {filtered.length === 0 ? (
-                <p className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
-                  No flags match “{query}”.
-                </p>
-              ) : (
-                <FlagList
-                  flags={filtered}
-                  onOpen={(key) =>
-                    void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
-                  }
-                  onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
-                  togglingKey={toggle.isPending ? toggle.variables.flagKey : null}
-                />
-              )}
-            </>
+            <FlagList
+              flags={flags.data}
+              onOpen={(key) =>
+                void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+              }
+              onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
+              togglingKey={toggle.isPending ? toggle.variables.flagKey : null}
+            />
           )}
         </div>
       )}

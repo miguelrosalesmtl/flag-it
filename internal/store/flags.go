@@ -59,10 +59,14 @@ func (s *Store) GetFlagByKey(ctx context.Context, projectID, key string) (models
 	return f, nil
 }
 
-// ListFlagsByProject returns a project's flag definitions ordered by key.
-func (s *Store) ListFlagsByProject(ctx context.Context, projectID string) ([]models.Flag, error) {
-	rows, err := s.pool.Query(ctx,
-		`SELECT `+flagColumns+` FROM flags WHERE project_id = $1 ORDER BY key`, projectID)
+// ListFlagsByProject returns a project's flag definitions ordered by key. A
+// non-empty search filters by key, name, or description (case-insensitive).
+func (s *Store) ListFlagsByProject(ctx context.Context, projectID, search string) ([]models.Flag, error) {
+	const q = `SELECT ` + flagColumns + ` FROM flags
+		WHERE project_id = $1
+		  AND ($2 = '' OR key ILIKE '%'||$2||'%' OR name ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
+		ORDER BY key`
+	rows, err := s.pool.Query(ctx, q, projectID, search)
 	if err != nil {
 		return nil, fmt.Errorf("store: list flags: %w", err)
 	}

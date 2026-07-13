@@ -63,9 +63,14 @@ func (s *Store) GetSegmentByKey(ctx context.Context, projectID, key string) (mod
 	return seg, nil
 }
 
-// ListSegmentsByProject returns a project's segments ordered by key.
-func (s *Store) ListSegmentsByProject(ctx context.Context, projectID string) ([]models.Segment, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+segmentColumns+` FROM segments WHERE project_id = $1 ORDER BY key`, projectID)
+// ListSegmentsByProject returns a project's segments ordered by key. A non-empty
+// search filters by key, name, or description (case-insensitive).
+func (s *Store) ListSegmentsByProject(ctx context.Context, projectID, search string) ([]models.Segment, error) {
+	const q = `SELECT ` + segmentColumns + ` FROM segments
+		WHERE project_id = $1
+		  AND ($2 = '' OR key ILIKE '%'||$2||'%' OR name ILIKE '%'||$2||'%' OR description ILIKE '%'||$2||'%')
+		ORDER BY key`
+	rows, err := s.pool.Query(ctx, q, projectID, search)
 	if err != nil {
 		return nil, fmt.Errorf("store: list segments: %w", err)
 	}

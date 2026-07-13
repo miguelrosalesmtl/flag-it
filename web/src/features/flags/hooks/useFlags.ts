@@ -12,10 +12,17 @@ export function useFlags(tenantSlug: string, projectKey: string) {
 }
 
 /** Flags with their on/off state in one environment (the env-aware flag list). */
-export function useEnvFlags(tenantSlug: string, projectKey: string, envKey: string) {
+export function useEnvFlags(
+  tenantSlug: string,
+  projectKey: string,
+  envKey: string,
+  search = '',
+) {
   return useQuery({
-    queryKey: queryKeys.envFlags(tenantSlug, projectKey, envKey),
-    queryFn: () => flagsApi.listInEnv(tenantSlug, projectKey, envKey),
+    // search is appended to the key so filtering refetches; the key still shares
+    // a prefix with envFlags(), so toggles/creates invalidate every search view.
+    queryKey: [...queryKeys.envFlags(tenantSlug, projectKey, envKey), search],
+    queryFn: () => flagsApi.listInEnv(tenantSlug, projectKey, envKey, search),
     enabled: envKey !== '',
   })
 }

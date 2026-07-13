@@ -10,10 +10,11 @@ export const flagsApi = {
       .get<{ flags: Flag[] | null }>(flagBase(tenantSlug, projectKey))
       .then((r) => r.flags ?? []),
   // Flags with their on/off state in one environment (for the flag list).
-  listInEnv: (tenantSlug: string, projectKey: string, envKey: string) =>
+  // A non-empty search filters server-side by name, key, or description.
+  listInEnv: (tenantSlug: string, projectKey: string, envKey: string, search = '') =>
     api
       .get<{ flags: FlagWithState[] | null }>(
-        `/tenants/${tenantSlug}/projects/${projectKey}/environments/${envKey}/flags`,
+        `/tenants/${tenantSlug}/projects/${projectKey}/environments/${envKey}/flags?search=${encodeURIComponent(search)}`,
       )
       .then((r) => r.flags ?? []),
   // Create/update a flag definition. The key is addressed in the path (PUT).

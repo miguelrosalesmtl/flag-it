@@ -2211,6 +2211,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: filter by environment name or key
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by environment name or key
+            type: string
       responses:
         "200":
           content:
@@ -2284,6 +2291,13 @@ paths:
           name: envKey
           required: true
           schema:
+            type: string
+        - description: filter by flag name, key, or description
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by flag name, key, or description
             type: string
       responses:
         "200":
@@ -2800,6 +2814,13 @@ paths:
           name: projectKey
           required: true
           schema:
+            type: string
+        - description: filter by segment name, key, or description
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by segment name, key, or description
             type: string
       responses:
         "200":

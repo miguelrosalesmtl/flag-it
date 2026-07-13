@@ -65,10 +65,14 @@ func (s *Store) GetEnvironmentByKey(ctx context.Context, projectID, key string) 
 	return e, nil
 }
 
-// ListEnvironmentsByProject returns a project's environments ordered by key.
-func (s *Store) ListEnvironmentsByProject(ctx context.Context, projectID string) ([]models.Environment, error) {
-	rows, err := s.pool.Query(ctx,
-		`SELECT `+environmentColumns+` FROM environments WHERE project_id = $1 ORDER BY key`, projectID)
+// ListEnvironmentsByProject returns a project's environments ordered by key. A
+// non-empty search filters by key or name (case-insensitive).
+func (s *Store) ListEnvironmentsByProject(ctx context.Context, projectID, search string) ([]models.Environment, error) {
+	const q = `SELECT ` + environmentColumns + ` FROM environments
+		WHERE project_id = $1
+		  AND ($2 = '' OR key ILIKE '%'||$2||'%' OR name ILIKE '%'||$2||'%')
+		ORDER BY key`
+	rows, err := s.pool.Query(ctx, q, projectID, search)
 	if err != nil {
 		return nil, fmt.Errorf("store: list environments: %w", err)
 	}
