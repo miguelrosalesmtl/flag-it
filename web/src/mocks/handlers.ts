@@ -78,6 +78,7 @@ let mockFlags: Flag[] = [
     name: 'New checkout',
     description: 'Rolls out the redesigned checkout flow.',
     client_side_available: true,
+    temporary: true,
     variations: [true, false],
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
@@ -89,6 +90,7 @@ let mockFlags: Flag[] = [
     name: 'Pricing tier',
     description: '',
     client_side_available: false,
+    temporary: false,
     variations: ['free', 'pro', 'enterprise'],
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
@@ -422,6 +424,20 @@ export const handlers = [
     HttpResponse.json({ flags: mockFlags }),
   ),
 
+  // Flags annotated with a lifecycle status (stale detection). The mock derives
+  // status from the flag's key so the screen has something to show.
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/lifecycle', () => {
+    const flags = mockFlags.map((f) => {
+      const status = f.key === 'pricing-tier' ? 'inactive' : 'active'
+      return {
+        ...f,
+        status,
+        last_evaluated: status === 'inactive' ? '2026-05-01T00:00:00Z' : '2026-07-12T00:00:00Z',
+      }
+    })
+    return HttpResponse.json({ flags })
+  }),
+
   // Flags with per-environment on/off state (the env-aware flag list).
   http.get(
     '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/flags',
@@ -442,6 +458,7 @@ export const handlers = [
         name: string
         description?: string
         client_side_available?: boolean
+        temporary?: boolean
         variations: unknown[]
       }
       const flag: Flag = {
@@ -451,6 +468,7 @@ export const handlers = [
         name: body.name,
         description: body.description ?? '',
         client_side_available: body.client_side_available ?? false,
+        temporary: body.temporary ?? false,
         variations: body.variations,
         created_at: '2026-07-12T00:00:00Z',
         updated_at: '2026-07-12T00:00:00Z',

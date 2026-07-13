@@ -18,10 +18,34 @@ type Flag struct {
 	Salt string `json:"-"`
 	// ClientSideAvailable gates whether client-kind SDK keys (public, e.g.
 	// browser) may see/evaluate this flag. Default false = server-side only.
-	ClientSideAvailable bool              `json:"client_side_available"`
-	Variations          []json.RawMessage `json:"variations"`
-	CreatedAt           time.Time         `json:"created_at"`
-	UpdatedAt           time.Time         `json:"updated_at"`
+	ClientSideAvailable bool `json:"client_side_available"`
+	// Temporary marks a short-lived flag (e.g. a release toggle) that is meant
+	// to be removed once its rollout is done. Drives stale-flag detection.
+	Temporary  bool              `json:"temporary"`
+	Variations []json.RawMessage `json:"variations"`
+	CreatedAt  time.Time         `json:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at"`
+}
+
+// Flag lifecycle statuses (derived from age + evaluation activity).
+const (
+	LifecycleNew      = "new"      // recently created, not yet evaluated
+	LifecycleActive   = "active"   // evaluated within the staleness window
+	LifecycleInactive = "inactive" // not evaluated recently — a cleanup candidate
+)
+
+// LifecycleStatus derives a flag's lifecycle status. A flag evaluated within
+// staleAfter is active; one never evaluated but created within newGrace is new;
+// anything else is inactive (stale). Temporary flags use the same rule — the
+// caller surfaces temporary+inactive as the highest-priority cleanup.
+func LifecycleStatus(createdAt time.Time, lastEvaluated *time.Time, now time.Time, staleAfter, newGrace time.Duration) string {
+	if lastEvaluated != nil && now.Sub(*lastEvaluated) <= staleAfter {
+		return LifecycleActive
+	}
+	if lastEvaluated == nil && now.Sub(createdAt) <= newGrace {
+		return LifecycleNew
+	}
+	return LifecycleInactive
 }
 
 // Prerequisite gates a flag on another flag: it passes only if the prerequisite

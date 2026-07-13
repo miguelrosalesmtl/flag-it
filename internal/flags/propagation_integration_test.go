@@ -76,7 +76,7 @@ func TestCrossReplicaPropagation(t *testing.T) {
 	}
 
 	variations := []json.RawMessage{json.RawMessage(`true`), json.RawMessage(`false`)}
-	flag, err := replicaA.SaveFlag(ctx, envs[0].ProjectID, "prop-flag", "Prop Flag", "", false, variations)
+	flag, err := replicaA.SaveFlag(ctx, envs[0].ProjectID, "prop-flag", "Prop Flag", "", false, false, variations)
 	if err != nil {
 		t.Fatalf("save flag: %v", err)
 	}

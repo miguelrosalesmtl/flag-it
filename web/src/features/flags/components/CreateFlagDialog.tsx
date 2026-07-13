@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ export function CreateFlagDialog({
   const [keyEdited, setKeyEdited] = useState(false)
   const [type, setType] = useState<FlagType>('boolean')
   const [stringVars, setStringVars] = useState<string[]>(['', ''])
+  const [temporary, setTemporary] = useState(false)
 
   function reset() {
     setName('')
@@ -57,6 +59,7 @@ export function CreateFlagDialog({
     setKeyEdited(false)
     setType('boolean')
     setStringVars(['', ''])
+    setTemporary(false)
   }
 
   function handleOpenChange(next: boolean) {
@@ -77,7 +80,7 @@ export function CreateFlagDialog({
     event.preventDefault()
     if (!canSubmit) return
     const variations: unknown[] = type === 'boolean' ? [true, false] : cleanVars
-    onCreate({ key, name, variations })
+    onCreate({ key, name, variations, temporary })
   }
 
   return (
@@ -167,6 +170,17 @@ export function CreateFlagDialog({
                 </Button>
               </div>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="flag-temporary"
+              checked={temporary}
+              onCheckedChange={(v) => setTemporary(v === true)}
+            />
+            <Label htmlFor="flag-temporary" className="font-normal">
+              Temporary flag (short-lived; flagged for cleanup once stale)
+            </Label>
           </div>
 
           <DialogFooter>

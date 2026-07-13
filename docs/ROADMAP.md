@@ -17,8 +17,9 @@ a **Contexts inspector** (new work beyond the original phases — migration 0001
 **Phase 7 (governance)** is underway: **approval workflows** (change requests,
 reviewed before they apply — migration 00014) and **scheduled changes** (applied
 automatically at a future time by a background scheduler — migration 00015) both
-ship. Not started: the rest of Phase 7 (flag triggers, flag lifecycle) and the
-rest of **Phase 8** (integrations,
+ship, as do **temporary flags + stale detection** (flag lifecycle — migration
+00016). Not started: the remaining Phase 7 tails (flag triggers, code-reference
+scanning) and the rest of **Phase 8** (integrations,
 SSO/SCIM, teams, data export, CLI). Deferred: A/B experimentation (P6), JS SDK (P4),
 private attributes (P1), and the scaling/hardening list.
 
@@ -288,7 +289,13 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       dialog + a scheduled-changes card on the flag detail page. Audited as
       `change.scheduled` / `change.schedule.cancelled`. (Flag *triggers* — inbound
       webhook URLs — still pending.)
-- [ ] Flag lifecycle (temporary flags, stale detection, code references)
+- [x] **Flag lifecycle — temporary flags + stale detection** — a `temporary`
+      marker on the flag definition (migration 00016) plus a derived lifecycle
+      status (new/active/inactive) computed from flag age and evaluation activity
+      (`flag_eval_stats`). Management API `GET .../flags/lifecycle`. UI: a
+      **Lifecycle** screen (filter all/stale/temporary) and a Temporary marker in
+      the create-flag dialog + flag list. (Code-reference scanning — where a flag
+      is used in source — is deferred: it needs an external CLI scanner.)
 
 ### Phase 8 — Platform
 - [ ] Webhooks + integrations (Slack / Jira / Datadog / Terraform)

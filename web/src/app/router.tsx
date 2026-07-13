@@ -10,6 +10,7 @@ import { ContextsPage } from '@/features/contexts/ContextsPage'
 import { EnvironmentsPage } from '@/features/environments/EnvironmentsPage'
 import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
+import { LifecyclePage } from '@/features/flags/LifecyclePage'
 import { MembersSettingsPage } from '@/features/members/MembersSettingsPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { ProjectsSettingsPage } from '@/features/projects/ProjectsSettingsPage'
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
               { path: 'contexts', Component: ContextsPage },
               { path: 'contexts/:kind/:key', Component: ContextDetailPage },
               { path: 'approvals', Component: ApprovalsPage },
+              { path: 'lifecycle', Component: LifecyclePage },
               { path: 'environments', Component: EnvironmentsPage },
             ],
           },

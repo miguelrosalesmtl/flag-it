@@ -11,6 +11,14 @@ export function useFlags(tenantSlug: string, projectKey: string) {
   })
 }
 
+/** Flags annotated with a lifecycle status, for the stale-flag view. */
+export function useFlagLifecycle(tenantSlug: string, projectKey: string) {
+  return useQuery({
+    queryKey: queryKeys.flagLifecycle(tenantSlug, projectKey),
+    queryFn: () => flagsApi.listLifecycle(tenantSlug, projectKey),
+  })
+}
+
 /** Flags with their on/off state in one environment (the env-aware flag list). */
 export function useEnvFlags(
   tenantSlug: string,

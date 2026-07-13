@@ -15,6 +15,8 @@ export const queryKeys = {
   project: (tenantSlug: string, projectKey: string) =>
     ['projects', tenantSlug, projectKey] as const,
   flags: (tenantSlug: string, projectKey: string) => ['flags', tenantSlug, projectKey] as const,
+  flagLifecycle: (tenantSlug: string, projectKey: string) =>
+    ['flags', tenantSlug, projectKey, 'lifecycle'] as const,
   envFlags: (tenantSlug: string, projectKey: string, envKey: string) =>
     ['flags', tenantSlug, projectKey, 'env', envKey] as const,
   flag: (tenantSlug: string, projectKey: string, flagKey: string) =>

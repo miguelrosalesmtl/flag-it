@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
@@ -219,6 +220,47 @@ func (s *Service) GetFlag(ctx context.Context, projectID, key string) (models.Fl
 	return s.store.GetFlagByKey(ctx, projectID, key)
 }
 
+// Lifecycle thresholds for stale-flag detection.
+const (
+	lifecycleStaleAfter = 30 * 24 * time.Hour // no evaluation in 30d ⇒ inactive
+	lifecycleNewGrace   = 7 * 24 * time.Hour  // never-evaluated but <7d old ⇒ new
+)
+
+// FlagLifecycle is a flag plus its derived lifecycle status and last-evaluated
+// time, for the lifecycle / stale-flag view.
+type FlagLifecycle struct {
+	models.Flag
+	Status        string     `json:"status"`
+	LastEvaluated *time.Time `json:"last_evaluated,omitempty"`
+}
+
+// ListFlagLifecycle returns a project's flags annotated with a lifecycle status
+// (new/active/inactive) derived from age and evaluation activity.
+func (s *Service) ListFlagLifecycle(ctx context.Context, projectID string) ([]FlagLifecycle, error) {
+	flags, err := s.store.ListFlagsByProject(ctx, projectID, "")
+	if err != nil {
+		return nil, err
+	}
+	lastSeen, err := s.store.LastEvaluatedByProject(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	out := make([]FlagLifecycle, 0, len(flags))
+	for _, f := range flags {
+		var last *time.Time
+		if t, ok := lastSeen[f.Key]; ok {
+			last = &t
+		}
+		out = append(out, FlagLifecycle{
+			Flag:          f,
+			Status:        models.LifecycleStatus(f.CreatedAt, last, now, lifecycleStaleAfter, lifecycleNewGrace),
+			LastEvaluated: last,
+		})
+	}
+	return out, nil
+}
+
 // GetFlagConfig returns a flag's configuration in one environment (on/off,
 // targeting, fallthrough).
 func (s *Service) GetFlagConfig(ctx context.Context, flagID, environmentID string) (models.FlagConfig, error) {
@@ -234,13 +276,13 @@ func (s *Service) FlagOnStates(ctx context.Context, projectID, environmentID str
 // SaveFlag creates or updates a flag definition and ensures it has a config row
 // in every environment of its project. Affected environments are reloaded
 // locally and broadcast to siblings.
-func (s *Service) SaveFlag(ctx context.Context, projectID, key, name, description string, clientSideAvailable bool, variations []json.RawMessage) (models.Flag, error) {
+func (s *Service) SaveFlag(ctx context.Context, projectID, key, name, description string, clientSideAvailable, temporary bool, variations []json.RawMessage) (models.Flag, error) {
 	if err := validateDefinition(key, variations); err != nil {
 		return models.Flag{}, err
 	}
 
 	// Salt is only applied on insert (UpsertFlag preserves it on update).
-	flag, err := s.store.UpsertFlag(ctx, projectID, key, name, description, newSalt(), clientSideAvailable, variations)
+	flag, err := s.store.UpsertFlag(ctx, projectID, key, name, description, newSalt(), clientSideAvailable, temporary, variations)
 	if err != nil {
 		return models.Flag{}, err
 	}
