@@ -63,7 +63,7 @@ let mockProjects: Project[] = [
 
 const seedProjects: Project[] = [...mockProjects]
 
-const mockFlags: Flag[] = [
+let mockFlags: Flag[] = [
   {
     id: 'f1',
     project_id: 'p1',
@@ -87,6 +87,8 @@ const mockFlags: Flag[] = [
     updated_at: '2026-07-12T00:00:00Z',
   },
 ]
+
+const seedFlags: Flag[] = [...mockFlags]
 
 const mockEnvironments: Environment[] = [
   {
@@ -124,6 +126,7 @@ export function resetBackend() {
   needsSetup = false
   tenants = [...seedTenants]
   mockProjects = [...seedProjects]
+  mockFlags = [...seedFlags]
   flagConfigs = {}
 }
 
@@ -207,6 +210,33 @@ export const handlers = [
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags', () =>
     HttpResponse.json({ flags: mockFlags }),
+  ),
+
+  http.put(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
+    async ({ params, request }) => {
+      const body = (await request.json()) as {
+        name: string
+        description?: string
+        client_side_available?: boolean
+        variations: unknown[]
+      }
+      const flag: Flag = {
+        id: crypto.randomUUID(),
+        project_id: 'p1',
+        key: String(params.flagKey),
+        name: body.name,
+        description: body.description ?? '',
+        client_side_available: body.client_side_available ?? false,
+        variations: body.variations,
+        created_at: '2026-07-12T00:00:00Z',
+        updated_at: '2026-07-12T00:00:00Z',
+      }
+      const existing = mockFlags.findIndex((f) => f.key === flag.key)
+      if (existing >= 0) mockFlags[existing] = flag
+      else mockFlags.push(flag)
+      return HttpResponse.json(flag)
+    },
   ),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', () =>

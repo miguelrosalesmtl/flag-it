@@ -81,6 +81,29 @@ test('creates a project from the projects screen', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
 })
 
+test('creates a boolean flag and lands on its detail page', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New flag' }).click()
+  await page.getByLabel('Name').fill('Dark mode')
+  await expect(page.getByLabel('Key')).toHaveValue('dark-mode')
+  await page.getByRole('button', { name: 'Create flag' }).click()
+
+  // Lands on the new flag's detail page, off by default.
+  await expect(page.getByRole('heading', { name: 'Dark mode' })).toBeVisible()
+  await expect(page.getByRole('switch', { name: 'Toggle flag' })).toHaveAttribute(
+    'data-state',
+    'unchecked',
+  )
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

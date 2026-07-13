@@ -3,11 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { environmentsApi } from '@/api/endpoints/environments'
 import { flagsApi } from '@/api/endpoints/flags'
 import { queryKeys } from '@/lib/query-keys'
+import type { CreateFlagInput } from '@/types/flag'
 
 export function useFlags(tenantSlug: string, projectKey: string) {
   return useQuery({
     queryKey: queryKeys.flags(tenantSlug, projectKey),
     queryFn: () => flagsApi.list(tenantSlug, projectKey),
+  })
+}
+
+export function useCreateFlag(tenantSlug: string, projectKey: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateFlagInput) => flagsApi.create(tenantSlug, projectKey, input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.flags(tenantSlug, projectKey) }),
   })
 }
 

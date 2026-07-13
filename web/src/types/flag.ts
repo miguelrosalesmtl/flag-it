@@ -18,6 +18,15 @@ export interface Flag {
   updated_at: string
 }
 
+/** Payload to create/update a flag definition. Variations are opaque JSON values. */
+export interface CreateFlagInput {
+  key: string
+  name: string
+  description?: string
+  client_side_available?: boolean
+  variations: unknown[]
+}
+
 /** A variation index or a percentage rollout — how a rule/fallthrough serves a value. */
 export interface VariationOrRollout {
   variation?: number
