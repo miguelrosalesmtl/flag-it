@@ -86,6 +86,7 @@ func (s *Server) registerEval() {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		s.analytics.Record(env, eval.FlagKey, eval.Variation)
+		s.recordContexts(env, evalCtx)
 		return &evaluationOutput{Body: eval}, nil
 	})
 
@@ -110,8 +111,17 @@ func (s *Server) registerEval() {
 		for _, ev := range out.Body.Flags {
 			s.analytics.Record(env, ev.FlagKey, ev.Variation)
 		}
+		s.recordContexts(env, evalCtx)
 		return out, nil
 	})
+}
+
+// recordContexts buffers each kind of the evaluated context as "seen" (for the
+// Contexts inspector). Cheap and hot-path safe — the recorder flushes async.
+func (s *Server) recordContexts(environmentID string, evalCtx models.Context) {
+	for _, part := range evalCtx.Parts() {
+		s.contexts.Record(environmentID, part)
+	}
 }
 
 // errMissingSDKKey signals an empty SDK key (distinct from an invalid one).

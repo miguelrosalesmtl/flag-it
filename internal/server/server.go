@@ -18,6 +18,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/authz"
 	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
+	"github.com/miguelrosalesmtl/flag-it/internal/contexts"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
 	"github.com/miguelrosalesmtl/flag-it/internal/settings"
@@ -34,6 +35,7 @@ type Server struct {
 	verifier  tokenVerifier // verifies tokens (OIDC seam; defaults to auth)
 	authz     *authz.Service
 	analytics *analytics.Recorder
+	contexts  *contexts.Recorder
 	bus       *pubsub.Bus
 	log       *slog.Logger
 	config    settings.Server
@@ -50,6 +52,7 @@ func New(
 	authSvc *auth.Service,
 	authzSvc *authz.Service,
 	analyticsRec *analytics.Recorder,
+	contextsRec *contexts.Recorder,
 	bus *pubsub.Bus,
 	log *slog.Logger,
 ) *Server {
@@ -61,6 +64,7 @@ func New(
 		verifier:  authSvc,
 		authz:     authzSvc,
 		analytics: analyticsRec,
+		contexts:  contextsRec,
 		bus:       bus,
 		log:       log,
 		config:    cfg,
@@ -107,6 +111,7 @@ func New(
 	s.registerAudit()
 	s.registerEval()
 	s.registerAnalytics()
+	s.registerContexts()
 
 	s.http = &http.Server{
 		Addr:         cfg.Addr(),

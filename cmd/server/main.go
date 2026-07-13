@@ -20,6 +20,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/auth"
 	"github.com/miguelrosalesmtl/flag-it/internal/authz"
 	"github.com/miguelrosalesmtl/flag-it/internal/catalog"
+	"github.com/miguelrosalesmtl/flag-it/internal/contexts"
 	"github.com/miguelrosalesmtl/flag-it/internal/database"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/logger"
@@ -127,8 +128,9 @@ func runOpenAPI() error {
 	catalogSvc := catalog.New(st)
 	auditSvc := audit.New(st, log)
 	analyticsRec := analytics.New(st, 0, log)
+	contextsRec := contexts.New(st, 0, log)
 	flagSvc := flags.NewService(st, nil, log)
-	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, nil, log)
+	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, contextsRec, nil, log)
 
 	spec, err := srv.OpenAPIYAML()
 	if err != nil {
@@ -178,6 +180,10 @@ func run() error {
 	analyticsRec := analytics.New(st, cfg.Server.AnalyticsFlushInterval, log)
 	go analyticsRec.Start(ctx)
 
+	// Contexts recorder — buffers contexts seen during eval, flushes on interval.
+	contextsRec := contexts.New(st, cfg.Server.AnalyticsFlushInterval, log)
+	go contextsRec.Start(ctx)
+
 	// Flag service — cache + evaluation. Start warms the cache and consumes
 	// change events in the background until the context is cancelled.
 	flagService := flags.NewService(st, bus, log)
@@ -189,7 +195,7 @@ func run() error {
 	}()
 
 	// HTTP server.
-	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, bus, log)
+	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, analyticsRec, contextsRec, bus, log)
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- srv.Start()
