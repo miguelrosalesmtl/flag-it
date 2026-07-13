@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"sort"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
@@ -98,20 +96,15 @@ func (s *Server) registerContexts() {
 			return nil, storeError(err, "context not found")
 		}
 
-		// Reconstruct the context and evaluate every flag for it — the
-		// "expected variations" view.
-		var attrs map[string]any
-		_ = json.Unmarshal(seen.Attributes, &attrs)
-		evalCtx := models.NewSingleContext(seen.Kind, seen.Key, attrs)
-		results := s.flags.EvaluateAll(env.ID, evalCtx, false)
-
+		// The flags service reconstructs the context and evaluates every flag —
+		// the "expected variations" view.
+		results := s.flags.EvaluateContext(env.ID, seen.Kind, seen.Key, seen.Attributes)
 		evals := make([]contextEvaluation, 0, len(results))
 		for _, ev := range results {
 			evals = append(evals, contextEvaluation{
 				FlagKey: ev.FlagKey, Variation: ev.Variation, Value: ev.Value, Reason: ev.Reason,
 			})
 		}
-		sort.Slice(evals, func(i, j int) bool { return evals[i].FlagKey < evals[j].FlagKey })
 
 		out := &getContextOutput{}
 		out.Body.Context = seen

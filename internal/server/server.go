@@ -41,7 +41,6 @@ type Server struct {
 	bus        *pubsub.Bus
 	log        *slog.Logger
 	config     settings.Server
-	sdkCache   *sdkKeyCache
 }
 
 // New builds a Server with all routes registered on a huma API over chi. It is
@@ -72,7 +71,6 @@ func New(
 		bus:        bus,
 		log:        log,
 		config:     cfg,
-		sdkCache:   newSDKKeyCache(cfg.SDKKeyCacheTTL),
 	}
 
 	r := chi.NewRouter()

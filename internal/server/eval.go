@@ -127,30 +127,15 @@ func (s *Server) recordContexts(environmentID string, evalCtx models.Context) {
 // errMissingSDKKey signals an empty SDK key (distinct from an invalid one).
 var errMissingSDKKey = errors.New("missing sdk key")
 
-// resolveSDKKey resolves an SDK key to its record via the in-memory cache,
-// falling back to Postgres and caching the result (positive or negative). It
-// returns errMissingSDKKey for an empty key and store.ErrNotFound for an
-// unknown/revoked key. No huma coupling, so the SSE handler can reuse it.
+// resolveSDKKey resolves an SDK key to its record via the catalog service (which
+// caches the lookup). It returns errMissingSDKKey for an empty key and
+// store.ErrNotFound for an unknown/revoked key. No huma coupling, so the SSE
+// handler can reuse it.
 func (s *Server) resolveSDKKey(ctx context.Context, sdkKey string) (models.SdkKey, error) {
 	if sdkKey == "" {
 		return models.SdkKey{}, errMissingSDKKey
 	}
-	if sk, found, hit := s.sdkCache.get(sdkKey); hit {
-		if !found {
-			return models.SdkKey{}, store.ErrNotFound
-		}
-		return sk, nil
-	}
-	sk, err := s.catalog.ActiveSdkKey(ctx, sdkKey)
-	if errors.Is(err, store.ErrNotFound) {
-		s.sdkCache.put(sdkKey, models.SdkKey{}, false) // negative cache
-		return models.SdkKey{}, store.ErrNotFound
-	}
-	if err != nil {
-		return models.SdkKey{}, err
-	}
-	s.sdkCache.put(sdkKey, sk, true)
-	return sk, nil
+	return s.catalog.ActiveSdkKey(ctx, sdkKey)
 }
 
 // sdkEnvironment resolves an SDK key to its environment id and whether it is a

@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"time"
 
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
@@ -16,14 +17,17 @@ import (
 // ErrInvalidSDKKeyKind is returned when an SDK key kind is neither server nor client.
 var ErrInvalidSDKKeyKind = errors.New("catalog: sdk key kind must be 'server' or 'client'")
 
-// Service owns tenant/project/environment/sdk-key operations.
+// Service owns tenant/project/environment/sdk-key operations, including the
+// SDK-key lookup cache used on the evaluation hot path.
 type Service struct {
-	store *store.Store
+	store    *store.Store
+	sdkCache *sdkKeyCache
 }
 
-// New returns a catalog Service backed by the store.
-func New(st *store.Store) *Service {
-	return &Service{store: st}
+// New returns a catalog Service backed by the store. sdkKeyCacheTTL caches
+// SDK-key → record lookups (0 disables); revokes flush it locally.
+func New(st *store.Store, sdkKeyCacheTTL time.Duration) *Service {
+	return &Service{store: st, sdkCache: newSDKKeyCache(sdkKeyCacheTTL)}
 }
 
 // Ping checks backing-store connectivity (readiness probe).
@@ -117,12 +121,32 @@ func (s *Service) ListSdkKeys(ctx context.Context, environmentID string) ([]mode
 }
 
 func (s *Service) RevokeSdkKey(ctx context.Context, id, environmentID string) error {
-	return s.store.RevokeSdkKey(ctx, id, environmentID)
+	if err := s.store.RevokeSdkKey(ctx, id, environmentID); err != nil {
+		return err
+	}
+	s.sdkCache.flush() // drop cached lookups so the revoke takes effect now
+	return nil
 }
 
-// ActiveSdkKey resolves a raw key string to its active record.
+// ActiveSdkKey resolves a raw key string to its active record, served from a TTL
+// cache (positive and negative) to keep the evaluation hot path off Postgres.
 func (s *Service) ActiveSdkKey(ctx context.Context, key string) (models.SdkKey, error) {
-	return s.store.GetActiveSdkKey(ctx, key)
+	if sk, found, hit := s.sdkCache.get(key); hit {
+		if !found {
+			return models.SdkKey{}, store.ErrNotFound
+		}
+		return sk, nil
+	}
+	sk, err := s.store.GetActiveSdkKey(ctx, key)
+	if errors.Is(err, store.ErrNotFound) {
+		s.sdkCache.put(key, models.SdkKey{}, false) // negative cache
+		return models.SdkKey{}, store.ErrNotFound
+	}
+	if err != nil {
+		return models.SdkKey{}, err
+	}
+	s.sdkCache.put(key, sk, true)
+	return sk, nil
 }
 
 // generateSDKKey mints a random bearer key. Server keys are secret; client keys
