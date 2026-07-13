@@ -121,6 +121,22 @@ test('creates a boolean flag and lands on its detail page', async ({ page }) => 
   )
 })
 
+test('filters the flag list with the search box', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+
+  await expect(page.getByRole('button', { name: 'New checkout' })).toBeVisible()
+  await page.getByPlaceholder('Search flags by name, key, or description').fill('pricing')
+  await expect(page.getByRole('button', { name: 'Pricing tier' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'New checkout' })).toBeHidden()
+})
+
 test('toggles a flag on from the flag list', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

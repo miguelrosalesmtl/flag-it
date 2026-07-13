@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
 import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
@@ -26,6 +27,19 @@ export function FlagsPage() {
   const envKey = picked || environments.data?.[0]?.key || ''
   const flags = useEnvFlags(tenantSlug, projectKey, envKey)
   const toggle = useToggleEnvFlag(tenantSlug, projectKey, envKey)
+
+  // Client-side filter over the already-loaded list (name, key, description).
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+  const allFlags = flags.data ?? []
+  const filtered = q
+    ? allFlags.filter(
+        (f) =>
+          f.key.toLowerCase().includes(q) ||
+          f.name.toLowerCase().includes(q) ||
+          f.description.toLowerCase().includes(q),
+      )
+    : allFlags
 
   return (
     <section className="space-y-6">
@@ -72,15 +86,31 @@ export function FlagsPage() {
             </div>
           ) : flags.isError ? (
             <ErrorState message={flags.error.message} onRetry={() => void flags.refetch()} />
+          ) : allFlags.length === 0 ? (
+            <FlagList flags={[]} />
           ) : (
-            <FlagList
-              flags={flags.data}
-              onOpen={(key) =>
-                void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
-              }
-              onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
-              togglingKey={toggle.isPending ? toggle.variables.flagKey : null}
-            />
+            <>
+              <Input
+                type="search"
+                placeholder="Search flags by name, key, or description"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              {filtered.length === 0 ? (
+                <p className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
+                  No flags match “{query}”.
+                </p>
+              ) : (
+                <FlagList
+                  flags={filtered}
+                  onOpen={(key) =>
+                    void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+                  }
+                  onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
+                  togglingKey={toggle.isPending ? toggle.variables.flagKey : null}
+                />
+              )}
+            </>
           )}
         </div>
       )}
