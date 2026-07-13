@@ -426,6 +426,27 @@ test('edits a targeting rule in place', async ({ page }) => {
   await expect(page.getByText('user.country is one of [US]')).toBeHidden()
 })
 
+test('adds a rollout rule bucketed by an attribute', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // Rule: plan in [pro] → a rollout bucketed by accountId (keeps an account together).
+  await page.getByLabel('Attribute').fill('plan')
+  await page.getByLabel('Values').fill('pro')
+  await page.getByRole('tab', { name: 'A rollout' }).click()
+  await page.getByLabel('Bucket by').fill('accountId')
+  await page.getByRole('button', { name: 'Add rule' }).click()
+
+  await expect(page.getByText(/50% true.*by accountId/)).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

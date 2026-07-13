@@ -27,7 +27,8 @@ function rolloutSummary(flag: Flag, rule: FlagRule): string {
   const parts = percentsFromRollout(rule.rollout, flag.variations.length)
     .map((p, i) => (p > 0 ? `${p}% ${variationLabel(flag.variations, i)}` : null))
     .filter(Boolean)
-  return parts.join(', ') || 'a rollout'
+  const summary = parts.join(', ') || 'a rollout'
+  return rule.rollout?.bucketBy ? `${summary} (by ${rule.rollout.bucketBy})` : summary
 }
 
 /** The served value of an existing rule, for pre-filling the edit form. */

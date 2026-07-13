@@ -16,12 +16,18 @@ export function evenPercents(count: number): number[] {
 
 /**
  * Build a rollout payload from per-variation percentages. Weights are out of
- * 100000 (the backend's unit), so a percentage maps to percent × 1000.
+ * 100000 (the backend's unit), so a percentage maps to percent × 1000. An
+ * optional `bucketBy` attribute buckets by something other than the context key
+ * (e.g. "accountId" keeps a whole account on one variation).
  */
-export function rolloutFromPercents(percents: number[]): {
-  variations: { variation: number; weight: number }[]
-} {
-  return { variations: percents.map((p, i) => ({ variation: i, weight: Math.round(p * 1000) })) }
+export function rolloutFromPercents(
+  percents: number[],
+  bucketBy?: string,
+): { variations: { variation: number; weight: number }[]; bucketBy?: string } {
+  return {
+    variations: percents.map((p, i) => ({ variation: i, weight: Math.round(p * 1000) })),
+    ...(bucketBy ? { bucketBy } : {}),
+  }
 }
 
 /** Percentages (rounded) from a rollout payload, aligned to `count` variations. */
