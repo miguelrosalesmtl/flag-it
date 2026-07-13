@@ -47,6 +47,59 @@ func TestInstructions_AddAndRemoveRule(t *testing.T) {
 	}
 }
 
+func TestInstructions_AddRuleWithRollout(t *testing.T) {
+	cfg, err := ApplyInstructions(baseConfig(), []Instruction{{
+		Kind:    InsAddRule,
+		Clauses: []models.Clause{{Attribute: "plan", Op: models.OpIn, Values: []any{"pro"}}},
+		Rollout: &models.Rollout{Variations: []models.WeightedVariation{
+			{Variation: 0, Weight: 60000}, {Variation: 1, Weight: 40000},
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Rules) != 1 || cfg.Rules[0].Rollout == nil || cfg.Rules[0].Variation != nil {
+		t.Fatalf("expected 1 rollout rule, got %+v", cfg.Rules)
+	}
+	if got := cfg.Rules[0].Rollout.Variations; len(got) != 2 || got[0].Weight != 60000 {
+		t.Fatalf("unexpected rollout weights: %+v", got)
+	}
+}
+
+func TestInstructions_ReorderRules(t *testing.T) {
+	cfg, err := ApplyInstructions(baseConfig(), []Instruction{
+		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "a", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},
+		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "b", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},
+		{Kind: InsAddRule, Clauses: []models.Clause{{Attribute: "c", Op: models.OpIn, Values: []any{"1"}}}, Variation: ptr(0)},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{cfg.Rules[0].ID, cfg.Rules[1].ID, cfg.Rules[2].ID}
+
+	// Move the last rule to the front.
+	reordered, err := ApplyInstructions(cfg, []Instruction{
+		{Kind: InsReorderRules, RuleIDs: []string{ids[2], ids[0], ids[1]}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := []string{reordered.Rules[0].ID, reordered.Rules[1].ID, reordered.Rules[2].ID}; got[0] != ids[2] || got[1] != ids[0] || got[2] != ids[1] {
+		t.Fatalf("reorder failed: %v", got)
+	}
+
+	// A partial / duplicate / unknown id list is rejected.
+	for _, bad := range [][]string{
+		{ids[0], ids[1]},         // missing one
+		{ids[0], ids[0], ids[1]}, // duplicate
+		{ids[0], ids[1], "nope"}, // unknown
+	} {
+		if _, err := ApplyInstructions(cfg, []Instruction{{Kind: InsReorderRules, RuleIDs: bad}}); err == nil {
+			t.Fatalf("expected error for reorder ids %v", bad)
+		}
+	}
+}
+
 func TestInstructions_Targets(t *testing.T) {
 	cfg, err := ApplyInstructions(baseConfig(), []Instruction{
 		{Kind: InsAddTargets, Variation: ptr(0), Values: []string{"a", "b"}},

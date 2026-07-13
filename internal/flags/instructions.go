@@ -13,7 +13,7 @@ import (
 // list of instructions surgically edits the config (vs replacing the whole
 // object), which is concurrency-friendlier and records intent for auditing.
 type Instruction struct {
-	Kind string `json:"kind" doc:"turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | removeRule | addPrerequisite | removePrerequisite"`
+	Kind string `json:"kind" doc:"turnFlagOn | turnFlagOff | updateOffVariation | updateFallthroughVariation | updateFallthroughRollout | addTargets | removeTargets | addRule | removeRule | reorderRules | addPrerequisite | removePrerequisite"`
 
 	Variation   *int            `json:"variation,omitempty"`
 	Values      []string        `json:"values,omitempty"`
@@ -21,7 +21,8 @@ type Instruction struct {
 	Clauses     []models.Clause `json:"clauses,omitempty"`
 	Rollout     *models.Rollout `json:"rollout,omitempty"`
 	RuleID      string          `json:"ruleId,omitempty"`
-	Key         string          `json:"key,omitempty"` // prerequisite flag key
+	RuleIDs     []string        `json:"ruleIds,omitempty"` // reorderRules: the full rule order
+	Key         string          `json:"key,omitempty"`     // prerequisite flag key
 }
 
 // Instruction kinds.
@@ -35,6 +36,7 @@ const (
 	InsRemoveTargets              = "removeTargets"
 	InsAddRule                    = "addRule"
 	InsRemoveRule                 = "removeRule"
+	InsReorderRules               = "reorderRules"
 	InsAddPrerequisite            = "addPrerequisite"
 	InsRemovePrerequisite         = "removePrerequisite"
 )
@@ -101,6 +103,8 @@ func applyInstruction(cfg *models.FlagConfig, in Instruction) error {
 			return fmt.Errorf("ruleId is required")
 		}
 		cfg.Rules = removeRule(cfg.Rules, in.RuleID)
+	case InsReorderRules:
+		return reorderRules(cfg, in.RuleIDs)
 	case InsAddPrerequisite:
 		if in.Key == "" || in.Variation == nil {
 			return fmt.Errorf("key and variation are required")
@@ -159,6 +163,30 @@ func removeRule(rules []models.Rule, id string) []models.Rule {
 		}
 	}
 	return out
+}
+
+// reorderRules replaces the rule order with ids. It requires ids to be a
+// permutation of exactly the existing rule ids — no additions, removals, or
+// duplicates — so the operation can't silently drop or clone a rule.
+func reorderRules(cfg *models.FlagConfig, ids []string) error {
+	if len(ids) != len(cfg.Rules) {
+		return fmt.Errorf("reorderRules must list every rule id exactly once")
+	}
+	byID := make(map[string]models.Rule, len(cfg.Rules))
+	for _, r := range cfg.Rules {
+		byID[r.ID] = r
+	}
+	next := make([]models.Rule, 0, len(ids))
+	for _, id := range ids {
+		r, ok := byID[id]
+		if !ok {
+			return fmt.Errorf("reorderRules: unknown or duplicate rule id %q", id)
+		}
+		delete(byID, id) // deleting guards against duplicates in ids
+		next = append(next, r)
+	}
+	cfg.Rules = next
+	return nil
 }
 
 func removePrerequisite(prereqs []models.Prerequisite, key string) []models.Prerequisite {
