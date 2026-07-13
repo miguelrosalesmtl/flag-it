@@ -9,7 +9,10 @@ import { ContextsPage } from '@/features/contexts/ContextsPage'
 import { EnvironmentsPage } from '@/features/environments/EnvironmentsPage'
 import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
+import { MembersSettingsPage } from '@/features/members/MembersSettingsPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { ProjectsSettingsPage } from '@/features/projects/ProjectsSettingsPage'
+import { RolesSettingsPage } from '@/features/roles/RolesSettingsPage'
 import { SdkKeysPage } from '@/features/sdk-keys/SdkKeysPage'
 import { SegmentDetailPage } from '@/features/segments/SegmentDetailPage'
 import { SegmentsPage } from '@/features/segments/SegmentsPage'
@@ -56,12 +59,12 @@ export const router = createBrowserRouter([
               { index: true, Component: GeneralSettingsPage },
               { path: 'general', Component: GeneralSettingsPage },
               { path: 'sdk-keys', Component: SdkKeysPage },
-              { path: 'projects', Component: SettingsPlaceholder },
+              { path: 'projects', Component: ProjectsSettingsPage },
               { path: 'diagnostic-usage', Component: SettingsPlaceholder },
               { path: 'sdks', Component: SettingsPlaceholder },
-              { path: 'members', Component: SettingsPlaceholder },
+              { path: 'members', Component: MembersSettingsPage },
               { path: 'teams', Component: SettingsPlaceholder },
-              { path: 'roles', Component: SettingsPlaceholder },
+              { path: 'roles', Component: RolesSettingsPage },
               { path: 'integrations', Component: SettingsPlaceholder },
               { path: 'applications', Component: SettingsPlaceholder },
               { path: 'relay-proxy', Component: SettingsPlaceholder },

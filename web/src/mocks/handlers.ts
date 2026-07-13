@@ -2,6 +2,8 @@ import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
 import type { SeenContext } from '@/types/context'
+import type { Member } from '@/types/member'
+import type { Role } from '@/types/role'
 import type { Environment } from '@/types/environment'
 import type { Flag, FlagConfig } from '@/types/flag'
 import type { Project } from '@/types/project'
@@ -134,6 +136,16 @@ let mockSegments: Segment[] = [
 
 const seedSegments: Segment[] = [...mockSegments]
 
+const mockRoles: Role[] = [
+  { id: 'r1', tenant_id: 't1', key: 'tenant_admin', name: 'Tenant Admin', description: 'Full control of the tenant.', scope: 'tenant', is_system: true, permissions: ['*'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+  { id: 'r2', tenant_id: 't1', key: 'writer', name: 'Writer', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read', 'flag.write', 'flag.delete'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+  { id: 'r3', tenant_id: 't1', key: 'reader', name: 'Reader', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+]
+
+let mockMembers: Member[] = [
+  { user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' },
+]
+
 let mockSdkKeys: SdkKey[] = [
   {
     id: 'k1',
@@ -196,6 +208,7 @@ export function resetBackend() {
   mockEnvironments = [...seedEnvironments]
   mockSegments = [...seedSegments]
   mockSdkKeys = [...seedSdkKeys]
+  mockMembers = [{ user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' }]
   flagConfigs = {}
 }
 
@@ -252,6 +265,24 @@ export const handlers = [
   http.get('*/api/v1/me', () => HttpResponse.json(mockUser)),
 
   http.get('*/api/v1/tenants', () => HttpResponse.json({ tenants })),
+
+  http.get('*/api/v1/tenants/:tenantSlug/roles', () => HttpResponse.json({ roles: mockRoles })),
+
+  http.get('*/api/v1/tenants/:tenantSlug/members', () =>
+    HttpResponse.json({ members: mockMembers }),
+  ),
+
+  http.post('*/api/v1/tenants/:tenantSlug/members', async ({ request }) => {
+    const input = (await request.json()) as { email: string; role?: string }
+    const member: Member = {
+      user_id: crypto.randomUUID(),
+      email: input.email,
+      full_name: '',
+      role: input.role ?? '',
+    }
+    mockMembers.push(member)
+    return HttpResponse.json({ membership: { id: member.user_id } }, { status: 201 })
+  }),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects', () =>
     HttpResponse.json({ projects: mockProjects }),

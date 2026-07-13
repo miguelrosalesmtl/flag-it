@@ -27,6 +27,35 @@ func insertMembership(ctx context.Context, q querier, userID, tenantID string) (
 	return scanMembership(q.QueryRow(ctx, sql, userID, tenantID))
 }
 
+// ListMembersByTenant returns a tenant's members with their tenant-scoped role
+// (one row per user; the role is the alphabetically-first if several apply).
+func (s *Store) ListMembersByTenant(ctx context.Context, tenantID string) ([]models.Member, error) {
+	const q = `
+		SELECT DISTINCT ON (u.id) u.id, u.email, u.full_name, COALESCE(r.key, '')
+		FROM memberships m
+		JOIN users u ON u.id = m.user_id
+		LEFT JOIN role_assignments ra
+			ON ra.user_id = u.id AND ra.tenant_id = $1 AND ra.scope_type = 'tenant'
+		LEFT JOIN roles r ON r.id = ra.role_id
+		WHERE m.tenant_id = $1
+		ORDER BY u.id, r.key`
+	rows, err := s.pool.Query(ctx, q, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("store: list members: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]models.Member, 0)
+	for rows.Next() {
+		var m models.Member
+		if err := rows.Scan(&m.UserID, &m.Email, &m.FullName, &m.Role); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
 // ListMembershipsByUser returns every tenant a user belongs to.
 func (s *Store) ListMembershipsByUser(ctx context.Context, userID string) ([]models.Membership, error) {
 	rows, err := s.pool.Query(ctx,

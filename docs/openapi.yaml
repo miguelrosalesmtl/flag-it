@@ -821,6 +821,25 @@ components:
       required:
         - flags
       type: object
+    ListMembersOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListMembersOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        members:
+          items:
+            $ref: "#/components/schemas/Member"
+          type:
+            - array
+            - "null"
+      required:
+        - members
+      type: object
     ListProjectsOutputBody:
       additionalProperties: false
       properties:
@@ -971,6 +990,23 @@ components:
       required:
         - token
         - user
+      type: object
+    Member:
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+        full_name:
+          type: string
+        role:
+          type: string
+        user_id:
+          type: string
+      required:
+        - user_id
+        - email
+        - full_name
+        - role
       type: object
     Membership:
       additionalProperties: false
@@ -2095,6 +2131,32 @@ paths:
       tags:
         - Audit
   /api/v1/tenants/{tenantSlug}/members:
+    get:
+      operationId: list-members
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMembersOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a tenant's members (requires member.manage)
+      tags:
+        - Members
     post:
       operationId: add-member
       parameters:

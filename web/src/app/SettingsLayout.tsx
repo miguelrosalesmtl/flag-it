@@ -28,7 +28,9 @@ function SettingsNavItem({ to, label }: { to: string; label: string }) {
 
 function Section({ label }: { label: string }) {
   return (
-    <p className="text-muted-foreground px-2 pt-4 pb-1 text-xs font-medium uppercase">{label}</p>
+    <p className="text-muted-foreground/80 mt-4 border-t px-2 pt-4 pb-1 text-[11px] font-semibold tracking-wider uppercase">
+      {label}
+    </p>
   )
 }
 

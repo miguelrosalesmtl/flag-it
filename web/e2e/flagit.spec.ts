@@ -222,6 +222,30 @@ test('opens Settings via the gear and creates an SDK key', async ({ page }) => {
   await expect(page.getByText('mobile')).toBeVisible()
 })
 
+test('shows roles and members in settings and adds a member', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Settings' }).click()
+
+  await page.getByRole('link', { name: 'Roles' }).click()
+  await expect(page.getByRole('heading', { name: 'Roles' })).toBeVisible()
+  await expect(page.getByText('Tenant Admin')).toBeVisible()
+
+  await page.getByRole('link', { name: 'Members' }).click()
+  await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible()
+  await expect(page.getByText('admin@flag-it.dev')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Add member' }).click()
+  await page.getByLabel('Email').fill('dev@flag-it.dev')
+  await page.getByRole('dialog').getByRole('button', { name: 'Add member' }).click()
+  await expect(page.getByText('dev@flag-it.dev')).toBeVisible()
+})
+
 test('signs out from the project sidebar avatar', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
