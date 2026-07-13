@@ -267,6 +267,12 @@ function applyInstructions(current: FlagConfig, instructions: Instruction[]) {
         variation: ins.variation,
         rollout: ins.rollout,
       })
+    else if (ins.kind === 'updateRule' && ins.ruleId && ins.clauses)
+      current.rules = current.rules.map((r) =>
+        r.id === ins.ruleId
+          ? { ...r, clauses: ins.clauses!, variation: ins.variation, rollout: ins.rollout }
+          : r,
+      )
     else if (ins.kind === 'removeRule' && ins.ruleId)
       current.rules = current.rules.filter((r) => r.id !== ins.ruleId)
     else if (ins.kind === 'reorderRules' && ins.ruleIds) {
