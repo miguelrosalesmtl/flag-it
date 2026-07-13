@@ -539,10 +539,35 @@ export const handlers = [
     async ({ params, request }) => {
       const k = configKey(String(params.flagKey), String(params.envKey))
       const current = (flagConfigs[k] ??= newConfig())
-      const body = (await request.json()) as { instructions: { kind: string }[] }
+      const body = (await request.json()) as {
+        instructions: Array<{
+          kind: string
+          variation?: number
+          contextKind?: string
+          values?: string[]
+        }>
+      }
       for (const ins of body.instructions) {
         if (ins.kind === 'turnFlagOn') current.on = true
-        if (ins.kind === 'turnFlagOff') current.on = false
+        else if (ins.kind === 'turnFlagOff') current.on = false
+        else if (ins.kind === 'updateOffVariation' && ins.variation !== undefined)
+          current.off_variation = ins.variation
+        else if (ins.kind === 'updateFallthroughVariation' && ins.variation !== undefined)
+          current.fallthrough = { variation: ins.variation }
+        else if (ins.kind === 'addTargets' && ins.variation !== undefined && ins.values) {
+          const kind = ins.contextKind ?? 'user'
+          let t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
+          if (!t) {
+            t = { contextKind: kind, variation: ins.variation, values: [] }
+            current.targets.push(t)
+          }
+          for (const v of ins.values) if (!t.values.includes(v)) t.values.push(v)
+        } else if (ins.kind === 'removeTargets' && ins.variation !== undefined && ins.values) {
+          const kind = ins.contextKind ?? 'user'
+          const t = current.targets.find((x) => x.variation === ins.variation && x.contextKind === kind)
+          if (t) t.values = t.values.filter((v) => !ins.values!.includes(v))
+          current.targets = current.targets.filter((x) => x.values.length > 0)
+        }
       }
       current.version += 1
       return HttpResponse.json(current)

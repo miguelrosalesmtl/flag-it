@@ -45,11 +45,26 @@ export interface VariationOrRollout {
  * A flag's configuration in one environment: the on/off switch, targeting, and
  * the fallthrough. Written via the semantic-instruction PATCH; read via GET.
  */
+/** An individual target: serve a variation to specific context keys. */
+export interface Target {
+  contextKind: string
+  values: string[]
+  variation: number
+}
+
 export interface FlagConfig {
   on: boolean
   off_variation: number
   fallthrough: VariationOrRollout
-  targets: unknown[]
+  targets: Target[]
   rules: unknown[]
   version: number
+}
+
+/** A semantic instruction applied to a flag's env config (surgical edit). */
+export interface FlagInstruction {
+  kind: string
+  variation?: number
+  contextKind?: string
+  values?: string[]
 }

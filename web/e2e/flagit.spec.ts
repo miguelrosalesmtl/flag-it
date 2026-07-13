@@ -302,6 +302,26 @@ test('creates an environment from the Environments settings', async ({ page }) =
   await expect(page.getByRole('cell', { name: 'QA', exact: true })).toBeVisible()
 })
 
+test('edits a flag targeting: default rule and an individual target', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // Default rule: change what's served when off.
+  await page.getByLabel('When off, serve').selectOption({ index: 0 })
+
+  // Individual target: serve a variation to a specific context key.
+  await page.getByPlaceholder('Context key').fill('user-42')
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(page.getByText('user-42')).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
