@@ -13,8 +13,28 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
 )
 
-// ErrNotPending is returned when reviewing/cancelling something not pending.
-var ErrNotPending = errors.New("governance: not pending")
+// Domain errors returned by the service and mapped to HTTP by the handler.
+var (
+	// ErrNotPending is returned when reviewing/cancelling something not pending.
+	ErrNotPending = errors.New("governance: not pending")
+	// ErrNoInstructions is returned when a change carries no instructions.
+	ErrNoInstructions = errors.New("governance: at least one instruction is required")
+	// ErrScheduledInPast is returned when a change is scheduled for the past.
+	ErrScheduledInPast = errors.New("governance: scheduled_for must be in the future")
+)
+
+// ChangeRequestInput is the typed request to propose a change. The service owns
+// serialising the instructions and building the domain record.
+type ChangeRequestInput struct {
+	ProjectID        string
+	EnvironmentID    string
+	EnvironmentKey   string
+	FlagKey          string
+	Instructions     []flags.Instruction
+	Comment          string
+	RequestedBy      string
+	RequestedByEmail string
+}
 
 // Service creates and reviews change requests and applies scheduled changes.
 // Applying reuses the flag service's semantic-instruction path.
@@ -29,9 +49,26 @@ func New(st *store.Store, flagSvc *flags.Service, log *slog.Logger) *Service {
 	return &Service{store: st, flags: flagSvc, log: log}
 }
 
-// Create records a new pending change request.
-func (s *Service) Create(ctx context.Context, cr models.ChangeRequest) (models.ChangeRequest, error) {
-	return s.store.CreateChangeRequest(ctx, cr)
+// Create records a new pending change request. It validates and serialises the
+// instructions itself so the handler stays free of domain logic.
+func (s *Service) Create(ctx context.Context, in ChangeRequestInput) (models.ChangeRequest, error) {
+	if len(in.Instructions) == 0 {
+		return models.ChangeRequest{}, ErrNoInstructions
+	}
+	raw, err := json.Marshal(in.Instructions)
+	if err != nil {
+		return models.ChangeRequest{}, err
+	}
+	return s.store.CreateChangeRequest(ctx, models.ChangeRequest{
+		ProjectID:        in.ProjectID,
+		EnvironmentID:    in.EnvironmentID,
+		EnvironmentKey:   in.EnvironmentKey,
+		FlagKey:          in.FlagKey,
+		Instructions:     raw,
+		Comment:          in.Comment,
+		RequestedBy:      in.RequestedBy,
+		RequestedByEmail: in.RequestedByEmail,
+	})
 }
 
 // List returns a project's change requests (status "" = all).

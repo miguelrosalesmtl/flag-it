@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/miguelrosalesmtl/flag-it/internal/flags"
+	"github.com/miguelrosalesmtl/flag-it/internal/governance"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
@@ -65,12 +65,6 @@ func (s *Server) registerScheduled() {
 		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		if len(in.Body.Instructions) == 0 {
-			return nil, huma.Error400BadRequest("at least one instruction is required")
-		}
-		if !in.Body.ScheduledFor.After(time.Now()) {
-			return nil, huma.Error400BadRequest("scheduled_for must be in the future")
-		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
 		if err != nil {
 			return nil, storeError(err, "flag not found")
@@ -79,27 +73,23 @@ func (s *Server) registerScheduled() {
 		if err != nil {
 			return nil, err
 		}
-		instructions, err := json.Marshal(in.Body.Instructions)
-		if err != nil {
-			return nil, huma.Error400BadRequest("invalid instructions")
-		}
 		user, err := s.auth.GetUser(ctx, userID(ctx))
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
-		sc, err := s.governance.Schedule(ctx, models.ScheduledChange{
+		sc, err := s.governance.Schedule(ctx, governance.ScheduledChangeInput{
 			ProjectID:      project.ID,
 			EnvironmentID:  env.ID,
 			EnvironmentKey: env.Key,
 			FlagKey:        flag.Key,
-			Instructions:   instructions,
+			Instructions:   in.Body.Instructions,
 			Comment:        in.Body.Comment,
 			ScheduledFor:   in.Body.ScheduledFor,
 			CreatedBy:      user.ID,
 			CreatedByEmail: user.Email,
 		})
 		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
+			return nil, changeError(err)
 		}
 		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
 			Action: "change.scheduled", ResourceType: "flag", ResourceKey: flag.Key,

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -68,9 +67,6 @@ func (s *Server) registerChanges() {
 		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		if len(in.Body.Instructions) == 0 {
-			return nil, huma.Error400BadRequest("at least one instruction is required")
-		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
 		if err != nil {
 			return nil, storeError(err, "flag not found")
@@ -79,26 +75,22 @@ func (s *Server) registerChanges() {
 		if err != nil {
 			return nil, err
 		}
-		instructions, err := json.Marshal(in.Body.Instructions)
-		if err != nil {
-			return nil, huma.Error400BadRequest("invalid instructions")
-		}
 		user, err := s.auth.GetUser(ctx, userID(ctx))
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
-		cr, err := s.governance.Create(ctx, models.ChangeRequest{
+		cr, err := s.governance.Create(ctx, governance.ChangeRequestInput{
 			ProjectID:        project.ID,
 			EnvironmentID:    env.ID,
 			EnvironmentKey:   env.Key,
 			FlagKey:          flag.Key,
-			Instructions:     instructions,
+			Instructions:     in.Body.Instructions,
 			Comment:          in.Body.Comment,
 			RequestedBy:      user.ID,
 			RequestedByEmail: user.Email,
 		})
 		if err != nil {
-			return nil, huma.Error500InternalServerError(err.Error())
+			return nil, changeError(err)
 		}
 		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
 			Action: "change.requested", ResourceType: "flag", ResourceKey: flag.Key,
@@ -194,8 +186,14 @@ func (s *Server) reviewChange(ctx context.Context, in *reviewChangeInput, approv
 
 // changeError maps governance errors to HTTP statuses.
 func changeError(err error) error {
-	if errors.Is(err, governance.ErrNotPending) {
+	switch {
+	case errors.Is(err, governance.ErrNotPending):
 		return huma.Error409Conflict("change request is not pending")
+	case errors.Is(err, governance.ErrNoInstructions):
+		return huma.Error400BadRequest("at least one instruction is required")
+	case errors.Is(err, governance.ErrScheduledInPast):
+		return huma.Error400BadRequest("scheduled_for must be in the future")
+	default:
+		return flagError(err)
 	}
-	return flagError(err)
 }

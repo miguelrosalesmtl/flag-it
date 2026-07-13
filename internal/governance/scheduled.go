@@ -2,9 +2,11 @@ package governance
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"time"
 
+	"github.com/miguelrosalesmtl/flag-it/internal/flags"
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
@@ -12,9 +14,44 @@ import (
 // backlog is drained over several ticks rather than in one long transaction.
 const dueBatchSize = 100
 
-// Schedule records a pending scheduled change.
-func (s *Service) Schedule(ctx context.Context, sc models.ScheduledChange) (models.ScheduledChange, error) {
-	return s.store.CreateScheduledChange(ctx, sc)
+// ScheduledChangeInput is the typed request to schedule a change. The service
+// validates the time, serialises the instructions, and builds the record.
+type ScheduledChangeInput struct {
+	ProjectID      string
+	EnvironmentID  string
+	EnvironmentKey string
+	FlagKey        string
+	Instructions   []flags.Instruction
+	Comment        string
+	ScheduledFor   time.Time
+	CreatedBy      string
+	CreatedByEmail string
+}
+
+// Schedule records a pending scheduled change after validating it. The
+// future-time rule is domain policy, so it lives here, not in the handler.
+func (s *Service) Schedule(ctx context.Context, in ScheduledChangeInput) (models.ScheduledChange, error) {
+	if len(in.Instructions) == 0 {
+		return models.ScheduledChange{}, ErrNoInstructions
+	}
+	if !in.ScheduledFor.After(time.Now()) {
+		return models.ScheduledChange{}, ErrScheduledInPast
+	}
+	raw, err := json.Marshal(in.Instructions)
+	if err != nil {
+		return models.ScheduledChange{}, err
+	}
+	return s.store.CreateScheduledChange(ctx, models.ScheduledChange{
+		ProjectID:      in.ProjectID,
+		EnvironmentID:  in.EnvironmentID,
+		EnvironmentKey: in.EnvironmentKey,
+		FlagKey:        in.FlagKey,
+		Instructions:   raw,
+		Comment:        in.Comment,
+		ScheduledFor:   in.ScheduledFor,
+		CreatedBy:      in.CreatedBy,
+		CreatedByEmail: in.CreatedByEmail,
+	})
 }
 
 // ListScheduled returns a project's scheduled changes. Empty filters are wildcards.
