@@ -864,6 +864,17 @@ export const handlers = [
     },
   ),
 
+  // --- Audit log ---
+  http.get('*/api/v1/tenants/:tenantSlug/audit', ({ request }) => {
+    const rt = new URL(request.url).searchParams.get('resource_type')
+    const entries = [
+      { id: 'au1', actor_email: 'admin@flag-it.dev', action: 'flag.config.patched', resource_type: 'flag', resource_key: 'new-checkout', comment: 'Launch for GA', created_at: '2026-07-13T12:00:00Z' },
+      { id: 'au2', actor_email: 'admin@flag-it.dev', action: 'sdk_key.created', resource_type: 'sdk_key', resource_key: 'k-123', created_at: '2026-07-13T11:30:00Z' },
+      { id: 'au3', actor_email: 'admin@flag-it.dev', action: 'segment.saved', resource_type: 'segment', resource_key: 'beta-users', created_at: '2026-07-13T10:00:00Z' },
+    ].filter((e) => !rt || e.resource_type === rt)
+    return HttpResponse.json({ entries })
+  }),
+
   // --- Outbound webhooks ---
   http.get('*/api/v1/tenants/:tenantSlug/webhooks', () =>
     HttpResponse.json({ webhooks: mockWebhooks.map(webhookNoSecret) }),

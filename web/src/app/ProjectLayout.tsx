@@ -4,6 +4,7 @@ import {
   FlagIcon,
   HeartPulseIcon,
   LayersIcon,
+  ScrollTextIcon,
   SettingsIcon,
   UsersIcon,
   type LucideIcon,
@@ -73,6 +74,7 @@ export function ProjectLayout() {
           <NavItem to={`${base}/contexts`} icon={BoxIcon} label="Contexts" />
           <NavItem to={`${base}/approvals`} icon={CheckCheckIcon} label="Approvals" />
           <NavItem to={`${base}/lifecycle`} icon={HeartPulseIcon} label="Lifecycle" />
+          <NavItem to={`${base}/audit`} icon={ScrollTextIcon} label="Audit log" />
           <p className="text-muted-foreground px-2 pt-3 pb-1 text-xs font-medium uppercase">
             Project settings
           </p>
