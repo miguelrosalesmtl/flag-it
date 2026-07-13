@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 
 import { FlagList } from '@/features/flags/components/FlagList'
 import type { Flag } from '@/types/flag'
@@ -31,6 +32,7 @@ const flags: Flag[] = [
 const meta = {
   title: 'Flags/FlagList',
   component: FlagList,
+  args: { onOpen: fn() },
 } satisfies Meta<typeof FlagList>
 
 export default meta

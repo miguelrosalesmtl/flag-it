@@ -2327,6 +2327,42 @@ paths:
       summary: Delete a flag (requires flag.delete); cascades its configs
       tags:
         - Flags
+    get:
+      operationId: get-flag
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flag"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a flag definition (requires flag.read)
+      tags:
+        - Flags
     put:
       operationId: save-flag
       parameters:
@@ -2370,6 +2406,47 @@ paths:
       tags:
         - Flags
   /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}:
+    get:
+      operationId: get-flag-config
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a flag's configuration in one environment (requires flag.read)
+      tags:
+        - Flags
     patch:
       description: Surgical, concurrency-friendly edits (turnFlagOn, addRule, addTargets, …) instead of replacing the whole config.
       operationId: patch-flag-config

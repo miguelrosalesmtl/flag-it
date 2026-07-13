@@ -219,6 +219,12 @@ func (s *Service) GetFlag(ctx context.Context, projectID, key string) (models.Fl
 	return s.store.GetFlagByKey(ctx, projectID, key)
 }
 
+// GetFlagConfig returns a flag's configuration in one environment (on/off,
+// targeting, fallthrough).
+func (s *Service) GetFlagConfig(ctx context.Context, flagID, environmentID string) (models.FlagConfig, error) {
+	return s.store.GetFlagConfig(ctx, flagID, environmentID)
+}
+
 // SaveFlag creates or updates a flag definition and ensures it has a config row
 // in every environment of its project. Affected environments are reloaded
 // locally and broadcast to siblings.

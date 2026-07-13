@@ -15,4 +15,10 @@ export const queryKeys = {
   project: (tenantSlug: string, projectKey: string) =>
     ['projects', tenantSlug, projectKey] as const,
   flags: (tenantSlug: string, projectKey: string) => ['flags', tenantSlug, projectKey] as const,
+  flag: (tenantSlug: string, projectKey: string, flagKey: string) =>
+    ['flags', tenantSlug, projectKey, flagKey] as const,
+  flagConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
+    ['flags', tenantSlug, projectKey, flagKey, 'config', envKey] as const,
+  environments: (tenantSlug: string, projectKey: string) =>
+    ['environments', tenantSlug, projectKey] as const,
 }

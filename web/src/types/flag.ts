@@ -17,3 +17,25 @@ export interface Flag {
   created_at: string
   updated_at: string
 }
+
+/** A variation index or a percentage rollout — how a rule/fallthrough serves a value. */
+export interface VariationOrRollout {
+  variation?: number
+  rollout?: {
+    variations: { variation: number; weight: number }[]
+    bucketBy?: string
+  }
+}
+
+/**
+ * A flag's configuration in one environment: the on/off switch, targeting, and
+ * the fallthrough. Written via the semantic-instruction PATCH; read via GET.
+ */
+export interface FlagConfig {
+  on: boolean
+  off_variation: number
+  fallthrough: VariationOrRollout
+  targets: unknown[]
+  rules: unknown[]
+  version: number
+}

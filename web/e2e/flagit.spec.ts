@@ -63,6 +63,23 @@ test('drills from a tenant into its projects and a project into its flags', asyn
   await expect(page.getByText('pricing-tier')).toBeVisible()
 })
 
+test('opens a flag and toggles it on for an environment', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+
+  // Flag detail: default off, flip it on. The switch reflects the PATCH result.
+  const toggle = page.getByRole('switch', { name: 'Toggle flag' })
+  await expect(toggle).toHaveAttribute('data-state', 'unchecked')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('data-state', 'checked')
+})
+
 test('bad credentials show an error and keep you on the login screen', async ({ page }) => {
   await page.goto('/?scenario=login-error')
 

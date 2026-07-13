@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,6 +12,7 @@ import { useProject } from '@/features/projects/hooks/useProjects'
  */
 export function FlagsPage() {
   const { tenantSlug = '', projectKey = '' } = useParams()
+  const navigate = useNavigate()
   const project = useProject(tenantSlug, projectKey)
   const { data: flags, isPending, isError, error, refetch } = useFlags(tenantSlug, projectKey)
 
@@ -40,7 +41,12 @@ export function FlagsPage() {
       ) : isError ? (
         <ErrorState message={error.message} onRetry={() => void refetch()} />
       ) : (
-        <FlagList flags={flags} />
+        <FlagList
+          flags={flags}
+          onOpen={(key) =>
+            void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+          }
+        />
       )}
     </section>
   )

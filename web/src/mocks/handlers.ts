@@ -1,7 +1,8 @@
 import { HttpResponse, http } from 'msw'
 
 import type { AuthUser } from '@/types/auth'
-import type { Flag } from '@/types/flag'
+import type { Environment } from '@/types/environment'
+import type { Flag, FlagConfig } from '@/types/flag'
 import type { Project } from '@/types/project'
 import type { SetupInput } from '@/types/setup'
 import type { Tenant } from '@/types/tenant'
@@ -85,6 +86,33 @@ const mockFlags: Flag[] = [
   },
 ]
 
+const mockEnvironments: Environment[] = [
+  {
+    id: 'env-prod',
+    project_id: 'p1',
+    key: 'production',
+    name: 'Production',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+  {
+    id: 'env-staging',
+    project_id: 'p1',
+    key: 'staging',
+    name: 'Staging',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+]
+
+function newConfig(): FlagConfig {
+  return { on: false, off_variation: 1, fallthrough: { variation: 0 }, targets: [], rules: [], version: 1 }
+}
+
+// Per (flagKey, envKey) config state, so the toggle actually flips something.
+let flagConfigs: Record<string, FlagConfig> = {}
+const configKey = (flagKey: string, envKey: string) => `${flagKey}:${envKey}`
+
 // Default to a configured install (shows login). Flip `needsSetup` in a scenario
 // to exercise the wizard.
 let needsSetup = false
@@ -93,6 +121,7 @@ let tenants: Tenant[] = [...seedTenants]
 export function resetBackend() {
   needsSetup = false
   tenants = [...seedTenants]
+  flagConfigs = {}
 }
 
 export const handlers = [
@@ -161,5 +190,39 @@ export const handlers = [
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags', () =>
     HttpResponse.json({ flags: mockFlags }),
+  ),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', () =>
+    HttpResponse.json({ environments: mockEnvironments }),
+  ),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
+    const flag = mockFlags.find((f) => f.key === params.flagKey)
+    if (!flag) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json(flag)
+  }),
+
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
+    ({ params }) => {
+      const k = configKey(String(params.flagKey), String(params.envKey))
+      flagConfigs[k] ??= newConfig()
+      return HttpResponse.json(flagConfigs[k])
+    },
+  ),
+
+  http.patch(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
+    async ({ params, request }) => {
+      const k = configKey(String(params.flagKey), String(params.envKey))
+      const current = (flagConfigs[k] ??= newConfig())
+      const body = (await request.json()) as { instructions: { kind: string }[] }
+      for (const ins of body.instructions) {
+        if (ins.kind === 'turnFlagOn') current.on = true
+        if (ins.kind === 'turnFlagOff') current.on = false
+      }
+      current.version += 1
+      return HttpResponse.json(current)
+    },
   ),
 ]

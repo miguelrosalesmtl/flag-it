@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 
 import { LoginRoute, ProtectedLayout, SetupRoute } from '@/app/guards'
+import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { TenantsPage } from '@/features/tenants/TenantsPage'
@@ -15,6 +16,10 @@ export const router = createBrowserRouter([
       { index: true, Component: TenantsPage },
       { path: 'tenants/:tenantSlug', Component: ProjectsPage },
       { path: 'tenants/:tenantSlug/projects/:projectKey', Component: FlagsPage },
+      {
+        path: 'tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
+        Component: FlagDetailPage,
+      },
     ],
   },
 ])
