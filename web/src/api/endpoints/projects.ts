@@ -12,4 +12,6 @@ export const projectsApi = {
     api
       .post<{ project: Project }>(`/tenants/${tenantSlug}/projects`, input)
       .then((r) => r.project),
+  update: (tenantSlug: string, projectKey: string, name: string) =>
+    api.patch<Project>(`/tenants/${tenantSlug}/projects/${projectKey}`, { name }),
 }

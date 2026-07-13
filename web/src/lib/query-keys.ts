@@ -31,4 +31,6 @@ export const queryKeys = {
     ['contexts', tenantSlug, projectKey, envKey] as const,
   context: (tenantSlug: string, projectKey: string, envKey: string, kind: string, key: string) =>
     ['contexts', tenantSlug, projectKey, envKey, kind, key] as const,
+  sdkKeys: (tenantSlug: string, projectKey: string, envKey: string) =>
+    ['sdk-keys', tenantSlug, projectKey, envKey] as const,
 }

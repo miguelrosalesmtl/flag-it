@@ -1,9 +1,9 @@
-import { BoxIcon, FlagIcon, LayersIcon, UsersIcon, type LucideIcon } from 'lucide-react'
+import { BoxIcon, FlagIcon, LayersIcon, SettingsIcon, UsersIcon, type LucideIcon } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router'
 
 import { EnvironmentBanner } from '@/components/environment-banner'
-import { Button } from '@/components/ui/button'
 import { getConfig } from '@/config/env'
+import { UserMenu } from '@/features/auth/components/UserMenu'
 import { useLogout, useMe } from '@/features/auth/hooks/useAuth'
 import { ProjectSwitcher } from '@/features/projects/components/ProjectSwitcher'
 import { useProjects } from '@/features/projects/hooks/useProjects'
@@ -68,21 +68,15 @@ export function ProjectLayout() {
           <NavItem to={`${base}/environments`} icon={LayersIcon} label="Environments" />
         </nav>
 
-        <div className="space-y-3 border-t p-3 text-sm">
+        <div className="flex items-center justify-between border-t p-3">
+          <UserMenu user={user} onSignOut={logout} />
           <Link
-            to={`/tenants/${tenantSlug}`}
-            className="text-muted-foreground block hover:underline"
+            to={`${base}/settings/general`}
+            aria-label="Settings"
+            className="text-muted-foreground hover:text-foreground"
           >
-            ← All projects
+            <SettingsIcon className="size-5" />
           </Link>
-          <div className="flex items-center justify-between gap-2">
-            {user ? (
-              <span className="text-muted-foreground truncate text-xs">{user.email}</span>
-            ) : null}
-            <Button variant="outline" size="sm" onClick={() => logout()}>
-              Sign out
-            </Button>
-          </div>
         </div>
       </aside>
 

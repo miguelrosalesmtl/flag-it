@@ -200,6 +200,42 @@ test('inspects a context and its expected variations', async ({ page }) => {
   await expect(page.getByText('new-checkout')).toBeVisible()
 })
 
+test('opens Settings via the gear and creates an SDK key', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+
+  await page.getByRole('link', { name: 'Settings' }).click()
+  await expect(page.getByRole('heading', { name: 'General' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'SDK keys' }).click()
+  await expect(page.getByRole('heading', { name: 'SDK keys' })).toBeVisible()
+  await expect(page.getByText('CI')).toBeVisible() // seeded key
+
+  await page.getByRole('button', { name: 'New SDK key' }).click()
+  await page.getByLabel('Name').fill('mobile')
+  await page.getByRole('button', { name: 'Create key' }).click()
+  await expect(page.getByText('mobile')).toBeVisible()
+})
+
+test('signs out from the project sidebar avatar', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+
+  await page.getByRole('button', { name: 'Account' }).click()
+  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await expect(page.getByText('Sign in to flag-it')).toBeVisible()
+})
+
 test('creates an environment from the Environments settings', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

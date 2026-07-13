@@ -5,6 +5,7 @@ import type { SeenContext } from '@/types/context'
 import type { Environment } from '@/types/environment'
 import type { Flag, FlagConfig } from '@/types/flag'
 import type { Project } from '@/types/project'
+import type { SdkKey } from '@/types/sdk-key'
 import type { Segment } from '@/types/segment'
 import type { SetupInput } from '@/types/setup'
 import type { Tenant } from '@/types/tenant'
@@ -133,6 +134,19 @@ let mockSegments: Segment[] = [
 
 const seedSegments: Segment[] = [...mockSegments]
 
+let mockSdkKeys: SdkKey[] = [
+  {
+    id: 'k1',
+    environment_id: 'env-prod',
+    key: 'sdk-mock0000000000000000000000000000',
+    kind: 'server',
+    name: 'CI',
+    created_at: '2026-07-12T00:00:00Z',
+  },
+]
+
+const seedSdkKeys: SdkKey[] = [...mockSdkKeys]
+
 const mockContexts: SeenContext[] = [
   {
     id: 'c1',
@@ -181,6 +195,7 @@ export function resetBackend() {
   mockFlags = [...seedFlags]
   mockEnvironments = [...seedEnvironments]
   mockSegments = [...seedSegments]
+  mockSdkKeys = [...seedSdkKeys]
   flagConfigs = {}
 }
 
@@ -312,6 +327,36 @@ export const handlers = [
       environments: mockEnvironments.filter((e) => includesAny(q, e.key, e.name)),
     })
   }),
+
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys',
+    () => HttpResponse.json({ sdk_keys: mockSdkKeys }),
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys',
+    async ({ request }) => {
+      const body = (await request.json()) as { kind: 'server' | 'client'; name?: string }
+      const key: SdkKey = {
+        id: crypto.randomUUID(),
+        environment_id: 'env-prod',
+        key: `${body.kind === 'client' ? 'client-' : 'sdk-'}${crypto.randomUUID().replace(/-/g, '')}`,
+        kind: body.kind,
+        name: body.name ?? '',
+        created_at: '2026-07-12T00:00:00Z',
+      }
+      mockSdkKeys.push(key)
+      return HttpResponse.json(key, { status: 201 })
+    },
+  ),
+
+  http.delete(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys/:keyID',
+    ({ params }) => {
+      mockSdkKeys = mockSdkKeys.filter((k) => k.id !== params.keyID)
+      return new HttpResponse(null, { status: 204 })
+    },
+  ),
 
   http.post(
     '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments',
