@@ -23,6 +23,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/governance"
 	"github.com/miguelrosalesmtl/flag-it/internal/pubsub"
 	"github.com/miguelrosalesmtl/flag-it/internal/settings"
+	"github.com/miguelrosalesmtl/flag-it/internal/webhooks"
 )
 
 // Server holds the HTTP server, the huma API, and dependencies.
@@ -36,6 +37,7 @@ type Server struct {
 	verifier   tokenVerifier // verifies tokens (OIDC seam; defaults to auth)
 	authz      *authz.Service
 	governance *governance.Service
+	webhooks   *webhooks.Service
 	analytics  *analytics.Recorder
 	contexts   *contexts.Recorder
 	bus        *pubsub.Bus
@@ -53,6 +55,7 @@ func New(
 	authSvc *auth.Service,
 	authzSvc *authz.Service,
 	governanceSvc *governance.Service,
+	webhooksSvc *webhooks.Service,
 	analyticsRec *analytics.Recorder,
 	contextsRec *contexts.Recorder,
 	bus *pubsub.Bus,
@@ -66,6 +69,7 @@ func New(
 		verifier:   authSvc,
 		authz:      authzSvc,
 		governance: governanceSvc,
+		webhooks:   webhooksSvc,
 		analytics:  analyticsRec,
 		contexts:   contextsRec,
 		bus:        bus,
@@ -113,6 +117,7 @@ func New(
 	s.registerChanges()
 	s.registerScheduled()
 	s.registerTriggers()
+	s.registerWebhooks()
 	s.registerAudit()
 	s.registerEval()
 	s.registerAnalytics()

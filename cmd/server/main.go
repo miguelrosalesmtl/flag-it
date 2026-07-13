@@ -29,6 +29,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/server"
 	"github.com/miguelrosalesmtl/flag-it/internal/settings"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
+	"github.com/miguelrosalesmtl/flag-it/internal/webhooks"
 )
 
 func main() {
@@ -132,7 +133,8 @@ func runOpenAPI() error {
 	contextsRec := contexts.New(st, 0, log)
 	flagSvc := flags.NewService(st, nil, log)
 	governanceSvc := governance.New(st, flagSvc, log)
-	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, nil, log)
+	webhooksSvc := webhooks.New(st, log)
+	srv := server.New(cfg.Server, flagSvc, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, webhooksSvc, analyticsRec, contextsRec, nil, log)
 
 	spec, err := srv.OpenAPIYAML()
 	if err != nil {
@@ -201,8 +203,15 @@ func run() error {
 	governanceSvc := governance.New(st, flagService, log)
 	go governanceSvc.StartScheduler(ctx, cfg.Server.ScheduledChangeInterval)
 
+	// Outbound webhooks — the audit log doubles as the event stream: every
+	// recorded entry is fanned out to subscribed webhooks and delivered by a
+	// background worker with retries.
+	webhooksSvc := webhooks.New(st, log)
+	auditSvc.SetEmitter(webhooksSvc)
+	go webhooksSvc.StartDeliverer(ctx, cfg.Server.WebhookDeliveryInterval)
+
 	// HTTP server.
-	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, analyticsRec, contextsRec, bus, log)
+	srv := server.New(cfg.Server, flagService, catalogSvc, auditSvc, authSvc, authzSvc, governanceSvc, webhooksSvc, analyticsRec, contextsRec, bus, log)
 	serverErr := make(chan error, 1)
 	go func() {
 		serverErr <- srv.Start()

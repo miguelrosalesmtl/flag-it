@@ -41,6 +41,9 @@ export const queryKeys = {
     ['scheduled-changes', tenantSlug, projectKey] as const,
   triggers: (tenantSlug: string, projectKey: string) =>
     ['triggers', tenantSlug, projectKey] as const,
+  webhooks: (tenantSlug: string) => ['webhooks', tenantSlug] as const,
+  webhookDeliveries: (tenantSlug: string, id: string) =>
+    ['webhooks', tenantSlug, id, 'deliveries'] as const,
   roles: (tenantSlug: string) => ['roles', tenantSlug] as const,
   permissions: ['permissions'] as const,
   members: (tenantSlug: string) => ['members', tenantSlug] as const,

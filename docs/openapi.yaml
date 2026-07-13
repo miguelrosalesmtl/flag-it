@@ -382,6 +382,33 @@ components:
         - email
         - password
       type: object
+    CreateWebhookInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateWebhookInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        description:
+          type: string
+        event_types:
+          description: audit actions to subscribe to, or ["*"] for all
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        url:
+          description: where to POST events
+          format: uri
+          type: string
+      required:
+        - url
+        - event_types
+      type: object
     Environment:
       additionalProperties: false
       properties:
@@ -1032,6 +1059,25 @@ components:
       required:
         - contexts
       type: object
+    ListDeliveriesOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListDeliveriesOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        deliveries:
+          items:
+            $ref: "#/components/schemas/WebhookDelivery"
+          type:
+            - array
+            - "null"
+      required:
+        - deliveries
+      type: object
     ListEnvFlagsOutputBody:
       additionalProperties: false
       properties:
@@ -1297,6 +1343,25 @@ components:
             - "null"
       required:
         - users
+      type: object
+    ListWebhooksOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListWebhooksOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        webhooks:
+          items:
+            $ref: "#/components/schemas/Webhook"
+          type:
+            - array
+            - "null"
+      required:
+        - webhooks
       type: object
     LoginInputBody:
       additionalProperties: false
@@ -1932,6 +1997,21 @@ components:
       required:
         - enabled
       type: object
+    SetWebhookEnabledInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/SetWebhookEnabledInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - enabled
+      type: object
     SetupInputBody:
       additionalProperties: false
       properties:
@@ -2216,6 +2296,99 @@ components:
         variation:
           format: int64
           type: integer
+      type: object
+    Webhook:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Webhook.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          type: string
+        created_by_email:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        event_types:
+          items:
+            type: string
+          type:
+            - array
+            - "null"
+        id:
+          type: string
+        secret:
+          type: string
+        tenant_id:
+          type: string
+        url:
+          type: string
+      required:
+        - id
+        - tenant_id
+        - url
+        - event_types
+        - description
+        - enabled
+        - created_by
+        - created_by_email
+        - created_at
+      type: object
+    WebhookDelivery:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/WebhookDelivery.json
+          format: uri
+          readOnly: true
+          type: string
+        attempts:
+          format: int64
+          type: integer
+        created_at:
+          format: date-time
+          type: string
+        delivered_at:
+          format: date-time
+          type: string
+        error:
+          type: string
+        event_type:
+          type: string
+        id:
+          type: string
+        next_attempt_at:
+          format: date-time
+          type: string
+        payload: {}
+        response_status:
+          format: int64
+          type: integer
+        status:
+          type: string
+        webhook_id:
+          type: string
+      required:
+        - id
+        - webhook_id
+        - event_type
+        - payload
+        - status
+        - attempts
+        - response_status
+        - next_attempt_at
+        - created_at
       type: object
     WeightedVariation:
       additionalProperties: false
@@ -4319,6 +4492,228 @@ paths:
       summary: Create a custom role (requires role.manage)
       tags:
         - Roles
+  /api/v1/tenants/{tenantSlug}/webhooks:
+    get:
+      operationId: list-webhooks
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListWebhooksOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a tenant's webhooks, without their secrets (requires webhook.manage)
+      tags:
+        - Webhooks
+    post:
+      description: Subscribed events (audit actions, or "*" for all) are delivered as signed POSTs. The signing secret is returned only here and on reset.
+      operationId: create-webhook
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Register an outbound webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}:
+    delete:
+      operationId: delete-webhook
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/deliveries:
+    get:
+      operationId: list-webhook-deliveries
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListDeliveriesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a webhook's recent delivery attempts (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/enabled:
+    post:
+      operationId: set-webhook-enabled
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetWebhookEnabledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Enable or disable a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/reset:
+    post:
+      operationId: reset-webhook-secret
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reset a webhook's signing secret (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/test:
+    post:
+      operationId: test-webhook
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookDelivery"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Send a test event to a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
   /api/v1/triggers/{token}:
     post:
       description: POST here — typically from an alerting or CI system — to apply the trigger's action.

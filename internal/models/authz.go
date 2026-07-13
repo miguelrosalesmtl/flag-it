@@ -7,11 +7,12 @@ package models
 type Permission string
 
 const (
-	PermTenantRead   Permission = "tenant.read"
-	PermTenantUpdate Permission = "tenant.update"
-	PermMemberManage Permission = "member.manage" // invite/remove members, assign roles
-	PermRoleManage   Permission = "role.manage"   // create/edit/delete custom roles
-	PermAuditRead    Permission = "audit.read"    // view the change history
+	PermTenantRead    Permission = "tenant.read"
+	PermTenantUpdate  Permission = "tenant.update"
+	PermMemberManage  Permission = "member.manage"  // invite/remove members, assign roles
+	PermRoleManage    Permission = "role.manage"    // create/edit/delete custom roles
+	PermAuditRead     Permission = "audit.read"     // view the change history
+	PermWebhookManage Permission = "webhook.manage" // create/edit/delete outbound webhooks
 
 	PermProjectCreate Permission = "project.create"
 	PermProjectRead   Permission = "project.read"
@@ -28,7 +29,7 @@ const (
 
 // AllPermissions is the complete vocabulary (the tenant_admin bundle).
 var AllPermissions = []Permission{
-	PermTenantRead, PermTenantUpdate, PermMemberManage, PermRoleManage, PermAuditRead,
+	PermTenantRead, PermTenantUpdate, PermMemberManage, PermRoleManage, PermAuditRead, PermWebhookManage,
 	PermProjectCreate, PermProjectRead, PermProjectUpdate, PermProjectDelete,
 	PermEnvironmentManage, PermSDKKeyManage,
 	PermFlagRead, PermFlagWrite, PermFlagDelete,

@@ -19,8 +19,10 @@ requests reviewed before they apply — migration 00014), **scheduled changes**
 (applied at a future time by a background scheduler — migration 00015),
 **temporary flags + stale detection** (flag lifecycle — migration 00016), and
 **flag triggers** (inbound webhook URLs — migration 00017) all ship. The only
-Phase 7 tail left is code-reference scanning (needs an external CLI). Not started:
-the rest of **Phase 8** (integrations, SSO/SCIM, teams, data export, CLI).
+Phase 7 tail left is code-reference scanning (needs an external CLI). **Phase 8**
+has begun: **outbound webhooks** (signed event delivery — migration 00018) ship.
+Not started: the rest of **Phase 8** (pre-built integrations, SSO/SCIM, teams,
+data export, CLI).
 Deferred: A/B experimentation (P6), JS SDK (P4), private attributes (P1), and the
 scaling/hardening list.
 
@@ -308,7 +310,15 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       is used in source — is deferred: it needs an external CLI scanner.)
 
 ### Phase 8 — Platform
-- [ ] Webhooks + integrations (Slack / Jira / Datadog / Terraform)
+- [x] **Outbound webhooks** — a tenant registers a URL that receives signed
+      (HMAC-SHA256) POSTs when subscribed events occur (migration 00018). The
+      audit log doubles as the event stream: the audit service fans each recorded
+      entry out to matching webhooks via an emitter seam, and a background
+      deliverer sends them with retry/backoff, logging every attempt. Management
+      API under a tenant (create/list/enable/reset-secret/test/deliveries/delete),
+      gated by a new `webhook.manage` permission. UI: settings → Integrations.
+      (Pre-built Slack/Jira/Datadog/Terraform integrations still to come — this is
+      the generic signed-webhook substrate they'd build on.)
 - [ ] SSO / SCIM, teams
 - [x] Custom roles — create per-tenant permission-bundle roles (UI permission picker)
 - [ ] Data export

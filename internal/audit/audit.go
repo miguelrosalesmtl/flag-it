@@ -4,21 +4,37 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"time"
 
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 	"github.com/miguelrosalesmtl/flag-it/internal/store"
 )
 
+// EventEmitter receives each recorded entry for fan-out to external subscribers
+// (outbound webhooks). It is the seam that lets the audit log double as the event
+// stream without the audit package depending on webhooks.
+type EventEmitter interface {
+	Enqueue(ctx context.Context, tenantID, eventType string, payload json.RawMessage)
+}
+
 // Service records and lists audit entries.
 type Service struct {
-	store *store.Store
-	log   *slog.Logger
+	store   *store.Store
+	log     *slog.Logger
+	emitter EventEmitter
 }
 
 // New returns an audit Service.
 func New(st *store.Store, log *slog.Logger) *Service {
 	return &Service{store: st, log: log}
+}
+
+// SetEmitter wires an event emitter (e.g. the webhooks service) that receives
+// every recorded entry. Call it once at startup; nil leaves emission off.
+func (s *Service) SetEmitter(e EventEmitter) {
+	s.emitter = e
 }
 
 // Record writes an entry attributed to the given actor id, resolving the actor's
@@ -46,7 +62,25 @@ func (s *Service) write(ctx context.Context, e models.AuditEntry) {
 	if err := s.store.CreateAuditEntry(ctx, e); err != nil {
 		s.log.Warn("audit: record failed",
 			slog.String("action", e.Action), slog.String("error", err.Error()))
+		return
 	}
+	s.emit(ctx, e)
+}
+
+// emit fans the recorded entry out to the event emitter (webhooks). Best-effort:
+// only tenant-scoped events route, and any failure is swallowed by the emitter.
+func (s *Service) emit(ctx context.Context, e models.AuditEntry) {
+	if s.emitter == nil || e.TenantID == "" {
+		return
+	}
+	if e.CreatedAt.IsZero() {
+		e.CreatedAt = time.Now()
+	}
+	payload, err := json.Marshal(e)
+	if err != nil {
+		return
+	}
+	s.emitter.Enqueue(ctx, e.TenantID, e.Action, payload)
 }
 
 // ListParams filters an audit query. Mirrors the store filter but keeps the
