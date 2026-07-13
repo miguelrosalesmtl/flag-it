@@ -477,3 +477,33 @@ test('shows flag lifecycle and flags stale flags', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'Pricing tier' })).toBeVisible()
   await expect(page.getByRole('cell', { name: 'New checkout' })).toBeHidden()
 })
+
+test('creates a flag trigger, reveals its URL, then deletes it', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // No triggers yet.
+  await expect(page.getByText('No triggers.')).toBeVisible()
+
+  // Create a trigger; its webhook URL is revealed once.
+  await page.getByRole('button', { name: 'Create trigger' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Description').fill('PagerDuty incident')
+  await dialog.getByRole('button', { name: 'Create trigger' }).click()
+  await expect(dialog).toBeHidden()
+
+  await expect(page.getByText(/won.t be shown again/)).toBeVisible()
+  await expect(page.getByText(/\/api\/v1\/triggers\/trg_/)).toBeVisible()
+  await expect(page.getByText('PagerDuty incident')).toBeVisible()
+
+  // Delete it; the empty state returns.
+  await page.getByRole('button', { name: 'Delete' }).click()
+  await expect(page.getByText('No triggers.')).toBeVisible()
+})

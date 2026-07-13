@@ -39,6 +39,8 @@ export const queryKeys = {
     ['changes', tenantSlug, projectKey] as const,
   scheduledChanges: (tenantSlug: string, projectKey: string) =>
     ['scheduled-changes', tenantSlug, projectKey] as const,
+  triggers: (tenantSlug: string, projectKey: string) =>
+    ['triggers', tenantSlug, projectKey] as const,
   roles: (tenantSlug: string) => ['roles', tenantSlug] as const,
   permissions: ['permissions'] as const,
   members: (tenantSlug: string) => ['members', tenantSlug] as const,

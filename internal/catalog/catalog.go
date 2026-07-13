@@ -67,6 +67,11 @@ func (s *Service) ProjectByKey(ctx context.Context, tenantID, key string) (model
 	return s.store.GetProjectByKey(ctx, tenantID, key)
 }
 
+// ProjectByID looks a project up by id.
+func (s *Service) ProjectByID(ctx context.Context, id string) (models.Project, error) {
+	return s.store.GetProjectByID(ctx, id)
+}
+
 func (s *Service) UpdateProject(ctx context.Context, id, name string) (models.Project, error) {
 	return s.store.UpdateProject(ctx, id, name)
 }

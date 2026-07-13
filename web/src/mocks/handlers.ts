@@ -3,6 +3,7 @@ import { HttpResponse, http } from 'msw'
 import type { AuthUser } from '@/types/auth'
 import type { ChangeRequest, ChangeStatus } from '@/types/change'
 import type { ScheduledChange, ScheduledStatus } from '@/types/scheduled-change'
+import type { FlagTrigger, TriggerAction } from '@/types/trigger'
 import type { SeenContext } from '@/types/context'
 import type { Member } from '@/types/member'
 import type { Role } from '@/types/role'
@@ -217,6 +218,12 @@ let changeRequests: ChangeRequest[] = []
 // Scheduled changes, applied to flagConfigs once their time passes.
 let scheduledChanges: ScheduledChange[] = []
 
+// Flag triggers (inbound webhooks).
+let flagTriggers: FlagTrigger[] = []
+const triggerURL = (token: string) => `http://localhost:8080/api/v1/triggers/${token}`
+// Strips the secret token/url — mirrors the server, which reveals them once.
+const withoutSecret = (t: FlagTrigger): FlagTrigger => ({ ...t, token: undefined, url: undefined })
+
 // Lazily apply any pending scheduled changes whose time has come (the mock's
 // stand-in for the backend scheduler). Called before every scheduled read.
 function runDueScheduledChanges() {
@@ -296,6 +303,7 @@ export function resetBackend() {
   flagConfigs = {}
   changeRequests = []
   scheduledChanges = []
+  flagTriggers = []
 }
 
 export const handlers = [
@@ -758,6 +766,77 @@ export const handlers = [
         return HttpResponse.json({ detail: 'not found' }, { status: 404 })
       sc.status = 'cancelled'
       return HttpResponse.json(sc)
+    },
+  ),
+
+  // --- Flag triggers ---
+  http.get(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers',
+    ({ request }) => {
+      const url = new URL(request.url)
+      const flag = url.searchParams.get('flag')
+      const env = url.searchParams.get('env')
+      const triggers = flagTriggers
+        .filter((t) => (!flag || t.flag_key === flag) && (!env || t.environment_key === env))
+        .map(withoutSecret) // never re-expose the token/url in a list
+      return HttpResponse.json({ triggers })
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/triggers',
+    async ({ params, request }) => {
+      const body = (await request.json()) as { action: TriggerAction; description?: string }
+      const token = `trg_${crypto.randomUUID().replace(/-/g, '')}`
+      const t: FlagTrigger = {
+        id: crypto.randomUUID(),
+        project_id: String(params.projectKey),
+        environment_id: String(params.envKey),
+        environment_key: String(params.envKey),
+        flag_key: String(params.flagKey),
+        action: body.action,
+        description: body.description ?? '',
+        enabled: true,
+        exec_count: 0,
+        created_by: mockUser.id,
+        created_by_email: mockUser.email,
+        created_at: new Date().toISOString(),
+        last_executed_at: null,
+        token,
+        url: triggerURL(token),
+      }
+      flagTriggers = [t, ...flagTriggers]
+      return HttpResponse.json(t)
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId/enabled',
+    async ({ params, request }) => {
+      const t = flagTriggers.find((x) => x.id === String(params.triggerId))
+      if (!t) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      const body = (await request.json()) as { enabled: boolean }
+      t.enabled = body.enabled
+      return HttpResponse.json(withoutSecret(t))
+    },
+  ),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId/reset',
+    ({ params }) => {
+      const t = flagTriggers.find((x) => x.id === String(params.triggerId))
+      if (!t) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      t.token = `trg_${crypto.randomUUID().replace(/-/g, '')}`
+      t.url = triggerURL(t.token)
+      return HttpResponse.json(t)
+    },
+  ),
+
+  http.delete(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId',
+    ({ params }) => {
+      flagTriggers = flagTriggers.filter((x) => x.id !== String(params.triggerId))
+      return new HttpResponse(null, { status: 204 })
     },
   ),
 ]
