@@ -11,6 +11,13 @@ order). Check items off as we go.
 
 **Status legend:** ✅ built · 🟡 foundation exists / partial · ❌ not yet
 
+**Where we are (2026-07):** backend milestones complete through **Phase 6**. The
+**Web UI dashboard** (a Phase 8 item) is built for the full management surface, plus
+a **Contexts inspector** (new work beyond the original phases — migration 00013).
+Not started: **Phase 7 (governance)** and the rest of **Phase 8** (integrations,
+SSO/SCIM, teams, data export, CLI). Deferred: A/B experimentation (P6), JS SDK (P4),
+private attributes (P1), and the scaling/hardening list.
+
 ---
 
 ## 1. Where we stand today
@@ -129,13 +136,13 @@ internal, and centralizes audit/control. Implications:
 - ❌ SSO / SCIM (via the OIDC seam)
 
 ### 3.8 Platform / integrations
-- 🟡 Minimal management API (our own, ID-based)
-- ❌ Full keys-based CRUD API
+- ✅ Full management API (our own, key-addressed) + auto-generated OpenAPI
+- ✅ Full keys-based CRUD API
+- ✅ Web UI dashboard (React SPA, `web/` — full management surface)
 - ❌ Webhooks
 - ❌ Integrations (Slack / Jira / Datadog / Terraform)
 - ❌ Data export
-- ❌ Web UI dashboard
-- ❌ CLI (beyond `migrate`)
+- ❌ CLI (beyond `migrate` / `createsuperuser`)
 
 ---
 
@@ -248,6 +255,11 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       summaries for streaming/local-cache clients; feeds the same counters.
 - [x] **Analytics query** — `GET .../flags/{key}/environments/{env}/stats?since=` →
       per-variation counts + total (requires flag.read). Live-verified.
+- [x] **Contexts inspector** — contexts seen during evaluation are recorded
+      (`internal/contexts`: buffered in memory, flushed to the `contexts` table on an
+      interval; migration 00013), off the eval hot path like the counters. Endpoints list
+      them per environment (searchable) and show a context's attributes + **expected
+      variations** (every flag evaluated for that stored context). Surfaced in the UI.
 - [ ] Experimentation (A/B tests, metrics, statistical results) — deferred (large; builds
       on these counters + a metrics model)
 
@@ -258,9 +270,19 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
 
 ### Phase 8 — Platform
 - [ ] Webhooks + integrations (Slack / Jira / Datadog / Terraform)
-- [ ] SSO / SCIM, custom roles, teams
+- [ ] SSO / SCIM, teams
+- [x] Custom roles — create per-tenant permission-bundle roles (UI permission picker)
 - [ ] Data export
-- [ ] Web UI dashboard, CLI
+- [x] **Web UI dashboard** — React + TypeScript SPA (`web/`) over the management API,
+      covering the full surface: first-run setup wizard, login/JWT session, tenants →
+      projects, an LD-style project sidebar with a project switcher, environment-aware flag
+      list (inline per-env toggles + server-side search), flag detail (on/off, default rule,
+      individual targets, clause-based targeting rules), create-flag; segments (create +
+      detail with individual targets and a clause/rule editor); a Contexts inspector;
+      environments (list + create); and a Settings area (SDK keys, general, projects, roles
+      with a permission picker, members). Strictly layered (api → hook → container →
+      component → ui, boundary-linted) with Playwright e2e throughout.
+- [ ] CLI (management CLI still to write)
 
 ---
 
