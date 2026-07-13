@@ -71,6 +71,24 @@ func (s *Server) registerSegments() {
 	})
 
 	huma.Register(s.api, huma.Operation{
+		OperationID: "get-segment", Method: http.MethodGet, Path: base + "/segments/{segKey}",
+		Summary: "Get a segment (requires flag.read)", Tags: []string{"Segments"}, Security: bearer,
+	}, func(ctx context.Context, in *segmentPath) (*segmentOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		seg, err := s.flags.GetSegment(ctx, project.ID, in.SegKey)
+		if err != nil {
+			return nil, storeError(err, "segment not found")
+		}
+		return &segmentOutput{Body: seg}, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
 		OperationID: "save-segment", Method: http.MethodPut, Path: base + "/segments/{segKey}",
 		Summary: "Create or update a segment (requires flag.write)", Tags: []string{"Segments"}, Security: bearer,
 	}, func(ctx context.Context, in *saveSegmentInput) (*segmentOutput, error) {

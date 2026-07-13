@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CreateSegmentDialog } from '@/features/segments/components/CreateSegmentDialog'
 import { SegmentList } from '@/features/segments/components/SegmentList'
-import { useSegments } from '@/features/segments/hooks/useSegments'
+import { useCreateSegment, useSegments } from '@/features/segments/hooks/useSegments'
 
-/** Container. Lists a project's segments, with server-side search. */
+/** Container. Lists a project's segments (server-side search) and creates new ones. */
 export function SegmentsPage() {
   const { tenantSlug = '', projectKey = '' } = useParams()
+  const navigate = useNavigate()
+  const createSegment = useCreateSegment(tenantSlug, projectKey)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
@@ -26,12 +31,34 @@ export function SegmentsPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Segments</h1>
-        <p className="text-muted-foreground text-sm">
-          Reusable targeting groups that flag rules can reference.
-        </p>
+      <header className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Segments</h1>
+          <p className="text-muted-foreground text-sm">
+            Reusable targeting groups that flag rules can reference.
+          </p>
+        </div>
+        <Button onClick={() => setDialogOpen(true)}>New segment</Button>
       </header>
+
+      <CreateSegmentDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onCreate={(input) =>
+          createSegment.mutate(input, {
+            onSuccess: () => {
+              setDialogOpen(false)
+              void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/segments/${input.key}`)
+            },
+          })
+        }
+        isCreating={createSegment.isPending}
+        errorMessage={
+          createSegment.isError
+            ? 'Could not create segment — the key may already be taken.'
+            : undefined
+        }
+      />
 
       {segments && (segments.length > 0 || search) ? (
         <Input
@@ -54,7 +81,12 @@ export function SegmentsPage() {
           No segments match “{search}”.
         </p>
       ) : (
-        <SegmentList segments={segments} />
+        <SegmentList
+          segments={segments}
+          onOpen={(key) =>
+            void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/segments/${key}`)
+          }
+        />
       )}
     </section>
   )

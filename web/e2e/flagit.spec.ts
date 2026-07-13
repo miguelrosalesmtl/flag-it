@@ -154,6 +154,33 @@ test('toggles a flag on from the flag list', async ({ page }) => {
   await expect(toggle).toHaveAttribute('data-state', 'checked')
 })
 
+test('creates a segment and adds an included target', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Segments' }).click()
+  await expect(page.getByRole('heading', { name: 'Segments' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New segment' }).click()
+  await page.getByLabel('Name').fill('VIP users')
+  await expect(page.getByLabel('Key')).toHaveValue('vip-users')
+  await page.getByRole('button', { name: 'Create segment' }).click()
+
+  // Segment detail: add an individually-included context key and save.
+  await expect(page.getByRole('heading', { name: 'VIP users' })).toBeVisible()
+  const included = page.getByPlaceholder('Add a context key to always include')
+  await included.fill('user-42')
+  await included.press('Enter')
+  await expect(page.getByText('user-42')).toBeVisible()
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  // Re-seeded from the saved segment: the target persists.
+  await expect(page.getByText('user-42')).toBeVisible()
+})
+
 test('creates an environment from the Environments settings', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

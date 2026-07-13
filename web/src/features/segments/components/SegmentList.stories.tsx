@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { fn } from 'storybook/test'
 
 import { SegmentList } from '@/features/segments/components/SegmentList'
 import type { Segment } from '@/types/segment'
@@ -12,7 +13,9 @@ const segments: Segment[] = [
     description: 'Early-access cohort.',
     included: ['user-1', 'user-2'],
     excluded: [],
-    rules: [{}],
+    included_contexts: [],
+    excluded_contexts: [],
+    rules: [{ clauses: [{ contextKind: 'user', attribute: 'plan', op: 'in', values: ['pro'] }] }],
     version: 2,
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
@@ -25,6 +28,8 @@ const segments: Segment[] = [
     description: '',
     included: [],
     excluded: [],
+    included_contexts: [],
+    excluded_contexts: [],
     rules: [],
     version: 1,
     created_at: '2026-07-12T00:00:00Z',
@@ -35,6 +40,7 @@ const segments: Segment[] = [
 const meta = {
   title: 'Segments/SegmentList',
   component: SegmentList,
+  args: { onOpen: fn() },
 } satisfies Meta<typeof SegmentList>
 
 export default meta

@@ -2873,6 +2873,42 @@ paths:
       summary: Delete a segment (requires flag.write)
       tags:
         - Segments
+    get:
+      operationId: get-segment
+      parameters:
+        - in: path
+          name: tenantSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Segment"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a segment (requires flag.read)
+      tags:
+        - Segments
     put:
       operationId: save-segment
       parameters:

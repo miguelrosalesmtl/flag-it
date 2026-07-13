@@ -317,6 +317,11 @@ func (s *Service) ListSegments(ctx context.Context, projectID, search string) ([
 	return s.store.ListSegmentsByProject(ctx, projectID, search)
 }
 
+// GetSegment returns a single segment by key within a project.
+func (s *Service) GetSegment(ctx context.Context, projectID, key string) (models.Segment, error) {
+	return s.store.GetSegmentByKey(ctx, projectID, key)
+}
+
 // SaveSegment creates or updates a segment, then reloads/broadcasts every
 // environment of its project (segments affect flag evaluation project-wide).
 func (s *Service) SaveSegment(ctx context.Context, seg models.Segment) (models.Segment, error) {

@@ -112,7 +112,7 @@ let mockEnvironments: Environment[] = [
 
 const seedEnvironments: Environment[] = [...mockEnvironments]
 
-const mockSegments: Segment[] = [
+let mockSegments: Segment[] = [
   {
     id: 's1',
     project_id: 'p1',
@@ -121,12 +121,16 @@ const mockSegments: Segment[] = [
     description: 'Early-access cohort.',
     included: ['user-1', 'user-2'],
     excluded: [],
+    included_contexts: [],
+    excluded_contexts: [],
     rules: [],
     version: 1,
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
   },
 ]
+
+const seedSegments: Segment[] = [...mockSegments]
 
 function newConfig(): FlagConfig {
   return { on: false, off_variation: 1, fallthrough: { variation: 0 }, targets: [], rules: [], version: 1 }
@@ -154,6 +158,7 @@ export function resetBackend() {
   mockProjects = [...seedProjects]
   mockFlags = [...seedFlags]
   mockEnvironments = [...seedEnvironments]
+  mockSegments = [...seedSegments]
   flagConfigs = {}
 }
 
@@ -309,6 +314,39 @@ export const handlers = [
       segments: mockSegments.filter((s) => includesAny(q, s.key, s.name, s.description)),
     })
   }),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey', ({ params }) => {
+    const segment = mockSegments.find((s) => s.key === params.segKey)
+    if (!segment) return new HttpResponse(null, { status: 404 })
+    return HttpResponse.json(segment)
+  }),
+
+  http.put(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey',
+    async ({ params, request }) => {
+      const key = String(params.segKey)
+      const body = (await request.json()) as Partial<Segment>
+      const existing = mockSegments.find((s) => s.key === key)
+      const segment: Segment = {
+        id: existing?.id ?? crypto.randomUUID(),
+        project_id: 'p1',
+        key,
+        name: body.name ?? key,
+        description: body.description ?? '',
+        included: body.included ?? [],
+        excluded: body.excluded ?? [],
+        included_contexts: body.included_contexts ?? [],
+        excluded_contexts: body.excluded_contexts ?? [],
+        rules: body.rules ?? [],
+        version: (existing?.version ?? 0) + 1,
+        created_at: existing?.created_at ?? '2026-07-12T00:00:00Z',
+        updated_at: '2026-07-12T00:00:00Z',
+      }
+      if (existing) mockSegments = mockSegments.map((s) => (s.key === key ? segment : s))
+      else mockSegments.push(segment)
+      return HttpResponse.json(segment)
+    },
+  ),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
     const flag = mockFlags.find((f) => f.key === params.flagKey)

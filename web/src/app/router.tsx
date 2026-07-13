@@ -7,6 +7,7 @@ import { EnvironmentsPage } from '@/features/environments/EnvironmentsPage'
 import { FlagDetailPage } from '@/features/flags/FlagDetailPage'
 import { FlagsPage } from '@/features/flags/FlagsPage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
+import { SegmentDetailPage } from '@/features/segments/SegmentDetailPage'
 import { SegmentsPage } from '@/features/segments/SegmentsPage'
 import { TenantsPage } from '@/features/tenants/TenantsPage'
 
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
           { index: true, Component: FlagsPage },
           { path: 'flags/:flagKey', Component: FlagDetailPage },
           { path: 'segments', Component: SegmentsPage },
+          { path: 'segments/:segKey', Component: SegmentDetailPage },
           { path: 'environments', Component: EnvironmentsPage },
         ],
       },
