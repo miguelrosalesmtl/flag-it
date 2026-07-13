@@ -5,7 +5,7 @@ import type { SeenContext } from '@/types/context'
 import type { Member } from '@/types/member'
 import type { Role } from '@/types/role'
 import type { Environment } from '@/types/environment'
-import type { Flag, FlagConfig } from '@/types/flag'
+import type { Flag, FlagConfig, FlagRule } from '@/types/flag'
 import type { Project } from '@/types/project'
 import type { SdkKey } from '@/types/sdk-key'
 import type { Segment } from '@/types/segment'
@@ -545,11 +545,17 @@ export const handlers = [
           variation?: number
           contextKind?: string
           values?: string[]
+          clauses?: FlagRule['clauses']
+          ruleId?: string
         }>
       }
       for (const ins of body.instructions) {
         if (ins.kind === 'turnFlagOn') current.on = true
         else if (ins.kind === 'turnFlagOff') current.on = false
+        else if (ins.kind === 'addRule' && ins.clauses)
+          current.rules.push({ id: crypto.randomUUID(), clauses: ins.clauses, variation: ins.variation })
+        else if (ins.kind === 'removeRule' && ins.ruleId)
+          current.rules = current.rules.filter((r) => r.id !== ins.ruleId)
         else if (ins.kind === 'updateOffVariation' && ins.variation !== undefined)
           current.off_variation = ins.variation
         else if (ins.kind === 'updateFallthroughVariation' && ins.variation !== undefined)

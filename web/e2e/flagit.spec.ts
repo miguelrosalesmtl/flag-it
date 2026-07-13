@@ -343,6 +343,25 @@ test('edits a flag targeting: default rule and an individual target', async ({ p
   await expect(page.getByText('user-42')).toBeVisible()
 })
 
+test('adds a targeting rule to a flag', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // Build a rule: if user.country is one of [US], serve a variation.
+  await page.getByLabel('Attribute').fill('country')
+  await page.getByLabel('Values').fill('US')
+  await page.getByRole('button', { name: 'Add rule' }).click()
+
+  await expect(page.getByText('user.country is one of [US]')).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

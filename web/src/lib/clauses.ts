@@ -42,3 +42,19 @@ export function parseValues(input: string): unknown[] {
 export function displayValues(values: unknown[]): string {
   return values.map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(', ')
 }
+
+/** A human-readable one-liner for a clause (for read-only display). */
+export function clauseText(clause: {
+  contextKind?: string
+  attribute?: string
+  op: string
+  values: unknown[]
+  negate?: boolean
+}): string {
+  const label = CLAUSE_OPERATORS.find((o) => o.value === clause.op)?.label ?? clause.op
+  const subject = clause.attribute
+    ? `${clause.contextKind ?? 'user'}.${clause.attribute}`
+    : 'segment'
+  const op = clause.negate ? `not (${label})` : label
+  return `${subject} ${op} [${displayValues(clause.values)}]`
+}
