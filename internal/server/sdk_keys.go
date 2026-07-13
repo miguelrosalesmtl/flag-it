@@ -119,7 +119,6 @@ func (s *Server) registerSDKKeys() {
 		if err := s.catalog.RevokeSdkKey(ctx, in.KeyID, env.ID); err != nil {
 			return nil, storeError(err, "sdk key not found or already revoked")
 		}
-		s.sdkCache.flush() // drop cached lookups so the revoke takes effect now
 		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
 			Action: "sdk_key.revoked", ResourceType: "sdk_key", ResourceKey: in.KeyID,
 			Data: jsonData(map[string]any{"environment": in.EnvKey})})

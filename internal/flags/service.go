@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"log/slog"
+	"sort"
 	"sync"
 	"time"
 
@@ -207,6 +208,33 @@ func (s *Service) EvaluateAll(environmentID string, ctx models.Context, clientOn
 		}
 		out[ef.Key] = EvaluateFlag(ef, ctx, ed)
 	}
+	return out
+}
+
+// ContextEvaluation is one flag's expected result for a reconstructed context.
+type ContextEvaluation struct {
+	FlagKey   string `json:"flag_key"`
+	Variation int    `json:"variation"`
+	Value     any    `json:"value"`
+	Reason    string `json:"reason"`
+}
+
+// EvaluateContext reconstructs a single context from stored attributes and
+// evaluates every flag in the environment for it, sorted by flag key — the
+// "expected variations" view for the contexts inspector. Building the context
+// and ordering the results is domain work, so it lives here, not in the handler.
+func (s *Service) EvaluateContext(environmentID, kind, key string, attributes json.RawMessage) []ContextEvaluation {
+	var attrs map[string]any
+	_ = json.Unmarshal(attributes, &attrs)
+	results := s.EvaluateAll(environmentID, models.NewSingleContext(kind, key, attrs), false)
+
+	out := make([]ContextEvaluation, 0, len(results))
+	for _, ev := range results {
+		out = append(out, ContextEvaluation{
+			FlagKey: ev.FlagKey, Variation: ev.Variation, Value: ev.Value, Reason: ev.Reason,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].FlagKey < out[j].FlagKey })
 	return out
 }
 

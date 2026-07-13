@@ -126,7 +126,7 @@ func runOpenAPI() error {
 	st := store.New(nil)
 	authSvc := auth.New(st, cfg.JWT.Secret, cfg.JWT.TTL)
 	authzSvc := authz.New(st)
-	catalogSvc := catalog.New(st)
+	catalogSvc := catalog.New(st, cfg.Server.SDKKeyCacheTTL)
 	auditSvc := audit.New(st, log)
 	analyticsRec := analytics.New(st, 0, log)
 	contextsRec := contexts.New(st, 0, log)
@@ -175,7 +175,7 @@ func run() error {
 	st := store.New(pool)
 	authSvc := auth.New(st, cfg.JWT.Secret, cfg.JWT.TTL)
 	authzSvc := authz.New(st)
-	catalogSvc := catalog.New(st)
+	catalogSvc := catalog.New(st, cfg.Server.SDKKeyCacheTTL)
 	auditSvc := audit.New(st, log)
 
 	// Analytics — buffers evaluation counts, flushes rollups on an interval.
