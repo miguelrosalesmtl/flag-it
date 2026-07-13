@@ -1,12 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { projectsApi } from '@/api/endpoints/projects'
 import { queryKeys } from '@/lib/query-keys'
+import type { CreateProjectInput } from '@/types/project'
 
 export function useProjects(tenantSlug: string) {
   return useQuery({
     queryKey: queryKeys.projects(tenantSlug),
     queryFn: () => projectsApi.list(tenantSlug),
+  })
+}
+
+export function useCreateProject(tenantSlug: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: CreateProjectInput) => projectsApi.create(tenantSlug, input),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects(tenantSlug) }),
   })
 }
 

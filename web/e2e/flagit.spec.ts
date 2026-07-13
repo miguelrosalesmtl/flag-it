@@ -63,6 +63,24 @@ test('drills from a tenant into its projects and a project into its flags', asyn
   await expect(page.getByText('pricing-tier')).toBeVisible()
 })
 
+test('creates a project from the projects screen', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New project' }).click()
+  await page.getByLabel('Name').fill('Analytics')
+  await expect(page.getByLabel('Key')).toHaveValue('analytics')
+  await page.getByRole('button', { name: 'Create project' }).click()
+
+  // Lands on the new project's flags page (its name as the heading).
+  await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

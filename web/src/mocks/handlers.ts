@@ -42,7 +42,7 @@ const seedTenants: Tenant[] = [
   },
 ]
 
-const mockProjects: Project[] = [
+let mockProjects: Project[] = [
   {
     id: 'p1',
     tenant_id: 't1',
@@ -60,6 +60,8 @@ const mockProjects: Project[] = [
     updated_at: '2026-07-12T00:00:00Z',
   },
 ]
+
+const seedProjects: Project[] = [...mockProjects]
 
 const mockFlags: Flag[] = [
   {
@@ -121,6 +123,7 @@ let tenants: Tenant[] = [...seedTenants]
 export function resetBackend() {
   needsSetup = false
   tenants = [...seedTenants]
+  mockProjects = [...seedProjects]
   flagConfigs = {}
 }
 
@@ -181,6 +184,20 @@ export const handlers = [
   http.get('*/api/v1/tenants/:tenantSlug/projects', () =>
     HttpResponse.json({ projects: mockProjects }),
   ),
+
+  http.post('*/api/v1/tenants/:tenantSlug/projects', async ({ request }) => {
+    const input = (await request.json()) as { key: string; name: string }
+    const project: Project = {
+      id: crypto.randomUUID(),
+      tenant_id: 't1',
+      key: input.key,
+      name: input.name,
+      created_at: '2026-07-12T00:00:00Z',
+      updated_at: '2026-07-12T00:00:00Z',
+    }
+    mockProjects.push(project)
+    return HttpResponse.json({ project, environments: mockEnvironments }, { status: 201 })
+  }),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey', ({ params }) => {
     const project = mockProjects.find((p) => p.key === params.projectKey)
