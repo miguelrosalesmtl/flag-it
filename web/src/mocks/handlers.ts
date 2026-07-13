@@ -250,7 +250,9 @@ type Instruction = {
   contextKind?: string
   values?: string[]
   clauses?: FlagRule['clauses']
+  rollout?: FlagRule['rollout']
   ruleId?: string
+  ruleIds?: string[]
 }
 
 // Applies semantic instructions to a config in place; bumps the version once.
@@ -259,9 +261,18 @@ function applyInstructions(current: FlagConfig, instructions: Instruction[]) {
     if (ins.kind === 'turnFlagOn') current.on = true
     else if (ins.kind === 'turnFlagOff') current.on = false
     else if (ins.kind === 'addRule' && ins.clauses)
-      current.rules.push({ id: crypto.randomUUID(), clauses: ins.clauses, variation: ins.variation })
+      current.rules.push({
+        id: crypto.randomUUID(),
+        clauses: ins.clauses,
+        variation: ins.variation,
+        rollout: ins.rollout,
+      })
     else if (ins.kind === 'removeRule' && ins.ruleId)
       current.rules = current.rules.filter((r) => r.id !== ins.ruleId)
+    else if (ins.kind === 'reorderRules' && ins.ruleIds) {
+      const order = ins.ruleIds
+      current.rules = [...current.rules].sort((a, b) => order.indexOf(a.id!) - order.indexOf(b.id!))
+    }
     else if (ins.kind === 'updateOffVariation' && ins.variation !== undefined)
       current.off_variation = ins.variation
     else if (ins.kind === 'updateFallthroughVariation' && ins.variation !== undefined)

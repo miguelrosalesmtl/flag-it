@@ -90,5 +90,8 @@ export interface FlagInstruction {
   contextKind?: string
   values?: string[]
   clauses?: Clause[]
+  rollout?: VariationOrRollout['rollout']
   ruleId?: string
+  /** reorderRules: the full rule order, by id. */
+  ruleIds?: string[]
 }

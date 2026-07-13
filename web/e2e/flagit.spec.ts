@@ -362,6 +362,42 @@ test('adds a targeting rule to a flag', async ({ page }) => {
   await expect(page.getByText('user.country is one of [US]')).toBeVisible()
 })
 
+test('adds a percentage-rollout rule and reorders the rules', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  const rulesSection = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Targeting rules' }) })
+
+  // Rule 1: country in [US] → a variation.
+  await page.getByLabel('Attribute').fill('country')
+  await page.getByLabel('Values').fill('US')
+  await page.getByRole('button', { name: 'Add rule' }).click()
+  await expect(page.getByText('user.country is one of [US]')).toBeVisible()
+
+  // Rule 2: plan in [pro] → a 50/50 percentage rollout.
+  await page.getByLabel('Attribute').fill('plan')
+  await page.getByLabel('Values').fill('pro')
+  await page.getByRole('tab', { name: 'A rollout' }).click()
+  await page.getByRole('button', { name: 'Add rule' }).click()
+  await expect(page.getByText('user.plan is one of [pro]')).toBeVisible()
+  await expect(page.getByText(/50% true/)).toBeVisible()
+
+  // Order is [country, plan]; move the plan rule up to the top.
+  const items = rulesSection.getByRole('listitem')
+  await expect(items.first()).toContainText('country')
+  await items.nth(1).getByRole('button', { name: 'Move rule up' }).click()
+  await expect(items.first()).toContainText('plan')
+})
+
 test('opens a flag and toggles it on for an environment', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')

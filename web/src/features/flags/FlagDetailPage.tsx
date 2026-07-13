@@ -162,10 +162,13 @@ export function FlagDetailPage() {
                 <FlagRules
                   flag={flag.data}
                   rules={config.data.rules}
-                  onAddRule={(clauses, variation) =>
-                    patch.mutate([{ kind: 'addRule', clauses, variation }])
+                  onAddRule={(clauses, served) =>
+                    patch.mutate([
+                      { kind: 'addRule', clauses, variation: served.variation, rollout: served.rollout },
+                    ])
                   }
                   onRemoveRule={(ruleId) => patch.mutate([{ kind: 'removeRule', ruleId }])}
+                  onReorderRules={(ruleIds) => patch.mutate([{ kind: 'reorderRules', ruleIds }])}
                   busy={patch.isPending}
                 />
               </section>

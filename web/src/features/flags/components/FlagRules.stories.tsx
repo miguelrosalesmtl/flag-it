@@ -16,12 +16,17 @@ const rules: FlagRule[] = [
     clauses: [{ contextKind: 'user', attribute: 'country', op: 'in', values: ['US', 'CA'], negate: false }],
     variation: 0,
   },
+  {
+    id: 'rule-2',
+    clauses: [{ contextKind: 'user', attribute: 'plan', op: 'in', values: ['pro'], negate: false }],
+    rollout: { variations: [{ variation: 0, weight: 70000 }, { variation: 1, weight: 30000 }] },
+  },
 ]
 
 const meta = {
   title: 'Flags/FlagRules',
   component: FlagRules,
-  args: { flag, rules, onAddRule: fn(), onRemoveRule: fn() },
+  args: { flag, rules, onAddRule: fn(), onRemoveRule: fn(), onReorderRules: fn() },
 } satisfies Meta<typeof FlagRules>
 
 export default meta
