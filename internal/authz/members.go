@@ -56,6 +56,11 @@ func (s *Service) GrantProjectRole(ctx context.Context, tenantID, projectID, ema
 	return s.store.GrantProjectRole(ctx, user.ID, tenantID, projectID, role.ID)
 }
 
+// ListMembers returns a tenant's members with their tenant-scoped role.
+func (s *Service) ListMembers(ctx context.Context, tenantID string) ([]models.Member, error) {
+	return s.store.ListMembersByTenant(ctx, tenantID)
+}
+
 // CreateRole creates a custom (non-system) role for a tenant.
 func (s *Service) CreateRole(ctx context.Context, tenantID, key, name, description string, scope models.ScopeType, perms []models.Permission) (models.Role, error) {
 	return s.store.CreateRole(ctx, tenantID, key, name, description, scope, perms)

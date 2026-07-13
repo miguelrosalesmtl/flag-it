@@ -15,4 +15,24 @@ export const queryKeys = {
   project: (tenantSlug: string, projectKey: string) =>
     ['projects', tenantSlug, projectKey] as const,
   flags: (tenantSlug: string, projectKey: string) => ['flags', tenantSlug, projectKey] as const,
+  envFlags: (tenantSlug: string, projectKey: string, envKey: string) =>
+    ['flags', tenantSlug, projectKey, 'env', envKey] as const,
+  flag: (tenantSlug: string, projectKey: string, flagKey: string) =>
+    ['flags', tenantSlug, projectKey, flagKey] as const,
+  flagConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
+    ['flags', tenantSlug, projectKey, flagKey, 'config', envKey] as const,
+  environments: (tenantSlug: string, projectKey: string) =>
+    ['environments', tenantSlug, projectKey] as const,
+  segments: (tenantSlug: string, projectKey: string) =>
+    ['segments', tenantSlug, projectKey] as const,
+  segment: (tenantSlug: string, projectKey: string, segKey: string) =>
+    ['segments', tenantSlug, projectKey, segKey] as const,
+  contexts: (tenantSlug: string, projectKey: string, envKey: string) =>
+    ['contexts', tenantSlug, projectKey, envKey] as const,
+  context: (tenantSlug: string, projectKey: string, envKey: string, kind: string, key: string) =>
+    ['contexts', tenantSlug, projectKey, envKey, kind, key] as const,
+  sdkKeys: (tenantSlug: string, projectKey: string, envKey: string) =>
+    ['sdk-keys', tenantSlug, projectKey, envKey] as const,
+  roles: (tenantSlug: string) => ['roles', tenantSlug] as const,
+  members: (tenantSlug: string) => ['members', tenantSlug] as const,
 }

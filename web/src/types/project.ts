@@ -7,3 +7,9 @@ export interface Project {
   created_at: string
   updated_at: string
 }
+
+/** Payload to create a project. */
+export interface CreateProjectInput {
+  key: string
+  name: string
+}

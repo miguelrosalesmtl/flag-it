@@ -17,3 +17,39 @@ export interface Flag {
   created_at: string
   updated_at: string
 }
+
+/** A flag definition plus its on/off state in a specific environment. */
+export interface FlagWithState extends Flag {
+  on: boolean
+}
+
+/** Payload to create/update a flag definition. Variations are opaque JSON values. */
+export interface CreateFlagInput {
+  key: string
+  name: string
+  description?: string
+  client_side_available?: boolean
+  variations: unknown[]
+}
+
+/** A variation index or a percentage rollout — how a rule/fallthrough serves a value. */
+export interface VariationOrRollout {
+  variation?: number
+  rollout?: {
+    variations: { variation: number; weight: number }[]
+    bucketBy?: string
+  }
+}
+
+/**
+ * A flag's configuration in one environment: the on/off switch, targeting, and
+ * the fallthrough. Written via the semantic-instruction PATCH; read via GET.
+ */
+export interface FlagConfig {
+  on: boolean
+  off_variation: number
+  fallthrough: VariationOrRollout
+  targets: unknown[]
+  rules: unknown[]
+  version: number
+}

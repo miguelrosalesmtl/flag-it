@@ -16,6 +16,25 @@ type listFlagsOutput struct {
 	}
 }
 
+// flagInEnv is a flag definition plus its on/off state in one environment.
+type flagInEnv struct {
+	models.Flag
+	On bool `json:"on"`
+}
+
+type listEnvFlagsOutput struct {
+	Body struct {
+		Flags []flagInEnv `json:"flags"`
+	}
+}
+
+type listEnvFlagsInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	EnvKey     string `path:"envKey"`
+	Search     string `query:"search" doc:"filter by flag name, key, or description"`
+}
+
 type saveFlagInput struct {
 	TenantSlug string `path:"tenantSlug"`
 	ProjectKey string `path:"projectKey"`
@@ -36,6 +55,14 @@ type flagPath struct {
 	TenantSlug string `path:"tenantSlug"`
 	ProjectKey string `path:"projectKey"`
 	FlagKey    string `path:"flagKey"`
+}
+
+// flagConfigPath addresses a flag's config in one environment.
+type flagConfigPath struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	FlagKey    string `path:"flagKey"`
+	EnvKey     string `path:"envKey"`
 }
 
 type saveFlagConfigInput struct {
@@ -82,13 +109,92 @@ func (s *Server) registerFlags() {
 		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		list, err := s.flags.ListFlags(ctx, project.ID)
+		list, err := s.flags.ListFlags(ctx, project.ID, "")
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		out := &listFlagsOutput{}
 		out.Body.Flags = list
 		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-env-flags", Method: http.MethodGet,
+		Path:    base + "/environments/{envKey}/flags",
+		Summary: "List a project's flags with their on/off state in one environment (requires flag.read)",
+		Tags:    []string{"Flags"}, Security: bearer,
+	}, func(ctx context.Context, in *listEnvFlagsInput) (*listEnvFlagsOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		list, err := s.flags.ListFlags(ctx, project.ID, in.Search)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		states, err := s.flags.FlagOnStates(ctx, project.ID, env.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &listEnvFlagsOutput{}
+		out.Body.Flags = make([]flagInEnv, 0, len(list))
+		for _, f := range list {
+			out.Body.Flags = append(out.Body.Flags, flagInEnv{Flag: f, On: states[f.ID]})
+		}
+		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-flag", Method: http.MethodGet, Path: base + "/flags/{flagKey}",
+		Summary: "Get a flag definition (requires flag.read)", Tags: []string{"Flags"}, Security: bearer,
+	}, func(ctx context.Context, in *flagPath) (*flagOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
+		if err != nil {
+			return nil, storeError(err, "flag not found")
+		}
+		return &flagOutput{Body: flag}, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-flag-config", Method: http.MethodGet,
+		Path:    base + "/flags/{flagKey}/environments/{envKey}",
+		Summary: "Get a flag's configuration in one environment (requires flag.read)",
+		Tags:    []string{"Flags"}, Security: bearer,
+	}, func(ctx context.Context, in *flagConfigPath) (*flagConfigOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
+		if err != nil {
+			return nil, storeError(err, "flag not found")
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		cfg, err := s.flags.GetFlagConfig(ctx, flag.ID, env.ID)
+		if err != nil {
+			return nil, storeError(err, "flag config not found")
+		}
+		return &flagConfigOutput{Body: cfg}, nil
 	})
 
 	huma.Register(s.api, huma.Operation{

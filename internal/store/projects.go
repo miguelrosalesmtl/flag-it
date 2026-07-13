@@ -90,7 +90,7 @@ func (s *Store) ListProjectsByTenant(ctx context.Context, tenantID string) ([]mo
 	}
 	defer rows.Close()
 
-	var out []models.Project
+	out := make([]models.Project, 0)
 	for rows.Next() {
 		p, err := scanProject(rows)
 		if err != nil {

@@ -85,8 +85,12 @@ func (s *Service) ListReadableProjects(ctx context.Context, subject models.Subje
 
 // --- Environments ---
 
-func (s *Service) ListEnvironments(ctx context.Context, projectID string) ([]models.Environment, error) {
-	return s.store.ListEnvironmentsByProject(ctx, projectID)
+func (s *Service) ListEnvironments(ctx context.Context, projectID, search string) ([]models.Environment, error) {
+	return s.store.ListEnvironmentsByProject(ctx, projectID, search)
+}
+
+func (s *Service) CreateEnvironment(ctx context.Context, projectID, key, name string) (models.Environment, error) {
+	return s.store.CreateEnvironment(ctx, projectID, key, name)
 }
 
 func (s *Service) EnvByKey(ctx context.Context, projectID, key string) (models.Environment, error) {

@@ -210,13 +210,25 @@ func (s *Service) EvaluateAll(environmentID string, ctx models.Context, clientOn
 }
 
 // ListFlags returns a project's flag definitions.
-func (s *Service) ListFlags(ctx context.Context, projectID string) ([]models.Flag, error) {
-	return s.store.ListFlagsByProject(ctx, projectID)
+func (s *Service) ListFlags(ctx context.Context, projectID, search string) ([]models.Flag, error) {
+	return s.store.ListFlagsByProject(ctx, projectID, search)
 }
 
 // GetFlag returns a single flag definition by key within a project.
 func (s *Service) GetFlag(ctx context.Context, projectID, key string) (models.Flag, error) {
 	return s.store.GetFlagByKey(ctx, projectID, key)
+}
+
+// GetFlagConfig returns a flag's configuration in one environment (on/off,
+// targeting, fallthrough).
+func (s *Service) GetFlagConfig(ctx context.Context, flagID, environmentID string) (models.FlagConfig, error) {
+	return s.store.GetFlagConfig(ctx, flagID, environmentID)
+}
+
+// FlagOnStates returns each flag's on/off state in an environment, keyed by flag
+// id — for rendering a per-environment flag list in one query.
+func (s *Service) FlagOnStates(ctx context.Context, projectID, environmentID string) (map[string]bool, error) {
+	return s.store.FlagOnStatesByEnvironment(ctx, projectID, environmentID)
 }
 
 // SaveFlag creates or updates a flag definition and ensures it has a config row
@@ -233,7 +245,7 @@ func (s *Service) SaveFlag(ctx context.Context, projectID, key, name, descriptio
 		return models.Flag{}, err
 	}
 
-	envs, err := s.store.ListEnvironmentsByProject(ctx, projectID)
+	envs, err := s.store.ListEnvironmentsByProject(ctx, projectID, "")
 	if err != nil {
 		return models.Flag{}, err
 	}
@@ -289,7 +301,7 @@ func (s *Service) DeleteFlag(ctx context.Context, flagID string) error {
 	if err != nil {
 		return err
 	}
-	envs, err := s.store.ListEnvironmentsByProject(ctx, flag.ProjectID)
+	envs, err := s.store.ListEnvironmentsByProject(ctx, flag.ProjectID, "")
 	if err != nil {
 		return err
 	}
@@ -301,8 +313,13 @@ func (s *Service) DeleteFlag(ctx context.Context, flagID string) error {
 }
 
 // ListSegments returns a project's segments.
-func (s *Service) ListSegments(ctx context.Context, projectID string) ([]models.Segment, error) {
-	return s.store.ListSegmentsByProject(ctx, projectID)
+func (s *Service) ListSegments(ctx context.Context, projectID, search string) ([]models.Segment, error) {
+	return s.store.ListSegmentsByProject(ctx, projectID, search)
+}
+
+// GetSegment returns a single segment by key within a project.
+func (s *Service) GetSegment(ctx context.Context, projectID, key string) (models.Segment, error) {
+	return s.store.GetSegmentByKey(ctx, projectID, key)
 }
 
 // SaveSegment creates or updates a segment, then reloads/broadcasts every
@@ -332,7 +349,7 @@ func (s *Service) DeleteSegment(ctx context.Context, projectID, key string) erro
 
 // propagateProject reloads and broadcasts every environment of a project.
 func (s *Service) propagateProject(ctx context.Context, projectID string) error {
-	envs, err := s.store.ListEnvironmentsByProject(ctx, projectID)
+	envs, err := s.store.ListEnvironmentsByProject(ctx, projectID, "")
 	if err != nil {
 		return err
 	}

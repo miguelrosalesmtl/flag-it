@@ -74,7 +74,7 @@ func (s *Store) ListAuditEntries(ctx context.Context, tenantID string, f AuditFi
 	}
 	defer rows.Close()
 
-	var out []models.AuditEntry
+	out := make([]models.AuditEntry, 0)
 	for rows.Next() {
 		e, err := scanAuditEntry(rows)
 		if err != nil {

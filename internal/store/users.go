@@ -56,7 +56,7 @@ func (s *Store) ListUsers(ctx context.Context) ([]models.User, error) {
 		return nil, fmt.Errorf("store: list users: %w", err)
 	}
 	defer rows.Close()
-	var out []models.User
+	out := make([]models.User, 0)
 	for rows.Next() {
 		u, err := scanUser(rows)
 		if err != nil {

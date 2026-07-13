@@ -29,6 +29,12 @@ type roleOutput struct {
 	Body models.Role
 }
 
+type listMembersOutput struct {
+	Body struct {
+		Members []models.Member `json:"members"`
+	}
+}
+
 type addMemberInput struct {
 	TenantSlug string `path:"tenantSlug"`
 	Body       struct {
@@ -101,6 +107,26 @@ func (s *Server) registerRoles() {
 			Action: "role.created", ResourceType: "role", ResourceKey: in.Body.Key,
 			Data: jsonData(map[string]any{"scope": in.Body.Scope, "permissions": in.Body.Permissions})})
 		return &roleOutput{Body: role}, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "list-members", Method: http.MethodGet, Path: "/api/v1/tenants/{tenantSlug}/members",
+		Summary: "List a tenant's members (requires member.manage)", Tags: []string{"Members"}, Security: bearer,
+	}, func(ctx context.Context, in *tenantPath) (*listMembersOutput, error) {
+		tenant, err := s.resolveTenant(ctx, in.TenantSlug)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermMemberManage, models.Resource{TenantID: tenant.ID}); err != nil {
+			return nil, err
+		}
+		members, err := s.authz.ListMembers(ctx, tenant.ID)
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &listMembersOutput{}
+		out.Body.Members = members
+		return out, nil
 	})
 
 	huma.Register(s.api, huma.Operation{

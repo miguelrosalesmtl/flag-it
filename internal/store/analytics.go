@@ -39,7 +39,7 @@ func (s *Store) QueryEvalStats(ctx context.Context, environmentID, flagKey strin
 	}
 	defer rows.Close()
 
-	var out []models.VariationCount
+	out := make([]models.VariationCount, 0)
 	for rows.Next() {
 		var vc models.VariationCount
 		if err := rows.Scan(&vc.Variation, &vc.Count); err != nil {

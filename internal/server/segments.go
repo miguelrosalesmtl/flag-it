@@ -10,6 +10,12 @@ import (
 
 // Segments reuse the flag read/write permissions (project-level targeting config).
 
+type listSegmentsInput struct {
+	TenantSlug string `path:"tenantSlug"`
+	ProjectKey string `path:"projectKey"`
+	Search     string `query:"search" doc:"filter by segment name, key, or description"`
+}
+
 type listSegmentsOutput struct {
 	Body struct {
 		Segments []models.Segment `json:"segments"`
@@ -47,7 +53,7 @@ func (s *Server) registerSegments() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-segments", Method: http.MethodGet, Path: base + "/segments",
 		Summary: "List a project's segments (requires flag.read)", Tags: []string{"Segments"}, Security: bearer,
-	}, func(ctx context.Context, in *projectPath) (*listSegmentsOutput, error) {
+	}, func(ctx context.Context, in *listSegmentsInput) (*listSegmentsOutput, error) {
 		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
@@ -55,13 +61,31 @@ func (s *Server) registerSegments() {
 		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
-		segs, err := s.flags.ListSegments(ctx, project.ID)
+		segs, err := s.flags.ListSegments(ctx, project.ID, in.Search)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		out := &listSegmentsOutput{}
 		out.Body.Segments = segs
 		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "get-segment", Method: http.MethodGet, Path: base + "/segments/{segKey}",
+		Summary: "Get a segment (requires flag.read)", Tags: []string{"Segments"}, Security: bearer,
+	}, func(ctx context.Context, in *segmentPath) (*segmentOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		seg, err := s.flags.GetSegment(ctx, project.ID, in.SegKey)
+		if err != nil {
+			return nil, storeError(err, "segment not found")
+		}
+		return &segmentOutput{Body: seg}, nil
 	})
 
 	huma.Register(s.api, huma.Operation{

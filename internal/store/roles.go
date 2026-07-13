@@ -130,7 +130,7 @@ func (s *Store) loadRolePermissions(ctx context.Context, roleID string) ([]model
 		return nil, fmt.Errorf("store: load role permissions: %w", err)
 	}
 	defer rows.Close()
-	var out []models.Permission
+	out := make([]models.Permission, 0)
 	for rows.Next() {
 		var p string
 		if err := rows.Scan(&p); err != nil {
@@ -183,7 +183,7 @@ func (s *Store) ListPermissionGrantsByUser(ctx context.Context, userID string) (
 	}
 	defer rows.Close()
 
-	var out []models.PermissionGrant
+	out := make([]models.PermissionGrant, 0)
 	for rows.Next() {
 		var (
 			scopeType string

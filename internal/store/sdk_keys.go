@@ -30,7 +30,7 @@ func (s *Store) ListSdkKeysByEnvironment(ctx context.Context, environmentID stri
 	}
 	defer rows.Close()
 
-	var out []models.SdkKey
+	out := make([]models.SdkKey, 0)
 	for rows.Next() {
 		sk, err := scanSdkKey(rows)
 		if err != nil {

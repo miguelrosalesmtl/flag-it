@@ -103,6 +103,23 @@ func NewMultiContext(parts ...Context) Context {
 // IsEmpty reports whether the context carries no kinds (e.g. an absent body).
 func (c Context) IsEmpty() bool { return len(c.single) == 0 }
 
+// ContextPart is one kind's identity and attributes within a context.
+type ContextPart struct {
+	Kind       string
+	Key        string
+	Attributes map[string]any
+}
+
+// Parts returns each kind's (key, attributes) — used to record which contexts
+// have been seen during evaluation.
+func (c Context) Parts() []ContextPart {
+	out := make([]ContextPart, 0, len(c.single))
+	for kind, sc := range c.single {
+		out = append(out, ContextPart{Kind: kind, Key: sc.Key, Attributes: sc.Attributes})
+	}
+	return out
+}
+
 // KeyForKind returns the key of the given kind's context (kind "" means "user").
 func (c Context) KeyForKind(kind string) (string, bool) {
 	sc, ok := c.single[defaultKind(kind)]
