@@ -603,6 +603,26 @@ test('shows flag lifecycle and flags stale flags', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'New checkout' })).toBeHidden()
 })
 
+test('shows the tenant audit log with a resource filter', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Audit log' }).click()
+  await expect(page.getByRole('heading', { name: 'Audit log' })).toBeVisible()
+
+  await expect(page.getByText('flag.config.patched')).toBeVisible()
+  await expect(page.getByText('sdk_key.created')).toBeVisible()
+
+  // Filter to SDK keys only.
+  await page.getByRole('tab', { name: 'SDK keys' }).click()
+  await expect(page.getByText('sdk_key.created')).toBeVisible()
+  await expect(page.getByText('flag.config.patched')).toBeHidden()
+})
+
 test('creates a flag trigger, reveals its URL, then deletes it', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
