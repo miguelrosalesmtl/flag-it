@@ -260,6 +260,11 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       interval; migration 00013), off the eval hot path like the counters. Endpoints list
       them per environment (searchable) and show a context's attributes + **expected
       variations** (every flag evaluated for that stored context). Surfaced in the UI.
+- [ ] **Analytics / monitoring UI** — the eval telemetry is collected and queryable
+      (per-flag `flag-stats` endpoint), but not yet surfaced. Needed: a flag-detail
+      **Monitoring** view (per-variation counts + total over a selectable window: 1h/24h/7d)
+      and an **eval-count column** on the flag list (the latter needs a small bulk
+      per-environment stats endpoint; the current one is per-flag). Optional: sparklines.
 - [ ] Experimentation (A/B tests, metrics, statistical results) — deferred (large; builds
       on these counters + a metrics model)
 
