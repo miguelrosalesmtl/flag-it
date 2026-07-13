@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RolloutEditor } from '@/features/flags/components/RolloutEditor'
 import { VariationSelect } from '@/features/flags/components/VariationSelect'
@@ -53,6 +55,7 @@ export function RuleForm({
       ? percentsFromRollout(initialServe.rollout, variations.length)
       : evenPercents(variations.length),
   )
+  const [bucketBy, setBucketBy] = useState(() => initialServe?.rollout?.bucketBy ?? '')
 
   const rolloutValid = percents.reduce((a, b) => a + b, 0) === 100
   const clausesValid = draft.length > 0 && draft.every((c) => c.attribute && c.values.length > 0)
@@ -61,7 +64,9 @@ export function RuleForm({
   function submit() {
     if (!canSubmit) return
     const served: VariationOrRollout =
-      serve === 'variation' ? { variation } : { rollout: rolloutFromPercents(percents) }
+      serve === 'variation'
+        ? { variation }
+        : { rollout: rolloutFromPercents(percents, bucketBy.trim() || undefined) }
     onSubmit(draft, served)
     // Reset for reuse (the add builder). The inline editor is unmounted on save.
     setDraft(initialClauses && initialClauses.length > 0 ? initialClauses : [newClause()])
@@ -72,6 +77,7 @@ export function RuleForm({
         ? percentsFromRollout(initialServe.rollout, variations.length)
         : evenPercents(variations.length),
     )
+    setBucketBy(initialServe?.rollout?.bucketBy ?? '')
   }
 
   return (
@@ -115,12 +121,27 @@ export function RuleForm({
             disabled={busy}
           />
         ) : (
-          <RolloutEditor
-            variations={variations}
-            percents={percents}
-            onChange={setPercents}
-            disabled={busy}
-          />
+          <div className="space-y-2">
+            <RolloutEditor
+              variations={variations}
+              percents={percents}
+              onChange={setPercents}
+              disabled={busy}
+            />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="bucket-by" className="text-muted-foreground font-normal">
+                Bucket by
+              </Label>
+              <Input
+                id="bucket-by"
+                value={bucketBy}
+                onChange={(e) => setBucketBy(e.target.value)}
+                placeholder="key"
+                disabled={busy}
+                className="w-40"
+              />
+            </div>
+          </div>
         )}
       </div>
 
