@@ -1,6 +1,5 @@
-import { Navigate } from 'react-router'
+import { Navigate, Outlet } from 'react-router'
 
-import { AppLayout } from '@/app/AppLayout'
 import { Spinner } from '@/components/ui/spinner'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { SetupPage } from '@/features/setup/SetupPage'
@@ -54,5 +53,6 @@ export function ProtectedLayout() {
   if (status.isPending) return <BootSpinner />
   if (status.data?.needs_setup) return <Navigate to="/setup" replace />
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  return <AppLayout />
+  // Auth gate only; child routes choose their layout (AppLayout / ProjectLayout).
+  return <Outlet />
 }

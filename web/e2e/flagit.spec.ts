@@ -77,8 +77,25 @@ test('creates a project from the projects screen', async ({ page }) => {
   await expect(page.getByLabel('Key')).toHaveValue('analytics')
   await page.getByRole('button', { name: 'Create project' }).click()
 
-  // Lands on the new project's flags page (its name as the heading).
-  await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
+  // Lands on the new project's flags page — the sidebar switcher shows its name.
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Analytics' })).toBeVisible()
+})
+
+test('navigates to Segments via the project sidebar', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+
+  // The sidebar Features nav.
+  await page.getByRole('link', { name: 'Segments' }).click()
+  await expect(page.getByRole('heading', { name: 'Segments' })).toBeVisible()
+  await expect(page.getByText('Beta users')).toBeVisible()
 })
 
 test('creates a boolean flag and lands on its detail page', async ({ page }) => {
@@ -89,7 +106,7 @@ test('creates a boolean flag and lands on its detail page', async ({ page }) => 
 
   await page.getByRole('button', { name: 'Acme Inc' }).click()
   await page.getByRole('button', { name: 'Checkout' }).click()
-  await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
 
   await page.getByRole('button', { name: 'New flag' }).click()
   await page.getByLabel('Name').fill('Dark mode')

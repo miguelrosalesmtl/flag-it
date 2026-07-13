@@ -4,6 +4,7 @@ import type { AuthUser } from '@/types/auth'
 import type { Environment } from '@/types/environment'
 import type { Flag, FlagConfig } from '@/types/flag'
 import type { Project } from '@/types/project'
+import type { Segment } from '@/types/segment'
 import type { SetupInput } from '@/types/setup'
 import type { Tenant } from '@/types/tenant'
 import type { CreateUserInput, User } from '@/types/user'
@@ -104,6 +105,22 @@ const mockEnvironments: Environment[] = [
     project_id: 'p1',
     key: 'staging',
     name: 'Staging',
+    created_at: '2026-07-12T00:00:00Z',
+    updated_at: '2026-07-12T00:00:00Z',
+  },
+]
+
+const mockSegments: Segment[] = [
+  {
+    id: 's1',
+    project_id: 'p1',
+    key: 'beta-users',
+    name: 'Beta users',
+    description: 'Early-access cohort.',
+    included: ['user-1', 'user-2'],
+    excluded: [],
+    rules: [],
+    version: 1,
     created_at: '2026-07-12T00:00:00Z',
     updated_at: '2026-07-12T00:00:00Z',
   },
@@ -241,6 +258,10 @@ export const handlers = [
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', () =>
     HttpResponse.json({ environments: mockEnvironments }),
+  ),
+
+  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments', () =>
+    HttpResponse.json({ segments: mockSegments }),
   ),
 
   http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
