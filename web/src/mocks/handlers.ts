@@ -4,6 +4,7 @@ import type { AuthUser } from '@/types/auth'
 import type { ChangeRequest, ChangeStatus } from '@/types/change'
 import type { ScheduledChange, ScheduledStatus } from '@/types/scheduled-change'
 import type { FlagTrigger, TriggerAction } from '@/types/trigger'
+import type { Webhook } from '@/types/webhook'
 import type { SeenContext } from '@/types/context'
 import type { Member } from '@/types/member'
 import type { Role } from '@/types/role'
@@ -224,6 +225,11 @@ const triggerURL = (token: string) => `http://localhost:8080/api/v1/triggers/${t
 // Strips the secret token/url — mirrors the server, which reveals them once.
 const withoutSecret = (t: FlagTrigger): FlagTrigger => ({ ...t, token: undefined, url: undefined })
 
+// Outbound webhooks.
+let mockWebhooks: Webhook[] = []
+const webhookSecret = () => `whsec_${crypto.randomUUID().replace(/-/g, '')}`
+const webhookNoSecret = (w: Webhook): Webhook => ({ ...w, secret: undefined })
+
 // Lazily apply any pending scheduled changes whose time has come (the mock's
 // stand-in for the backend scheduler). Called before every scheduled read.
 function runDueScheduledChanges() {
@@ -304,6 +310,7 @@ export function resetBackend() {
   changeRequests = []
   scheduledChanges = []
   flagTriggers = []
+  mockWebhooks = []
 }
 
 export const handlers = [
@@ -839,4 +846,77 @@ export const handlers = [
       return new HttpResponse(null, { status: 204 })
     },
   ),
+
+  // --- Outbound webhooks ---
+  http.get('*/api/v1/tenants/:tenantSlug/webhooks', () =>
+    HttpResponse.json({ webhooks: mockWebhooks.map(webhookNoSecret) }),
+  ),
+
+  http.post('*/api/v1/tenants/:tenantSlug/webhooks', async ({ request }) => {
+    const body = (await request.json()) as {
+      url: string
+      event_types: string[]
+      description?: string
+    }
+    if (!body.event_types?.length) {
+      return HttpResponse.json({ detail: 'at least one event type is required' }, { status: 400 })
+    }
+    const w: Webhook = {
+      id: crypto.randomUUID(),
+      tenant_id: 't1',
+      url: body.url,
+      secret: webhookSecret(),
+      event_types: body.event_types,
+      description: body.description ?? '',
+      enabled: true,
+      created_by: mockUser.id,
+      created_by_email: mockUser.email,
+      created_at: new Date().toISOString(),
+    }
+    mockWebhooks = [w, ...mockWebhooks]
+    return HttpResponse.json(w)
+  }),
+
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/enabled',
+    async ({ params, request }) => {
+      const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
+      if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+      const body = (await request.json()) as { enabled: boolean }
+      w.enabled = body.enabled
+      return HttpResponse.json(webhookNoSecret(w))
+    },
+  ),
+
+  http.post('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/reset', ({ params }) => {
+    const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
+    if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+    w.secret = webhookSecret()
+    return HttpResponse.json(w)
+  }),
+
+  http.post('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/test', ({ params }) => {
+    const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
+    if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+    return HttpResponse.json({
+      id: crypto.randomUUID(),
+      webhook_id: w.id,
+      event_type: 'webhook.test',
+      status: 'pending',
+      attempts: 0,
+      response_status: 0,
+      next_attempt_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      delivered_at: null,
+    })
+  }),
+
+  http.get('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/deliveries', () =>
+    HttpResponse.json({ deliveries: [] }),
+  ),
+
+  http.delete('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId', ({ params }) => {
+    mockWebhooks = mockWebhooks.filter((x) => x.id !== String(params.webhookId))
+    return new HttpResponse(null, { status: 204 })
+  }),
 ]

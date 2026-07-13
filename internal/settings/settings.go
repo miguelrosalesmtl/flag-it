@@ -68,6 +68,9 @@ type Server struct {
 	// ScheduledChangeInterval is how often the scheduler wakes to apply
 	// scheduled flag changes whose time has come.
 	ScheduledChangeInterval time.Duration `env:"SCHEDULED_CHANGE_INTERVAL" envDefault:"15s"`
+	// WebhookDeliveryInterval is how often the deliverer sends due outbound
+	// webhook deliveries (and retries failed ones).
+	WebhookDeliveryInterval time.Duration `env:"WEBHOOK_DELIVERY_INTERVAL" envDefault:"10s"`
 	// CORSAllowedOrigins lists browser origins allowed to call the API (comma
 	// separated). "*" allows any (fine for dev; restrict in production). Auth is
 	// via the Authorization header, not cookies, so credentials are not shared.

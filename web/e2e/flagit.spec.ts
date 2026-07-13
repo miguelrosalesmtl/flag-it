@@ -507,3 +507,38 @@ test('creates a flag trigger, reveals its URL, then deletes it', async ({ page }
   await page.getByRole('button', { name: 'Delete' }).click()
   await expect(page.getByText('No triggers.')).toBeVisible()
 })
+
+test('adds an outbound webhook in settings and reveals its secret', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await page.getByRole('link', { name: 'Settings' }).click()
+  await page.getByRole('link', { name: 'Integrations' }).click()
+  await expect(page.getByRole('heading', { name: 'Webhooks' })).toBeVisible()
+  await expect(page.getByText('No webhooks yet.')).toBeVisible()
+
+  // Add a webhook (defaults to all events); its secret is revealed once.
+  await page.getByRole('button', { name: 'Add webhook' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Payload URL').fill('https://example.com/hooks/flag-it')
+  await dialog.getByLabel('Description').fill('Slack notifications')
+  await dialog.getByRole('button', { name: 'Add webhook' }).click()
+  await expect(dialog).toBeHidden()
+
+  await expect(page.getByText(/won.t be shown again/)).toBeVisible()
+  await expect(page.getByText(/whsec_/)).toBeVisible()
+  await expect(page.getByText('https://example.com/hooks/flag-it')).toBeVisible()
+  await expect(page.getByText('All events')).toBeVisible()
+
+  // A test event can be queued.
+  await page.getByRole('button', { name: 'Test' }).click()
+  await expect(page.getByText(/Test event queued/)).toBeVisible()
+
+  // Delete it; the empty state returns.
+  await page.getByRole('button', { name: 'Delete' }).click()
+  await expect(page.getByText('No webhooks yet.')).toBeVisible()
+})

@@ -18,6 +18,7 @@ import { RolesSettingsPage } from '@/features/roles/RolesSettingsPage'
 import { SdkKeysPage } from '@/features/sdk-keys/SdkKeysPage'
 import { SegmentDetailPage } from '@/features/segments/SegmentDetailPage'
 import { SegmentsPage } from '@/features/segments/SegmentsPage'
+import { WebhooksSettingsPage } from '@/features/webhooks/WebhooksSettingsPage'
 import { GeneralSettingsPage } from '@/features/settings/GeneralSettingsPage'
 import { SettingsPlaceholder } from '@/features/settings/SettingsPlaceholder'
 import { TenantsPage } from '@/features/tenants/TenantsPage'
@@ -69,7 +70,7 @@ export const router = createBrowserRouter([
               { path: 'members', Component: MembersSettingsPage },
               { path: 'teams', Component: SettingsPlaceholder },
               { path: 'roles', Component: RolesSettingsPage },
-              { path: 'integrations', Component: SettingsPlaceholder },
+              { path: 'integrations', Component: WebhooksSettingsPage },
               { path: 'applications', Component: SettingsPlaceholder },
               { path: 'relay-proxy', Component: SettingsPlaceholder },
               { path: 'authorization', Component: SettingsPlaceholder },
