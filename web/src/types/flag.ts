@@ -1,3 +1,5 @@
+import type { Clause } from '@/types/segment'
+
 /**
  * A flag *definition*. Per-environment state (on/off, targeting rules) is a
  * separate resource (FlagConfig) and is not part of this shape — the list screen
@@ -41,6 +43,14 @@ export interface VariationOrRollout {
   }
 }
 
+/** A targeting rule: contexts matching all clauses get the served variation. */
+export interface FlagRule {
+  id?: string
+  clauses: Clause[]
+  variation?: number
+  rollout?: VariationOrRollout['rollout']
+}
+
 /**
  * A flag's configuration in one environment: the on/off switch, targeting, and
  * the fallthrough. Written via the semantic-instruction PATCH; read via GET.
@@ -57,7 +67,7 @@ export interface FlagConfig {
   off_variation: number
   fallthrough: VariationOrRollout
   targets: Target[]
-  rules: unknown[]
+  rules: FlagRule[]
   version: number
 }
 
@@ -67,4 +77,6 @@ export interface FlagInstruction {
   variation?: number
   contextKind?: string
   values?: string[]
+  clauses?: Clause[]
+  ruleId?: string
 }

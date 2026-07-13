@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
 import { FlagConfigCard } from '@/features/flags/components/FlagConfigCard'
+import { FlagRules } from '@/features/flags/components/FlagRules'
 import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
 import {
   useFlag,
@@ -94,6 +95,22 @@ export function FlagDetailPage() {
                 }
                 busy={patch.isPending}
               />
+              <section className="space-y-3 rounded-xl border p-4">
+                <h2 className="text-sm font-semibold">Targeting rules</h2>
+                <p className="text-muted-foreground text-sm">
+                  When on, contexts matching a rule get its variation (rules are checked in order,
+                  before the default).
+                </p>
+                <FlagRules
+                  flag={flag.data}
+                  rules={config.data.rules}
+                  onAddRule={(clauses, variation) =>
+                    patch.mutate([{ kind: 'addRule', clauses, variation }])
+                  }
+                  onRemoveRule={(ruleId) => patch.mutate([{ kind: 'removeRule', ruleId }])}
+                  busy={patch.isPending}
+                />
+              </section>
             </>
           )}
         </div>
