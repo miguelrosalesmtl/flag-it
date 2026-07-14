@@ -384,6 +384,32 @@ export const handlers = [
 
   http.get('*/api/v1/tenants', () => HttpResponse.json({ tenants })),
 
+  http.delete('*/api/v1/tenants/:tenantSlug', ({ params }) => {
+    tenants = tenants.filter((t) => t.slug !== String(params.tenantSlug))
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.delete('*/api/v1/tenants/:tenantSlug/projects/:projectKey', ({ params }) => {
+    mockProjects = mockProjects.filter((p) => p.key !== String(params.projectKey))
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.delete(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
+    ({ params }) => {
+      mockFlags = mockFlags.filter((f) => f.key !== String(params.flagKey))
+      return new HttpResponse(null, { status: 204 })
+    },
+  ),
+
+  http.delete(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey',
+    ({ params }) => {
+      mockSegments = mockSegments.filter((s) => s.key !== String(params.segKey))
+      return new HttpResponse(null, { status: 204 })
+    },
+  ),
+
   http.get('*/api/v1/permissions', () => HttpResponse.json({ permissions: allPermissions })),
 
   http.get('*/api/v1/tenants/:tenantSlug/roles', () => HttpResponse.json({ roles: mockRoles })),

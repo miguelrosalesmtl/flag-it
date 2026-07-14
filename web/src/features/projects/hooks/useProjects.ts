@@ -37,3 +37,11 @@ export function useProject(tenantSlug: string, projectKey: string) {
     queryFn: () => projectsApi.get(tenantSlug, projectKey),
   })
 }
+
+export function useDeleteProject(tenantSlug: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (projectKey: string) => projectsApi.remove(tenantSlug, projectKey),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.projects(tenantSlug) }),
+  })
+}

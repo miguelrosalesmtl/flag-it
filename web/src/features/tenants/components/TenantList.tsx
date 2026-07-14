@@ -1,3 +1,4 @@
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import {
   Table,
   TableBody,
@@ -13,10 +14,13 @@ export interface TenantListProps {
   tenants: Tenant[]
   /** Emitted with a tenant's slug when its row is opened. Navigation is the container's job. */
   onOpen?: (slug: string) => void
+  /** Emitted with a tenant's slug to delete it (renders a guarded action). */
+  onDelete?: (slug: string) => void
+  busy?: boolean
 }
 
 /** Presentational. Renders the tenant table; no data access, no branching on load/error. */
-export function TenantList({ tenants, onOpen }: TenantListProps) {
+export function TenantList({ tenants, onOpen, onDelete, busy }: TenantListProps) {
   if (tenants.length === 0) {
     return (
       <p className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
@@ -31,6 +35,7 @@ export function TenantList({ tenants, onOpen }: TenantListProps) {
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Slug</TableHead>
+          {onDelete ? <TableHead className="w-0" /> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -50,6 +55,19 @@ export function TenantList({ tenants, onOpen }: TenantListProps) {
               )}
             </TableCell>
             <TableCell className="text-muted-foreground font-mono text-sm">{tenant.slug}</TableCell>
+            {onDelete ? (
+              <TableCell className="text-right">
+                <ConfirmDeleteDialog
+                  triggerLabel="Delete"
+                  triggerVariant="ghost"
+                  title={`Delete ${tenant.name}?`}
+                  description="This permanently removes the tenant and everything in it — projects, flags, segments, members, and keys. This cannot be undone."
+                  confirmLabel="Delete tenant"
+                  busy={busy}
+                  onConfirm={() => onDelete(tenant.slug)}
+                />
+              </TableCell>
+            ) : null}
           </TableRow>
         ))}
       </TableBody>

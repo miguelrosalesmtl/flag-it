@@ -1,9 +1,10 @@
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SegmentEditor } from '@/features/segments/components/SegmentEditor'
-import { useSaveSegment, useSegment } from '@/features/segments/hooks/useSegments'
+import { useDeleteSegment, useSaveSegment, useSegment } from '@/features/segments/hooks/useSegments'
 
 /**
  * Container. A segment's definition: individually included/excluded context keys
@@ -11,24 +12,37 @@ import { useSaveSegment, useSegment } from '@/features/segments/hooks/useSegment
  */
 export function SegmentDetailPage() {
   const { tenantSlug = '', projectKey = '', segKey = '' } = useParams()
+  const navigate = useNavigate()
   const segment = useSegment(tenantSlug, projectKey, segKey)
   const save = useSaveSegment(tenantSlug, projectKey, segKey)
+  const deleteSegment = useDeleteSegment(tenantSlug, projectKey)
+
+  const segmentsUrl = `/tenants/${tenantSlug}/projects/${projectKey}/segments`
 
   return (
     <section className="space-y-6">
-      <header className="space-y-1">
-        <Link
-          to={`/tenants/${tenantSlug}/projects/${projectKey}/segments`}
-          className="text-muted-foreground text-sm hover:underline"
-        >
-          ← Segments
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {segment.data?.name ?? segKey}
-        </h1>
-        {segment.data?.description ? (
-          <p className="text-muted-foreground text-sm">{segment.data.description}</p>
-        ) : null}
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <Link to={segmentsUrl} className="text-muted-foreground text-sm hover:underline">
+            ← Segments
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {segment.data?.name ?? segKey}
+          </h1>
+          {segment.data?.description ? (
+            <p className="text-muted-foreground text-sm">{segment.data.description}</p>
+          ) : null}
+        </div>
+        <ConfirmDeleteDialog
+          triggerLabel="Delete segment"
+          title={`Delete ${segment.data?.name ?? segKey}?`}
+          description="Flags referencing this segment will no longer match it. This cannot be undone."
+          confirmLabel="Delete segment"
+          busy={deleteSegment.isPending}
+          onConfirm={() =>
+            deleteSegment.mutate(segKey, { onSuccess: () => void navigate(segmentsUrl) })
+          }
+        />
       </header>
 
       {segment.isPending ? (

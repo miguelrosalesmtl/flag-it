@@ -16,4 +16,6 @@ export const segmentsApi = {
   // Create or update a segment (the key is addressed in the path; PUT).
   save: (tenantSlug: string, projectKey: string, segKey: string, body: SaveSegmentInput) =>
     api.put<Segment>(`${segBase(tenantSlug, projectKey)}/${segKey}`, body),
+  remove: (tenantSlug: string, projectKey: string, segKey: string) =>
+    api.delete<void>(`${segBase(tenantSlug, projectKey)}/${segKey}`),
 }

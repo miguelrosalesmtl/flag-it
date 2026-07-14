@@ -50,3 +50,12 @@ export function useSaveSegment(tenantSlug: string, projectKey: string, segKey: s
     },
   })
 }
+
+export function useDeleteSegment(tenantSlug: string, projectKey: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (segKey: string) => segmentsApi.remove(tenantSlug, projectKey, segKey),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.segments(tenantSlug, projectKey) }),
+  })
+}
