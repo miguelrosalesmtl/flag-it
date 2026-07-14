@@ -683,6 +683,14 @@ test('adds an outbound webhook in settings and reveals its secret', async ({ pag
   await page.getByRole('button', { name: 'Test' }).click()
   await expect(page.getByText(/Test event queued/)).toBeVisible()
 
+  // Recent deliveries open in a dialog.
+  await page.getByRole('button', { name: 'Deliveries' }).click()
+  const deliveriesDialog = page.getByRole('dialog')
+  await expect(deliveriesDialog.getByText('Recent deliveries')).toBeVisible()
+  await expect(deliveriesDialog.getByText('flag.config.patched')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(deliveriesDialog).toBeHidden()
+
   // Delete it; the empty state returns.
   await page.getByRole('button', { name: 'Delete' }).click()
   await expect(page.getByText('No webhooks yet.')).toBeVisible()

@@ -12,6 +12,7 @@ export interface WebhookListProps {
   notice?: string | null
   onToggleEnabled?: (id: string, enabled: boolean) => void
   onTest?: (id: string) => void
+  onViewDeliveries?: (id: string) => void
   onReset?: (id: string) => void
   onDelete?: (id: string) => void
   busy?: boolean
@@ -29,6 +30,7 @@ export function WebhookList({
   notice,
   onToggleEnabled,
   onTest,
+  onViewDeliveries,
   onReset,
   onDelete,
   busy,
@@ -82,6 +84,13 @@ export function WebhookList({
                 />
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => onTest?.(w.id)}>
                   Test
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onViewDeliveries?.(w.id)}
+                >
+                  Deliveries
                 </Button>
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => onReset?.(w.id)}>
                   Reset secret

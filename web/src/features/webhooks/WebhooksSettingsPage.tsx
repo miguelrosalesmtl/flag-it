@@ -2,8 +2,15 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateWebhookDialog } from '@/features/webhooks/components/CreateWebhookDialog'
+import { WebhookDeliveries } from '@/features/webhooks/components/WebhookDeliveries'
 import { WebhookList } from '@/features/webhooks/components/WebhookList'
 import {
   useCreateWebhook,
@@ -11,6 +18,7 @@ import {
   useResetWebhookSecret,
   useSetWebhookEnabled,
   useTestWebhook,
+  useWebhookDeliveries,
   useWebhooks,
 } from '@/features/webhooks/hooks/useWebhooks'
 
@@ -29,6 +37,8 @@ export function WebhooksSettingsPage() {
 
   const [revealedSecret, setRevealedSecret] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [deliveriesFor, setDeliveriesFor] = useState<string | null>(null)
+  const deliveries = useWebhookDeliveries(tenantSlug, deliveriesFor ?? '', deliveriesFor !== null)
 
   return (
     <section className="space-y-6">
@@ -71,6 +81,7 @@ export function WebhooksSettingsPage() {
               onSuccess: () => setNotice('Test event queued — it will be delivered shortly.'),
             })
           }
+          onViewDeliveries={(id) => setDeliveriesFor(id)}
           onReset={(id) =>
             reset.mutate(id, {
               onSuccess: (w) => {
@@ -83,6 +94,24 @@ export function WebhooksSettingsPage() {
           busy={setEnabled.isPending || reset.isPending || remove.isPending || test.isPending}
         />
       )}
+
+      <Dialog open={deliveriesFor !== null} onOpenChange={(open) => !open && setDeliveriesFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recent deliveries</DialogTitle>
+          </DialogHeader>
+          {deliveries.isPending ? (
+            <Skeleton className="h-24" />
+          ) : deliveries.isError ? (
+            <ErrorState
+              message={deliveries.error.message}
+              onRetry={() => void deliveries.refetch()}
+            />
+          ) : (
+            <WebhookDeliveries deliveries={deliveries.data ?? []} />
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

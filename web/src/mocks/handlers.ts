@@ -939,9 +939,15 @@ export const handlers = [
     })
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/deliveries', () =>
-    HttpResponse.json({ deliveries: [] }),
-  ),
+  http.get('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/deliveries', ({ params }) => {
+    const id = String(params.webhookId)
+    return HttpResponse.json({
+      deliveries: [
+        { id: 'd1', webhook_id: id, event_type: 'flag.config.patched', status: 'success', attempts: 1, response_status: 200, next_attempt_at: '2026-07-13T12:00:00Z', created_at: '2026-07-13T12:00:00Z', delivered_at: '2026-07-13T12:00:01Z' },
+        { id: 'd2', webhook_id: id, event_type: 'change.approved', status: 'failed', attempts: 5, response_status: 500, error: 'status 500', next_attempt_at: '2026-07-13T11:00:00Z', created_at: '2026-07-13T11:00:00Z', delivered_at: '2026-07-13T11:05:00Z' },
+      ],
+    })
+  }),
 
   http.delete('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId', ({ params }) => {
     mockWebhooks = mockWebhooks.filter((x) => x.id !== String(params.webhookId))
