@@ -5,19 +5,23 @@ import { ErrorState } from '@/components/error-state'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AddMemberDialog } from '@/features/members/components/AddMemberDialog'
+import { GrantProjectRoleDialog } from '@/features/members/components/GrantProjectRoleDialog'
 import { MemberList } from '@/features/members/components/MemberList'
-import { useAddMember, useMembers } from '@/features/members/hooks/useMembers'
+import { useAddMember, useGrantProjectRole, useMembers } from '@/features/members/hooks/useMembers'
 import { useRoles } from '@/features/roles/hooks/useRoles'
 
 /** Container. Lists a tenant's members and adds new ones (with an optional role). */
 export function MembersSettingsPage() {
-  const { tenantSlug = '' } = useParams()
+  const { tenantSlug = '', projectKey = '' } = useParams()
   const members = useMembers(tenantSlug)
   const roles = useRoles(tenantSlug)
   const addMember = useAddMember(tenantSlug)
+  const grantRole = useGrantProjectRole(tenantSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const tenantRoles = (roles.data ?? []).filter((r) => r.scope === 'tenant')
+  const projectRoles = (roles.data ?? []).filter((r) => r.scope === 'project')
 
   return (
     <section className="space-y-6">
@@ -26,8 +30,23 @@ export function MembersSettingsPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
           <p className="text-muted-foreground text-sm">Users with access to this tenant.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>Add member</Button>
+        <div className="flex gap-2">
+          <GrantProjectRoleDialog
+            projectKey={projectKey}
+            roles={projectRoles}
+            onGrant={(input) =>
+              grantRole.mutate(input, {
+                onSuccess: () => setNotice(`Granted ${input.email} the ${input.role} role on ${projectKey}.`),
+              })
+            }
+            isGranting={grantRole.isPending}
+            errorMessage={grantRole.isError ? 'Could not grant the role — check the email exists.' : undefined}
+          />
+          <Button onClick={() => setDialogOpen(true)}>Add member</Button>
+        </div>
       </header>
+
+      {notice ? <p className="text-muted-foreground text-sm">{notice}</p> : null}
 
       <AddMemberDialog
         open={dialogOpen}

@@ -286,6 +286,14 @@ test('shows roles and members in settings and adds a member', async ({ page }) =
   await page.getByLabel('Email').fill('dev@flag-it.dev')
   await page.getByRole('dialog').getByRole('button', { name: 'Add member' }).click()
   await expect(page.getByText('dev@flag-it.dev')).toBeVisible()
+
+  // Grant a user a project-scoped role.
+  await page.getByRole('button', { name: 'Grant project role' }).click()
+  const grant = page.getByRole('dialog')
+  await grant.getByLabel('Email').fill('contractor@flag-it.dev')
+  await grant.getByLabel('Role').selectOption('writer')
+  await grant.getByRole('button', { name: 'Grant role' }).click()
+  await expect(page.getByText(/Granted contractor@flag-it.dev the writer role/)).toBeVisible()
 })
 
 test('creates a custom role with picked permissions', async ({ page }) => {
