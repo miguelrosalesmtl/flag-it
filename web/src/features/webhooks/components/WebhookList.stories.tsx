@@ -34,6 +34,7 @@ const meta = {
     onReset: fn(),
     onDelete: fn(),
     onDismissSecret: fn(),
+    onViewDeliveries: fn(),
   },
 } satisfies Meta<typeof WebhookList>
 
