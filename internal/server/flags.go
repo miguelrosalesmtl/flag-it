@@ -35,17 +35,17 @@ type listEnvFlagsOutput struct {
 }
 
 type listEnvFlagsInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	EnvKey     string `path:"envKey"`
-	Search     string `query:"search" doc:"filter by flag name, key, or description"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	EnvKey           string `path:"envKey"`
+	Search           string `query:"search" doc:"filter by flag name, key, or description"`
 }
 
 type saveFlagInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	Body             struct {
 		Name                string            `json:"name,omitempty"`
 		Description         string            `json:"description,omitempty"`
 		ClientSideAvailable bool              `json:"client_side_available,omitempty" doc:"expose to client (public) SDK keys; default false = server-only"`
@@ -59,25 +59,25 @@ type flagOutput struct {
 }
 
 type flagPath struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
 }
 
 // flagConfigPath addresses a flag's config in one environment.
 type flagConfigPath struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
 }
 
 type saveFlagConfigInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Body             struct {
 		On            bool                      `json:"on"`
 		OffVariation  int                       `json:"off_variation"`
 		Prerequisites []models.Prerequisite     `json:"prerequisites,omitempty"`
@@ -92,28 +92,28 @@ type flagConfigOutput struct {
 }
 
 type patchFlagConfigInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Body             struct {
 		Comment      string              `json:"comment,omitempty" doc:"optional note recorded in the audit log"`
 		Instructions []flags.Instruction `json:"instructions"`
 	}
 }
 
 func (s *Server) registerFlags() {
-	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}"
+	base := "/api/v1/organizations/{organizationSlug}/projects/{projectKey}"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-flags", Method: http.MethodGet, Path: base + "/flags",
 		Summary: "List a project's flag definitions (requires flag.read)", Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *projectPath) (*listFlagsOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		list, err := s.flags.ListFlags(ctx, project.ID, "")
@@ -131,11 +131,11 @@ func (s *Server) registerFlags() {
 		Summary: "List a project's flags with their on/off state in one environment (requires flag.read)",
 		Tags:    []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *listEnvFlagsInput) (*listEnvFlagsOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
@@ -165,11 +165,11 @@ func (s *Server) registerFlags() {
 			"evaluation activity, plus its last-evaluated time and temporary marker.",
 		Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *projectPath) (*listFlagLifecycleOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		list, err := s.flags.ListFlagLifecycle(ctx, project.ID)
@@ -185,11 +185,11 @@ func (s *Server) registerFlags() {
 		OperationID: "get-flag", Method: http.MethodGet, Path: base + "/flags/{flagKey}",
 		Summary: "Get a flag definition (requires flag.read)", Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *flagPath) (*flagOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -205,11 +205,11 @@ func (s *Server) registerFlags() {
 		Summary: "Get a flag's configuration in one environment (requires flag.read)",
 		Tags:    []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *flagConfigPath) (*flagConfigOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -231,18 +231,18 @@ func (s *Server) registerFlags() {
 		OperationID: "save-flag", Method: http.MethodPut, Path: base + "/flags/{flagKey}",
 		Summary: "Create or update a flag definition (requires flag.write)", Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *saveFlagInput) (*flagOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.SaveFlag(ctx, project.ID, in.FlagKey, in.Body.Name, in.Body.Description, in.Body.ClientSideAvailable, in.Body.Temporary, in.Body.Variations)
 		if err != nil {
 			return nil, flagError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "flag.saved", ResourceType: "flag", ResourceKey: in.FlagKey})
 		return &flagOutput{Body: flag}, nil
 	})
@@ -252,11 +252,11 @@ func (s *Server) registerFlags() {
 		Summary: "Delete a flag (requires flag.delete); cascades its configs", Tags: []string{"Flags"}, Security: bearer,
 		DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *flagPath) (*noContent, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagDelete, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagDelete, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -266,7 +266,7 @@ func (s *Server) registerFlags() {
 		if err := s.flags.DeleteFlag(ctx, flag.ID); err != nil {
 			return nil, flagError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "flag.deleted", ResourceType: "flag", ResourceKey: in.FlagKey})
 		return &noContent{}, nil
 	})
@@ -276,11 +276,11 @@ func (s *Server) registerFlags() {
 		Path:    base + "/flags/{flagKey}/environments/{envKey}",
 		Summary: "Set a flag's targeting config in an environment (requires flag.write)", Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *saveFlagConfigInput) (*flagConfigOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -302,7 +302,7 @@ func (s *Server) registerFlags() {
 		if err != nil {
 			return nil, flagError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "flag.config.set", ResourceType: "flag", ResourceKey: in.FlagKey,
 			Data: jsonData(map[string]any{"environment": in.EnvKey})})
 		return &flagConfigOutput{Body: saved}, nil
@@ -316,11 +316,11 @@ func (s *Server) registerFlags() {
 			"instead of replacing the whole config.",
 		Tags: []string{"Flags"}, Security: bearer,
 	}, func(ctx context.Context, in *patchFlagConfigInput) (*flagConfigOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -335,7 +335,7 @@ func (s *Server) registerFlags() {
 		if err != nil {
 			return nil, flagError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "flag.config.patched", ResourceType: "flag", ResourceKey: in.FlagKey,
 			Comment: in.Body.Comment,
 			Data:    jsonData(map[string]any{"environment": in.EnvKey, "instructions": in.Body.Instructions})})

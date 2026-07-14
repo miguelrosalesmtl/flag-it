@@ -10,7 +10,7 @@ import {
 import type { Project } from '@/types/project'
 
 export interface ProjectSwitcherProps {
-  /** Projects in the current tenant. */
+  /** Projects in the current organization. */
   projects: Project[]
   /** Key of the project currently open. */
   currentKey: string
@@ -18,7 +18,7 @@ export interface ProjectSwitcherProps {
   onSelect: (key: string) => void
 }
 
-/** Presentational. A dropdown to switch between the tenant's projects. */
+/** Presentational. A dropdown to switch between the organization's projects. */
 export function ProjectSwitcher({ projects, currentKey, onSelect }: ProjectSwitcherProps) {
   const current = projects.find((p) => p.key === currentKey)
 

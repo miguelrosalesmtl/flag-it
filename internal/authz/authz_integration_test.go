@@ -15,8 +15,8 @@ import (
 )
 
 // TestAuthorizationResolution exercises the dynamic-role permission model against
-// a real Postgres: seeded system roles (tenant_admin/writer/reader), scope
-// semantics, cross-tenant isolation, and a custom per-tenant role. Skipped when
+// a real Postgres: seeded system roles (organization_admin/writer/reader), scope
+// semantics, cross-organization isolation, and a custom per-organization role. Skipped when
 // no database is reachable.
 func TestAuthorizationResolution(t *testing.T) {
 	ctx := context.Background()
@@ -37,13 +37,13 @@ func TestAuthorizationResolution(t *testing.T) {
 	suffix := time.Now().UnixNano()
 	email := func(name string) string { return fmt.Sprintf("%s-%d@test.local", name, suffix) }
 
-	// Two tenants (each auto-seeds tenant_admin/writer/reader roles).
-	acme, err := st.CreateTenant(ctx, fmt.Sprintf("acme-%d", suffix), "Acme")
+	// Two organizations (each auto-seeds organization_admin/writer/reader roles).
+	acme, err := st.CreateOrganization(ctx, fmt.Sprintf("acme-%d", suffix), "Acme")
 	mustNoErr(t, err, "create acme")
-	other, err := st.CreateTenant(ctx, fmt.Sprintf("other-%d", suffix), "Other")
+	other, err := st.CreateOrganization(ctx, fmt.Sprintf("other-%d", suffix), "Other")
 	mustNoErr(t, err, "create other")
-	defer deleteTenant(ctx, t, pool, acme.ID)
-	defer deleteTenant(ctx, t, pool, other.ID)
+	defer deleteOrganization(ctx, t, pool, acme.ID)
+	defer deleteOrganization(ctx, t, pool, other.ID)
 
 	projA, _, err := st.CreateProject(ctx, acme.ID, "app-a", "App A")
 	mustNoErr(t, err, "create project A")
@@ -64,13 +64,13 @@ func TestAuthorizationResolution(t *testing.T) {
 	}
 
 	// Grants via seeded roles.
-	assignTenantRole(ctx, t, st, admin.ID, acme.ID, "tenant_admin")
-	assignProjectRole(ctx, t, st, writer.ID, acme.ID, projA.ID, "writer") // writer on project A only
-	assignTenantRole(ctx, t, st, outsider.ID, other.ID, "tenant_admin")   // admin of a different tenant
+	assignOrganizationRole(ctx, t, st, admin.ID, acme.ID, "organization_admin")
+	assignProjectRole(ctx, t, st, writer.ID, acme.ID, projA.ID, "writer")           // writer on project A only
+	assignOrganizationRole(ctx, t, st, outsider.ID, other.ID, "organization_admin") // admin of a different organization
 
-	acmeProjA := models.Resource{TenantID: acme.ID, ProjectID: projA.ID}
-	acmeProjB := models.Resource{TenantID: acme.ID, ProjectID: projB.ID}
-	acmeTenant := models.Resource{TenantID: acme.ID}
+	acmeProjA := models.Resource{OrganizationID: acme.ID, ProjectID: projA.ID}
+	acmeProjB := models.Resource{OrganizationID: acme.ID, ProjectID: projB.ID}
+	acmeOrganization := models.Resource{OrganizationID: acme.ID}
 
 	cases := []struct {
 		name    string
@@ -80,17 +80,17 @@ func TestAuthorizationResolution(t *testing.T) {
 		allowed bool
 	}{
 		{"superuser writes any project", super.ID, models.PermFlagWrite, acmeProjA, true},
-		{"tenant_admin writes project A", admin.ID, models.PermFlagWrite, acmeProjA, true},
-		{"tenant_admin writes project B (tenant scope covers all)", admin.ID, models.PermFlagWrite, acmeProjB, true},
-		{"tenant_admin manages members", admin.ID, models.PermMemberManage, acmeTenant, true},
-		{"tenant_admin manages sdk keys", admin.ID, models.PermSDKKeyManage, acmeTenant, true},
+		{"organization_admin writes project A", admin.ID, models.PermFlagWrite, acmeProjA, true},
+		{"organization_admin writes project B (organization scope covers all)", admin.ID, models.PermFlagWrite, acmeProjB, true},
+		{"organization_admin manages members", admin.ID, models.PermMemberManage, acmeOrganization, true},
+		{"organization_admin manages sdk keys", admin.ID, models.PermSDKKeyManage, acmeOrganization, true},
 		{"writer writes project A", writer.ID, models.PermFlagWrite, acmeProjA, true},
 		{"writer reads project A", writer.ID, models.PermFlagRead, acmeProjA, true},
 		{"writer CANNOT write project B", writer.ID, models.PermFlagWrite, acmeProjB, false},
-		{"writer CANNOT manage members", writer.ID, models.PermMemberManage, acmeTenant, false},
-		{"writer CANNOT manage sdk keys", writer.ID, models.PermSDKKeyManage, acmeTenant, false},
+		{"writer CANNOT manage members", writer.ID, models.PermMemberManage, acmeOrganization, false},
+		{"writer CANNOT manage sdk keys", writer.ID, models.PermSDKKeyManage, acmeOrganization, false},
 		{"outsider CANNOT read acme project", outsider.ID, models.PermFlagRead, acmeProjA, false},
-		{"outsider CANNOT read acme tenant", outsider.ID, models.PermTenantRead, acmeTenant, false},
+		{"outsider CANNOT read acme organization", outsider.ID, models.PermOrganizationRead, acmeOrganization, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestAuthorizationResolution(t *testing.T) {
 		})
 	}
 
-	// --- Custom per-tenant role: a project-scoped "releaser" that can manage SDK
+	// --- Custom per-organization role: a project-scoped "releaser" that can manage SDK
 	// keys. Proves dynamic role bundles work. ---
 	releaser, err := st.CreateRole(ctx, acme.ID, "releaser", "Releaser", "Manage SDK keys",
 		models.ScopeProject, []models.Permission{models.PermSDKKeyManage})
@@ -121,17 +121,17 @@ func TestAuthorizationResolution(t *testing.T) {
 	})
 }
 
-func assignTenantRole(ctx context.Context, t *testing.T, st *store.Store, userID, tenantID, roleKey string) {
+func assignOrganizationRole(ctx context.Context, t *testing.T, st *store.Store, userID, organizationID, roleKey string) {
 	t.Helper()
-	role, err := st.GetRoleByKey(ctx, tenantID, roleKey)
+	role, err := st.GetRoleByKey(ctx, organizationID, roleKey)
 	mustNoErr(t, err, "get role "+roleKey)
-	_, err = st.AssignTenantRole(ctx, userID, role.ID, tenantID)
-	mustNoErr(t, err, "assign tenant role "+roleKey)
+	_, err = st.AssignOrganizationRole(ctx, userID, role.ID, organizationID)
+	mustNoErr(t, err, "assign organization role "+roleKey)
 }
 
-func assignProjectRole(ctx context.Context, t *testing.T, st *store.Store, userID, tenantID, projectID, roleKey string) {
+func assignProjectRole(ctx context.Context, t *testing.T, st *store.Store, userID, organizationID, projectID, roleKey string) {
 	t.Helper()
-	role, err := st.GetRoleByKey(ctx, tenantID, roleKey)
+	role, err := st.GetRoleByKey(ctx, organizationID, roleKey)
 	mustNoErr(t, err, "get role "+roleKey)
 	_, err = st.AssignProjectRole(ctx, userID, role.ID, projectID)
 	mustNoErr(t, err, "assign project role "+roleKey)
@@ -144,10 +144,10 @@ func mustNoErr(t *testing.T, err error, ctx string) {
 	}
 }
 
-func deleteTenant(ctx context.Context, t *testing.T, pool *pgxpool.Pool, id string) {
+func deleteOrganization(ctx context.Context, t *testing.T, pool *pgxpool.Pool, id string) {
 	t.Helper()
-	if _, err := pool.Exec(ctx, `DELETE FROM tenants WHERE id = $1`, id); err != nil {
-		t.Logf("cleanup tenant %s: %v", id, err)
+	if _, err := pool.Exec(ctx, `DELETE FROM organizations WHERE id = $1`, id); err != nil {
+		t.Logf("cleanup organization %s: %v", id, err)
 	}
 }
 

@@ -18,7 +18,7 @@ export function UsersPage() {
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-          <p className="text-muted-foreground text-sm">Platform accounts across all tenants.</p>
+          <p className="text-muted-foreground text-sm">Platform accounts across all organizations.</p>
         </div>
         <CreateUserDialog
           onCreate={(input) => create.mutate(input)}

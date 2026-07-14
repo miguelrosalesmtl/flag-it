@@ -15,15 +15,15 @@ import { useCreateSdkKey, useRevokeSdkKey, useSdkKeys } from '@/features/sdk-key
  * and the keys for the selected one, with create + revoke.
  */
 export function SdkKeysPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
-  const environments = useEnvironments(tenantSlug, projectKey)
+  const { organizationSlug = '', projectKey = '' } = useParams()
+  const environments = useEnvironments(organizationSlug, projectKey)
 
   const [picked, setPicked] = useState('')
   const envKey = picked || environments.data?.[0]?.key || ''
 
-  const keys = useSdkKeys(tenantSlug, projectKey, envKey)
-  const createKey = useCreateSdkKey(tenantSlug, projectKey, envKey)
-  const revokeKey = useRevokeSdkKey(tenantSlug, projectKey, envKey)
+  const keys = useSdkKeys(organizationSlug, projectKey, envKey)
+  const createKey = useCreateSdkKey(organizationSlug, projectKey, envKey)
+  const revokeKey = useRevokeSdkKey(organizationSlug, projectKey, envKey)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (

@@ -9,11 +9,11 @@ import (
 )
 
 type listContextsInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	EnvKey     string `path:"envKey"`
-	Search     string `query:"search" doc:"filter by context kind or key"`
-	Limit      int    `query:"limit" doc:"max contexts (default 100, max 500)"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	EnvKey           string `path:"envKey"`
+	Search           string `query:"search" doc:"filter by context kind or key"`
+	Limit            int    `query:"limit" doc:"max contexts (default 100, max 500)"`
 }
 
 type listContextsOutput struct {
@@ -23,11 +23,11 @@ type listContextsOutput struct {
 }
 
 type getContextInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	EnvKey     string `path:"envKey"`
-	Kind       string `path:"kind"`
-	Key        string `path:"key"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	EnvKey           string `path:"envKey"`
+	Kind             string `path:"kind"`
+	Key              string `path:"key"`
 }
 
 // contextEvaluation is one flag's expected result for a context.
@@ -46,7 +46,7 @@ type getContextOutput struct {
 }
 
 func (s *Server) registerContexts() {
-	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}"
+	base := "/api/v1/organizations/{organizationSlug}/projects/{projectKey}"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-contexts", Method: http.MethodGet,
@@ -54,11 +54,11 @@ func (s *Server) registerContexts() {
 		Summary: "List contexts seen during evaluation in an environment (requires flag.read)",
 		Tags:    []string{"Contexts"}, Security: bearer,
 	}, func(ctx context.Context, in *listContextsInput) (*listContextsOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
@@ -80,11 +80,11 @@ func (s *Server) registerContexts() {
 		Summary: "A seen context's attributes and how every flag evaluates for it (requires flag.read)",
 		Tags:    []string{"Contexts"}, Security: bearer,
 	}, func(ctx context.Context, in *getContextInput) (*getContextOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)

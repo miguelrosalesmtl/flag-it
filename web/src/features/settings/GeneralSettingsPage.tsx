@@ -7,9 +7,9 @@ import { ProjectGeneralForm } from '@/features/settings/components/ProjectGenera
 
 /** Container. Project general settings — rename the project (the key is immutable). */
 export function GeneralSettingsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
-  const project = useProject(tenantSlug, projectKey)
-  const update = useUpdateProject(tenantSlug, projectKey)
+  const { organizationSlug = '', projectKey = '' } = useParams()
+  const project = useProject(organizationSlug, projectKey)
+  const update = useUpdateProject(organizationSlug, projectKey)
 
   return (
     <section className="space-y-6">

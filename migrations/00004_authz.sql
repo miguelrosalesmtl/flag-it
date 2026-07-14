@@ -1,7 +1,7 @@
 -- +goose Up
 
--- Per-project role for a tenant member. Absence of a row = no access to that
--- project. tenant_admins bypass this table entirely (full tenant access).
+-- Per-project role for a organization member. Absence of a row = no access to that
+-- project. organization_admins bypass this table entirely (full organization access).
 CREATE TABLE project_roles (
     id         uuid PRIMARY KEY DEFAULT uuidv7(),
     user_id    uuid NOT NULL REFERENCES users(id)    ON DELETE CASCADE,

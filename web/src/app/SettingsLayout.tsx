@@ -36,19 +36,19 @@ function Section({ label }: { label: string }) {
 
 /** The settings shell — its own left sidebar (org/project settings), reached via the gear. */
 export function SettingsLayout() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const { data: user } = useMe()
   const logout = useLogout()
   const { environment, enableMocking } = getConfig()
 
-  const base = `/tenants/${tenantSlug}/projects/${projectKey}/settings`
+  const base = `/organizations/${organizationSlug}/projects/${projectKey}/settings`
 
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-64 shrink-0 flex-col border-r">
         <div className="border-b p-3">
           <Link
-            to={`/tenants/${tenantSlug}/projects/${projectKey}`}
+            to={`/organizations/${organizationSlug}/projects/${projectKey}`}
             className="text-muted-foreground flex items-center gap-1 text-sm hover:underline"
           >
             <ArrowLeftIcon className="size-4" /> Back to project

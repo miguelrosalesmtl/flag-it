@@ -29,9 +29,9 @@ export const CompletingBothSteps: Story = {
       await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
     })
 
-    await step('step 2: tenant (slug auto-fills)', async () => {
-      await userEvent.type(canvas.getByLabelText('Tenant name'), 'Acme Inc')
-      await expect(canvas.getByLabelText('Tenant slug')).toHaveValue('acme-inc')
+    await step('step 2: organization (slug auto-fills)', async () => {
+      await userEvent.type(canvas.getByLabelText('Organization name'), 'Acme Inc')
+      await expect(canvas.getByLabelText('Organization slug')).toHaveValue('acme-inc')
       await userEvent.click(canvas.getByRole('button', { name: 'Finish setup' }))
     })
 
@@ -40,8 +40,8 @@ export const CompletingBothSteps: Story = {
         email: 'admin@flag-it.dev',
         password: 'supersecret123',
         full_name: undefined,
-        tenant_name: 'Acme Inc',
-        tenant_slug: 'acme-inc',
+        organization_name: 'Acme Inc',
+        organization_slug: 'acme-inc',
       })
     })
   },

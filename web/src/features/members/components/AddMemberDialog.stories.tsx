@@ -5,7 +5,7 @@ import { AddMemberDialog } from '@/features/members/components/AddMemberDialog'
 import type { Role } from '@/types/role'
 
 const roles: Role[] = [
-  { id: 'r1', tenant_id: 't1', key: 'tenant_admin', name: 'Tenant Admin', description: '', scope: 'tenant', is_system: true, permissions: [], created_at: '', updated_at: '' },
+  { id: 'r1', organization_id: 't1', key: 'organization_admin', name: 'Organization Admin', description: '', scope: 'organization', is_system: true, permissions: [], created_at: '', updated_at: '' },
 ]
 
 const meta = {

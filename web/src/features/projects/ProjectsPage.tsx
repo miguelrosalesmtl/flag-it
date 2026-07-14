@@ -9,14 +9,14 @@ import { ProjectList } from '@/features/projects/components/ProjectList'
 import { useCreateProject, useProjects } from '@/features/projects/hooks/useProjects'
 
 /**
- * Container. Lists the projects in the tenant named by the route, and opens a
+ * Container. Lists the projects in the organization named by the route, and opens a
  * project's flags when a row is clicked.
  */
 export function ProjectsPage() {
-  const { tenantSlug = '' } = useParams()
+  const { organizationSlug = '' } = useParams()
   const navigate = useNavigate()
-  const { data: projects, isPending, isError, error, refetch } = useProjects(tenantSlug)
-  const createProject = useCreateProject(tenantSlug)
+  const { data: projects, isPending, isError, error, refetch } = useProjects(organizationSlug)
+  const createProject = useCreateProject(organizationSlug)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
@@ -24,11 +24,11 @@ export function ProjectsPage() {
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <Link to="/" className="text-muted-foreground text-sm hover:underline">
-            ← Tenants
+            ← Organizations
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
           <p className="text-muted-foreground text-sm">
-            Projects in <span className="font-mono">{tenantSlug}</span>.
+            Projects in <span className="font-mono">{organizationSlug}</span>.
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>New project</Button>
@@ -41,7 +41,7 @@ export function ProjectsPage() {
           createProject.mutate(input, {
             onSuccess: (project) => {
               setDialogOpen(false)
-              void navigate(`/tenants/${tenantSlug}/projects/${project.key}`)
+              void navigate(`/organizations/${organizationSlug}/projects/${project.key}`)
             },
           })
         }
@@ -63,7 +63,7 @@ export function ProjectsPage() {
       ) : (
         <ProjectList
           projects={projects}
-          onOpen={(key) => void navigate(`/tenants/${tenantSlug}/projects/${key}`)}
+          onOpen={(key) => void navigate(`/organizations/${organizationSlug}/projects/${key}`)}
         />
       )}
     </section>

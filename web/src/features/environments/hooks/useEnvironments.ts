@@ -4,19 +4,19 @@ import { environmentsApi } from '@/api/endpoints/environments'
 import { queryKeys } from '@/lib/query-keys'
 import type { CreateEnvironmentInput } from '@/types/environment'
 
-export function useEnvironments(tenantSlug: string, projectKey: string, search = '') {
+export function useEnvironments(organizationSlug: string, projectKey: string, search = '') {
   return useQuery({
-    queryKey: [...queryKeys.environments(tenantSlug, projectKey), search],
-    queryFn: () => environmentsApi.list(tenantSlug, projectKey, search),
+    queryKey: [...queryKeys.environments(organizationSlug, projectKey), search],
+    queryFn: () => environmentsApi.list(organizationSlug, projectKey, search),
   })
 }
 
-export function useCreateEnvironment(tenantSlug: string, projectKey: string) {
+export function useCreateEnvironment(organizationSlug: string, projectKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateEnvironmentInput) =>
-      environmentsApi.create(tenantSlug, projectKey, input),
+      environmentsApi.create(organizationSlug, projectKey, input),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.environments(tenantSlug, projectKey) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.environments(organizationSlug, projectKey) }),
   })
 }

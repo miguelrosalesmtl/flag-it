@@ -22,7 +22,7 @@ import { SegmentsPage } from '@/features/segments/SegmentsPage'
 import { WebhooksSettingsPage } from '@/features/webhooks/WebhooksSettingsPage'
 import { GeneralSettingsPage } from '@/features/settings/GeneralSettingsPage'
 import { SettingsPlaceholder } from '@/features/settings/SettingsPlaceholder'
-import { TenantsPage } from '@/features/tenants/TenantsPage'
+import { OrganizationsPage } from '@/features/organizations/OrganizationsPage'
 import { UsersPage } from '@/features/users/UsersPage'
 
 export const router = createBrowserRouter([
@@ -32,17 +32,17 @@ export const router = createBrowserRouter([
     path: '/',
     Component: ProtectedLayout,
     children: [
-      // Org shell: a top header. Tenant + project selection.
+      // Org shell: a top header. Organization + project selection.
       {
         Component: AppLayout,
         children: [
-          { index: true, Component: TenantsPage },
+          { index: true, Component: OrganizationsPage },
           { path: 'users', Component: UsersPage },
-          { path: 'tenants/:tenantSlug', Component: ProjectsPage },
+          { path: 'organizations/:organizationSlug', Component: ProjectsPage },
         ],
       },
       {
-        path: 'tenants/:tenantSlug/projects/:projectKey',
+        path: 'organizations/:organizationSlug/projects/:projectKey',
         children: [
           // Project shell: a left sidebar (project switcher + Features nav).
           {

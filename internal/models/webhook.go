@@ -15,12 +15,12 @@ const (
 	DeliveryFailed  = "failed"
 )
 
-// Webhook is a tenant's registered endpoint that receives signed POSTs when a
+// Webhook is a organization's registered endpoint that receives signed POSTs when a
 // subscribed event occurs. The secret signs the payload (HMAC-SHA256) and is
 // returned to managers on create/reset only.
 type Webhook struct {
 	ID             string    `json:"id"`
-	TenantID       string    `json:"tenant_id"`
+	OrganizationID string    `json:"organization_id"`
 	URL            string    `json:"url"`
 	Secret         string    `json:"secret,omitempty"` // shown once, on create/reset
 	EventTypes     []string  `json:"event_types"`

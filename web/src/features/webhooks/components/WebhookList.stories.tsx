@@ -5,7 +5,7 @@ import { WebhookList } from '@/features/webhooks/components/WebhookList'
 import type { Webhook } from '@/types/webhook'
 
 const base: Omit<Webhook, 'id' | 'enabled' | 'event_types' | 'url'> = {
-  tenant_id: 't1',
+  organization_id: 't1',
   description: 'Slack notifications',
   created_by: 'u1',
   created_by_email: 'ada@example.com',

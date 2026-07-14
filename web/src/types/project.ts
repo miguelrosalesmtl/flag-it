@@ -1,7 +1,7 @@
-/** A project: an application within a tenant, holding flags across environments. */
+/** A project: an application within a organization, holding flags across environments. */
 export interface Project {
   id: string
-  tenant_id: string
+  organization_id: string
   key: string
   name: string
   created_at: string

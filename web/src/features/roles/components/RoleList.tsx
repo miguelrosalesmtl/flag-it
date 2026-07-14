@@ -14,7 +14,7 @@ export interface RoleListProps {
   roles: Role[]
 }
 
-/** Presentational. Lists a tenant's roles (permission bundles). */
+/** Presentational. Lists a organization's roles (permission bundles). */
 export function RoleList({ roles }: RoleListProps) {
   if (roles.length === 0) {
     return (

@@ -7,12 +7,12 @@ package models
 type Permission string
 
 const (
-	PermTenantRead    Permission = "tenant.read"
-	PermTenantUpdate  Permission = "tenant.update"
-	PermMemberManage  Permission = "member.manage"  // invite/remove members, assign roles
-	PermRoleManage    Permission = "role.manage"    // create/edit/delete custom roles
-	PermAuditRead     Permission = "audit.read"     // view the change history
-	PermWebhookManage Permission = "webhook.manage" // create/edit/delete outbound webhooks
+	PermOrganizationRead   Permission = "organization.read"
+	PermOrganizationUpdate Permission = "organization.update"
+	PermMemberManage       Permission = "member.manage"  // invite/remove members, assign roles
+	PermRoleManage         Permission = "role.manage"    // create/edit/delete custom roles
+	PermAuditRead          Permission = "audit.read"     // view the change history
+	PermWebhookManage      Permission = "webhook.manage" // create/edit/delete outbound webhooks
 
 	PermProjectCreate Permission = "project.create"
 	PermProjectRead   Permission = "project.read"
@@ -27,9 +27,9 @@ const (
 	PermFlagDelete Permission = "flag.delete"
 )
 
-// AllPermissions is the complete vocabulary (the tenant_admin bundle).
+// AllPermissions is the complete vocabulary (the organization_admin bundle).
 var AllPermissions = []Permission{
-	PermTenantRead, PermTenantUpdate, PermMemberManage, PermRoleManage, PermAuditRead, PermWebhookManage,
+	PermOrganizationRead, PermOrganizationUpdate, PermMemberManage, PermRoleManage, PermAuditRead, PermWebhookManage,
 	PermProjectCreate, PermProjectRead, PermProjectUpdate, PermProjectDelete,
 	PermEnvironmentManage, PermSDKKeyManage,
 	PermFlagRead, PermFlagWrite, PermFlagDelete,
@@ -50,28 +50,28 @@ func IsValidPermission(p Permission) bool { return permissionSet[p] }
 type ScopeType string
 
 const (
-	ScopeTenant  ScopeType = "tenant"
-	ScopeProject ScopeType = "project"
+	ScopeOrganization ScopeType = "organization"
+	ScopeProject      ScopeType = "project"
 )
 
 // Resource identifies what an action targets. ProjectID is empty for
-// tenant-level resources.
+// organization-level resources.
 type Resource struct {
-	TenantID  string
-	ProjectID string
+	OrganizationID string
+	ProjectID      string
 }
 
 // Subject is a user's precomputed authorization profile: superuser status plus
-// the set of permissions they hold at each tenant and project scope. Build once
+// the set of permissions they hold at each organization and project scope. Build once
 // per request (see authz.Service) and answer many Can checks cheaply.
 //
-// A tenant-scoped grant applies to the tenant AND every project within it; a
+// A organization-scoped grant applies to the organization AND every project within it; a
 // project-scoped grant applies only to that project.
 type Subject struct {
-	UserID       string
-	IsSuperuser  bool
-	TenantPerms  map[string]map[Permission]bool // tenantID  -> perms
-	ProjectPerms map[string]map[Permission]bool // projectID -> perms
+	UserID            string
+	IsSuperuser       bool
+	OrganizationPerms map[string]map[Permission]bool // organizationID  -> perms
+	ProjectPerms      map[string]map[Permission]bool // projectID -> perms
 }
 
 // Can reports whether the subject may perform perm on res.
@@ -79,7 +79,7 @@ func (s Subject) Can(perm Permission, res Resource) bool {
 	if s.IsSuperuser {
 		return true
 	}
-	if res.TenantID != "" && s.TenantPerms[res.TenantID][perm] {
+	if res.OrganizationID != "" && s.OrganizationPerms[res.OrganizationID][perm] {
 		return true
 	}
 	if res.ProjectID != "" && s.ProjectPerms[res.ProjectID][perm] {
@@ -88,14 +88,14 @@ func (s Subject) Can(perm Permission, res Resource) bool {
 	return false
 }
 
-// ReadableProjects filters a tenant's projects to those the subject may read.
-// tenantWide is true when a tenant-level project.read grant (or superuser status)
+// ReadableProjects filters a organization's projects to those the subject may read.
+// organizationWide is true when a organization-level project.read grant (or superuser status)
 // makes every project visible — in which case an empty result is legitimate,
 // not a permission failure. Otherwise only project-scoped grants apply, and an
 // empty result means the caller has no access. Keeping this here (next to Can)
 // means the visibility rule lives in one place, not in a handler.
-func (s Subject) ReadableProjects(tenantID string, projects []Project) (visible []Project, tenantWide bool) {
-	if s.Can(PermProjectRead, Resource{TenantID: tenantID}) {
+func (s Subject) ReadableProjects(organizationID string, projects []Project) (visible []Project, organizationWide bool) {
+	if s.Can(PermProjectRead, Resource{OrganizationID: organizationID}) {
 		return projects, true
 	}
 	visible = make([]Project, 0, len(projects))

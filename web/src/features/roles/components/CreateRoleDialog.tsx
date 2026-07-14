@@ -61,7 +61,7 @@ export function CreateRoleDialog({
   const [key, setKey] = useState('')
   const [keyEdited, setKeyEdited] = useState(false)
   const [description, setDescription] = useState('')
-  const [scope, setScope] = useState<'tenant' | 'project'>('project')
+  const [scope, setScope] = useState<'organization' | 'project'>('project')
   const [selected, setSelected] = useState<string[]>([])
 
   function reset() {
@@ -142,10 +142,10 @@ export function CreateRoleDialog({
           </div>
           <div className="space-y-2">
             <Label>Scope</Label>
-            <Tabs value={scope} onValueChange={(v) => setScope(v as 'tenant' | 'project')}>
+            <Tabs value={scope} onValueChange={(v) => setScope(v as 'organization' | 'project')}>
               <TabsList>
                 <TabsTrigger value="project">Project</TabsTrigger>
-                <TabsTrigger value="tenant">Tenant</TabsTrigger>
+                <TabsTrigger value="organization">Organization</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

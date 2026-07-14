@@ -1,14 +1,14 @@
 -- +goose Up
 
--- Projects are applications within a tenant (LaunchDarkly "projects").
+-- Projects are applications within a organization (LaunchDarkly "projects").
 CREATE TABLE projects (
     id         uuid PRIMARY KEY DEFAULT uuidv7(),
-    tenant_id  uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    organization_id  uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     key        text NOT NULL,
     name       text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (tenant_id, key)
+    UNIQUE (organization_id, key)
 );
 
 -- Environments are deployment targets within a project (production, staging, …).

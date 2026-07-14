@@ -14,7 +14,7 @@ import type { Project } from '@/types/project'
 import type { SdkKey } from '@/types/sdk-key'
 import type { Segment } from '@/types/segment'
 import type { SetupInput } from '@/types/setup'
-import type { Tenant } from '@/types/tenant'
+import type { Organization } from '@/types/organization'
 import type { User } from '@/types/user'
 
 const seedUsers: User[] = [
@@ -28,7 +28,7 @@ export function resetUsers() {
   mockUsers = [...seedUsers]
 }
 
-// --- flag-it backend (auth / setup / tenants) ---
+// --- flag-it backend (auth / setup / organizations) ---
 
 const mockUser: AuthUser = {
   id: 'u1',
@@ -40,7 +40,7 @@ const mockUser: AuthUser = {
   updated_at: '2026-07-12T00:00:00Z',
 }
 
-const seedTenants: Tenant[] = [
+const seedOrganizations: Organization[] = [
   {
     id: 't1',
     slug: 'acme',
@@ -53,7 +53,7 @@ const seedTenants: Tenant[] = [
 let mockProjects: Project[] = [
   {
     id: 'p1',
-    tenant_id: 't1',
+    organization_id: 't1',
     key: 'checkout',
     name: 'Checkout',
     created_at: '2026-07-12T00:00:00Z',
@@ -61,7 +61,7 @@ let mockProjects: Project[] = [
   },
   {
     id: 'p2',
-    tenant_id: 't1',
+    organization_id: 't1',
     key: 'mobile-app',
     name: 'Mobile App',
     created_at: '2026-07-12T00:00:00Z',
@@ -142,8 +142,8 @@ let mockSegments: Segment[] = [
 const seedSegments: Segment[] = [...mockSegments]
 
 const allPermissions = [
-  'tenant.read',
-  'tenant.update',
+  'organization.read',
+  'organization.update',
   'member.manage',
   'role.manage',
   'audit.read',
@@ -159,15 +159,15 @@ const allPermissions = [
 ]
 
 let mockRoles: Role[] = [
-  { id: 'r1', tenant_id: 't1', key: 'tenant_admin', name: 'Tenant Admin', description: 'Full control of the tenant.', scope: 'tenant', is_system: true, permissions: ['*'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
-  { id: 'r2', tenant_id: 't1', key: 'writer', name: 'Writer', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read', 'flag.write', 'flag.delete'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
-  { id: 'r3', tenant_id: 't1', key: 'reader', name: 'Reader', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+  { id: 'r1', organization_id: 't1', key: 'organization_admin', name: 'Organization Admin', description: 'Full control of the organization.', scope: 'organization', is_system: true, permissions: ['*'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+  { id: 'r2', organization_id: 't1', key: 'writer', name: 'Writer', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read', 'flag.write', 'flag.delete'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
+  { id: 'r3', organization_id: 't1', key: 'reader', name: 'Reader', description: '', scope: 'project', is_system: true, permissions: ['project.read', 'flag.read'], created_at: '2026-07-12T00:00:00Z', updated_at: '2026-07-12T00:00:00Z' },
 ]
 
 const seedRoles: Role[] = [...mockRoles]
 
 let mockMembers: Member[] = [
-  { user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' },
+  { user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'organization_admin' },
 ]
 
 let mockSdkKeys: SdkKey[] = [
@@ -310,17 +310,17 @@ const includesAny = (q: string, ...fields: string[]) =>
 // Default to a configured install (shows login). Flip `needsSetup` in a scenario
 // to exercise the wizard.
 let needsSetup = false
-let tenants: Tenant[] = [...seedTenants]
+let organizations: Organization[] = [...seedOrganizations]
 
 export function resetBackend() {
   needsSetup = false
-  tenants = [...seedTenants]
+  organizations = [...seedOrganizations]
   mockProjects = [...seedProjects]
   mockFlags = [...seedFlags]
   mockEnvironments = [...seedEnvironments]
   mockSegments = [...seedSegments]
   mockSdkKeys = [...seedSdkKeys]
-  mockMembers = [{ user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'tenant_admin' }]
+  mockMembers = [{ user_id: 'u1', email: 'admin@flag-it.dev', full_name: 'Admin', role: 'organization_admin' }]
   mockRoles = [...seedRoles]
   flagConfigs = {}
   changeRequests = []
@@ -375,18 +375,18 @@ export const handlers = [
     }
     const input = (await request.json()) as SetupInput
     needsSetup = false
-    const tenant: Tenant | undefined = input.tenant_slug
+    const organization: Organization | undefined = input.organization_slug
       ? {
           id: crypto.randomUUID(),
-          slug: input.tenant_slug,
-          name: input.tenant_name ?? input.tenant_slug,
+          slug: input.organization_slug,
+          name: input.organization_name ?? input.organization_slug,
           created_at: '2026-07-12T00:00:00Z',
           updated_at: '2026-07-12T00:00:00Z',
         }
       : undefined
-    tenants = tenant ? [tenant] : []
+    organizations = organization ? [organization] : []
     return HttpResponse.json(
-      { token: 'mock-token', user: { ...mockUser, email: input.email }, tenant },
+      { token: 'mock-token', user: { ...mockUser, email: input.email }, organization },
       { status: 201 },
     )
   }),
@@ -397,20 +397,20 @@ export const handlers = [
 
   http.get('*/api/v1/me', () => HttpResponse.json(mockUser)),
 
-  http.get('*/api/v1/tenants', () => HttpResponse.json({ tenants })),
+  http.get('*/api/v1/organizations', () => HttpResponse.json({ organizations })),
 
-  http.delete('*/api/v1/tenants/:tenantSlug', ({ params }) => {
-    tenants = tenants.filter((t) => t.slug !== String(params.tenantSlug))
+  http.delete('*/api/v1/organizations/:organizationSlug', ({ params }) => {
+    organizations = organizations.filter((t) => t.slug !== String(params.organizationSlug))
     return new HttpResponse(null, { status: 204 })
   }),
 
-  http.delete('*/api/v1/tenants/:tenantSlug/projects/:projectKey', ({ params }) => {
+  http.delete('*/api/v1/organizations/:organizationSlug/projects/:projectKey', ({ params }) => {
     mockProjects = mockProjects.filter((p) => p.key !== String(params.projectKey))
     return new HttpResponse(null, { status: 204 })
   }),
 
   http.delete(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey',
     ({ params }) => {
       mockFlags = mockFlags.filter((f) => f.key !== String(params.flagKey))
       return new HttpResponse(null, { status: 204 })
@@ -418,7 +418,7 @@ export const handlers = [
   ),
 
   http.delete(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/segments/:segKey',
     ({ params }) => {
       mockSegments = mockSegments.filter((s) => s.key !== String(params.segKey))
       return new HttpResponse(null, { status: 204 })
@@ -427,19 +427,19 @@ export const handlers = [
 
   http.get('*/api/v1/permissions', () => HttpResponse.json({ permissions: allPermissions })),
 
-  http.get('*/api/v1/tenants/:tenantSlug/roles', () => HttpResponse.json({ roles: mockRoles })),
+  http.get('*/api/v1/organizations/:organizationSlug/roles', () => HttpResponse.json({ roles: mockRoles })),
 
-  http.post('*/api/v1/tenants/:tenantSlug/roles', async ({ request }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/roles', async ({ request }) => {
     const input = (await request.json()) as {
       key: string
       name: string
       description?: string
-      scope: 'tenant' | 'project'
+      scope: 'organization' | 'project'
       permissions: string[]
     }
     const role: Role = {
       id: crypto.randomUUID(),
-      tenant_id: 't1',
+      organization_id: 't1',
       key: input.key,
       name: input.name,
       description: input.description ?? '',
@@ -455,7 +455,7 @@ export const handlers = [
 
   // Grant a user a project-scoped role.
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/roles',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/roles',
     async ({ params, request }) => {
       const input = (await request.json()) as { email: string; role: string }
       return HttpResponse.json({
@@ -467,11 +467,11 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/members', () =>
+  http.get('*/api/v1/organizations/:organizationSlug/members', () =>
     HttpResponse.json({ members: mockMembers }),
   ),
 
-  http.post('*/api/v1/tenants/:tenantSlug/members', async ({ request }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/members', async ({ request }) => {
     const input = (await request.json()) as { email: string; role?: string }
     const member: Member = {
       user_id: crypto.randomUUID(),
@@ -483,15 +483,15 @@ export const handlers = [
     return HttpResponse.json({ membership: { id: member.user_id } }, { status: 201 })
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects', () =>
+  http.get('*/api/v1/organizations/:organizationSlug/projects', () =>
     HttpResponse.json({ projects: mockProjects }),
   ),
 
-  http.post('*/api/v1/tenants/:tenantSlug/projects', async ({ request }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/projects', async ({ request }) => {
     const input = (await request.json()) as { key: string; name: string }
     const project: Project = {
       id: crypto.randomUUID(),
-      tenant_id: 't1',
+      organization_id: 't1',
       key: input.key,
       name: input.name,
       created_at: '2026-07-12T00:00:00Z',
@@ -501,19 +501,19 @@ export const handlers = [
     return HttpResponse.json({ project, environments: mockEnvironments }, { status: 201 })
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey', ({ params }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey', ({ params }) => {
     const project = mockProjects.find((p) => p.key === params.projectKey)
     if (!project) return new HttpResponse(null, { status: 404 })
     return HttpResponse.json(project)
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags', () =>
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags', () =>
     HttpResponse.json({ flags: mockFlags }),
   ),
 
   // Flags annotated with a lifecycle status (stale detection). The mock derives
   // status from the flag's key so the screen has something to show.
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/lifecycle', () => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/lifecycle', () => {
     const flags = mockFlags.map((f) => {
       const status = f.key === 'pricing-tier' ? 'inactive' : 'active'
       return {
@@ -527,7 +527,7 @@ export const handlers = [
 
   // Flags with per-environment on/off state (the env-aware flag list).
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/flags',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/flags',
     ({ params, request }) => {
       const envKey = String(params.envKey)
       const q = searchParam(request)
@@ -539,7 +539,7 @@ export const handlers = [
   ),
 
   http.put(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey',
     async ({ params, request }) => {
       const body = (await request.json()) as {
         name: string
@@ -567,7 +567,7 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments', ({ request }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments', ({ request }) => {
     const q = searchParam(request)
     return HttpResponse.json({
       environments: mockEnvironments.filter((e) => includesAny(q, e.key, e.name)),
@@ -575,12 +575,12 @@ export const handlers = [
   }),
 
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/sdk-keys',
     () => HttpResponse.json({ sdk_keys: mockSdkKeys }),
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/sdk-keys',
     async ({ request }) => {
       const body = (await request.json()) as { kind: 'server' | 'client'; name?: string }
       const key: SdkKey = {
@@ -597,7 +597,7 @@ export const handlers = [
   ),
 
   http.delete(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/sdk-keys/:keyID',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/sdk-keys/:keyID',
     ({ params }) => {
       mockSdkKeys = mockSdkKeys.filter((k) => k.id !== params.keyID)
       return new HttpResponse(null, { status: 204 })
@@ -605,7 +605,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments',
     async ({ request }) => {
       const input = (await request.json()) as { key: string; name: string }
       const env: Environment = {
@@ -622,7 +622,7 @@ export const handlers = [
   ),
 
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/contexts',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/contexts',
     ({ request }) => {
       const q = searchParam(request)
       return HttpResponse.json({
@@ -632,7 +632,7 @@ export const handlers = [
   ),
 
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/environments/:envKey/contexts/:kind/:key',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/contexts/:kind/:key',
     ({ params }) => {
       const context = mockContexts.find(
         (c) => c.kind === params.kind && c.key === decodeURIComponent(String(params.key)),
@@ -648,21 +648,21 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments', ({ request }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/segments', ({ request }) => {
     const q = searchParam(request)
     return HttpResponse.json({
       segments: mockSegments.filter((s) => includesAny(q, s.key, s.name, s.description)),
     })
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey', ({ params }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/segments/:segKey', ({ params }) => {
     const segment = mockSegments.find((s) => s.key === params.segKey)
     if (!segment) return new HttpResponse(null, { status: 404 })
     return HttpResponse.json(segment)
   }),
 
   http.put(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/segments/:segKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/segments/:segKey',
     async ({ params, request }) => {
       const key = String(params.segKey)
       const body = (await request.json()) as Partial<Segment>
@@ -688,14 +688,14 @@ export const handlers = [
     },
   ),
 
-  http.get('*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey', ({ params }) => {
     const flag = mockFlags.find((f) => f.key === params.flagKey)
     if (!flag) return new HttpResponse(null, { status: 404 })
     return HttpResponse.json(flag)
   }),
 
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
     ({ params }) => {
       const k = configKey(String(params.flagKey), String(params.envKey))
       flagConfigs[k] ??= newConfig()
@@ -704,7 +704,7 @@ export const handlers = [
   ),
 
   http.patch(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey',
     async ({ params, request }) => {
       const k = configKey(String(params.flagKey), String(params.envKey))
       const current = (flagConfigs[k] ??= newConfig())
@@ -716,7 +716,7 @@ export const handlers = [
 
   // --- Approvals (change requests) ---
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/changes',
     ({ request }) => {
       const status = new URL(request.url).searchParams.get('status') as ChangeStatus | null
       const changes = changeRequests.filter((c) => !status || c.status === status)
@@ -725,7 +725,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/changes',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/changes',
     async ({ params, request }) => {
       const body = (await request.json()) as { comment?: string; instructions: Instruction[] }
       if (!body.instructions?.length) {
@@ -750,7 +750,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes/:changeId/approve',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/changes/:changeId/approve',
     async ({ params, request }) => {
       const cr = changeRequests.find((c) => c.id === String(params.changeId))
       if (!cr) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
@@ -769,7 +769,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/changes/:changeId/reject',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/changes/:changeId/reject',
     async ({ params, request }) => {
       const cr = changeRequests.find((c) => c.id === String(params.changeId))
       if (!cr) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
@@ -787,7 +787,7 @@ export const handlers = [
 
   // --- Scheduled changes ---
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/scheduled-changes',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/scheduled-changes',
     ({ request }) => {
       runDueScheduledChanges()
       const url = new URL(request.url)
@@ -805,7 +805,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/scheduled-changes',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/scheduled-changes',
     async ({ params, request }) => {
       const body = (await request.json()) as {
         comment?: string
@@ -838,7 +838,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/scheduled-changes/:scheduledId/cancel',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/scheduled-changes/:scheduledId/cancel',
     ({ params }) => {
       const sc = scheduledChanges.find((c) => c.id === String(params.scheduledId))
       if (!sc || sc.status !== 'pending')
@@ -850,7 +850,7 @@ export const handlers = [
 
   // --- Flag triggers ---
   http.get(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/triggers',
     ({ request }) => {
       const url = new URL(request.url)
       const flag = url.searchParams.get('flag')
@@ -863,7 +863,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/triggers',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/triggers',
     async ({ params, request }) => {
       const body = (await request.json()) as { action: TriggerAction; description?: string }
       const token = `trg_${crypto.randomUUID().replace(/-/g, '')}`
@@ -890,7 +890,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId/enabled',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/triggers/:triggerId/enabled',
     async ({ params, request }) => {
       const t = flagTriggers.find((x) => x.id === String(params.triggerId))
       if (!t) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
@@ -901,7 +901,7 @@ export const handlers = [
   ),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId/reset',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/triggers/:triggerId/reset',
     ({ params }) => {
       const t = flagTriggers.find((x) => x.id === String(params.triggerId))
       if (!t) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
@@ -912,7 +912,7 @@ export const handlers = [
   ),
 
   http.delete(
-    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/triggers/:triggerId',
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/triggers/:triggerId',
     ({ params }) => {
       flagTriggers = flagTriggers.filter((x) => x.id !== String(params.triggerId))
       return new HttpResponse(null, { status: 204 })
@@ -920,7 +920,7 @@ export const handlers = [
   ),
 
   // --- Audit log ---
-  http.get('*/api/v1/tenants/:tenantSlug/audit', ({ request }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/audit', ({ request }) => {
     const rt = new URL(request.url).searchParams.get('resource_type')
     const entries = [
       { id: 'au1', actor_email: 'admin@flag-it.dev', action: 'flag.config.patched', resource_type: 'flag', resource_key: 'new-checkout', comment: 'Launch for GA', created_at: '2026-07-13T12:00:00Z' },
@@ -931,11 +931,11 @@ export const handlers = [
   }),
 
   // --- Outbound webhooks ---
-  http.get('*/api/v1/tenants/:tenantSlug/webhooks', () =>
+  http.get('*/api/v1/organizations/:organizationSlug/webhooks', () =>
     HttpResponse.json({ webhooks: mockWebhooks.map(webhookNoSecret) }),
   ),
 
-  http.post('*/api/v1/tenants/:tenantSlug/webhooks', async ({ request }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/webhooks', async ({ request }) => {
     const body = (await request.json()) as {
       url: string
       event_types: string[]
@@ -946,7 +946,7 @@ export const handlers = [
     }
     const w: Webhook = {
       id: crypto.randomUUID(),
-      tenant_id: 't1',
+      organization_id: 't1',
       url: body.url,
       secret: webhookSecret(),
       event_types: body.event_types,
@@ -961,7 +961,7 @@ export const handlers = [
   }),
 
   http.post(
-    '*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/enabled',
+    '*/api/v1/organizations/:organizationSlug/webhooks/:webhookId/enabled',
     async ({ params, request }) => {
       const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
       if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
@@ -971,14 +971,14 @@ export const handlers = [
     },
   ),
 
-  http.post('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/reset', ({ params }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/webhooks/:webhookId/reset', ({ params }) => {
     const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
     if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
     w.secret = webhookSecret()
     return HttpResponse.json(w)
   }),
 
-  http.post('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/test', ({ params }) => {
+  http.post('*/api/v1/organizations/:organizationSlug/webhooks/:webhookId/test', ({ params }) => {
     const w = mockWebhooks.find((x) => x.id === String(params.webhookId))
     if (!w) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
     return HttpResponse.json({
@@ -994,7 +994,7 @@ export const handlers = [
     })
   }),
 
-  http.get('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId/deliveries', ({ params }) => {
+  http.get('*/api/v1/organizations/:organizationSlug/webhooks/:webhookId/deliveries', ({ params }) => {
     const id = String(params.webhookId)
     return HttpResponse.json({
       deliveries: [
@@ -1004,7 +1004,7 @@ export const handlers = [
     })
   }),
 
-  http.delete('*/api/v1/tenants/:tenantSlug/webhooks/:webhookId', ({ params }) => {
+  http.delete('*/api/v1/organizations/:organizationSlug/webhooks/:webhookId', ({ params }) => {
     mockWebhooks = mockWebhooks.filter((x) => x.id !== String(params.webhookId))
     return new HttpResponse(null, { status: 204 })
   }),

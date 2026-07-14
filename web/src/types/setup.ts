@@ -1,5 +1,5 @@
 import type { AuthUser } from '@/types/auth'
-import type { Tenant } from '@/types/tenant'
+import type { Organization } from '@/types/organization'
 
 /** GET /setup — is this a fresh install still needing first-run configuration? */
 export interface SetupStatus {
@@ -8,19 +8,19 @@ export interface SetupStatus {
 
 /**
  * POST /setup — the first-run wizard's payload. Creates the first superuser and,
- * optionally, the first tenant. Tenant fields are all-or-nothing.
+ * optionally, the first organization. Organization fields are all-or-nothing.
  */
 export interface SetupInput {
   email: string
   password: string
   full_name?: string
-  tenant_slug?: string
-  tenant_name?: string
+  organization_slug?: string
+  organization_name?: string
 }
 
-/** POST /setup result: a session (so the wizard lands the user in the app) plus the created tenant. */
+/** POST /setup result: a session (so the wizard lands the user in the app) plus the created organization. */
 export interface SetupResult {
   token: string
   user: AuthUser
-  tenant?: Tenant
+  organization?: Organization
 }

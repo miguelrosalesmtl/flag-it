@@ -4,61 +4,61 @@ import { webhooksApi } from '@/api/endpoints/webhooks'
 import { queryKeys } from '@/lib/query-keys'
 import type { CreateWebhookInput } from '@/types/webhook'
 
-export function useWebhooks(tenantSlug: string) {
+export function useWebhooks(organizationSlug: string) {
   return useQuery({
-    queryKey: queryKeys.webhooks(tenantSlug),
-    queryFn: () => webhooksApi.list(tenantSlug),
+    queryKey: queryKeys.webhooks(organizationSlug),
+    queryFn: () => webhooksApi.list(organizationSlug),
   })
 }
 
-export function useWebhookDeliveries(tenantSlug: string, id: string, enabled: boolean) {
+export function useWebhookDeliveries(organizationSlug: string, id: string, enabled: boolean) {
   return useQuery({
-    queryKey: queryKeys.webhookDeliveries(tenantSlug, id),
-    queryFn: () => webhooksApi.deliveries(tenantSlug, id),
+    queryKey: queryKeys.webhookDeliveries(organizationSlug, id),
+    queryFn: () => webhooksApi.deliveries(organizationSlug, id),
     enabled,
   })
 }
 
-function useInvalidateWebhooks(tenantSlug: string) {
+function useInvalidateWebhooks(organizationSlug: string) {
   const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: queryKeys.webhooks(tenantSlug) })
+  return () => queryClient.invalidateQueries({ queryKey: queryKeys.webhooks(organizationSlug) })
 }
 
-export function useCreateWebhook(tenantSlug: string) {
-  const invalidate = useInvalidateWebhooks(tenantSlug)
+export function useCreateWebhook(organizationSlug: string) {
+  const invalidate = useInvalidateWebhooks(organizationSlug)
   return useMutation({
-    mutationFn: (input: CreateWebhookInput) => webhooksApi.create(tenantSlug, input),
+    mutationFn: (input: CreateWebhookInput) => webhooksApi.create(organizationSlug, input),
     onSuccess: () => void invalidate(),
   })
 }
 
-export function useSetWebhookEnabled(tenantSlug: string) {
-  const invalidate = useInvalidateWebhooks(tenantSlug)
+export function useSetWebhookEnabled(organizationSlug: string) {
+  const invalidate = useInvalidateWebhooks(organizationSlug)
   return useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      webhooksApi.setEnabled(tenantSlug, id, enabled),
+      webhooksApi.setEnabled(organizationSlug, id, enabled),
     onSuccess: () => void invalidate(),
   })
 }
 
-export function useResetWebhookSecret(tenantSlug: string) {
-  const invalidate = useInvalidateWebhooks(tenantSlug)
+export function useResetWebhookSecret(organizationSlug: string) {
+  const invalidate = useInvalidateWebhooks(organizationSlug)
   return useMutation({
-    mutationFn: (id: string) => webhooksApi.reset(tenantSlug, id),
+    mutationFn: (id: string) => webhooksApi.reset(organizationSlug, id),
     onSuccess: () => void invalidate(),
   })
 }
 
-export function useTestWebhook(tenantSlug: string) {
+export function useTestWebhook(organizationSlug: string) {
   return useMutation({
-    mutationFn: (id: string) => webhooksApi.test(tenantSlug, id),
+    mutationFn: (id: string) => webhooksApi.test(organizationSlug, id),
   })
 }
 
-export function useDeleteWebhook(tenantSlug: string) {
-  const invalidate = useInvalidateWebhooks(tenantSlug)
+export function useDeleteWebhook(organizationSlug: string) {
+  const invalidate = useInvalidateWebhooks(organizationSlug)
   return useMutation({
-    mutationFn: (id: string) => webhooksApi.remove(tenantSlug, id),
+    mutationFn: (id: string) => webhooksApi.remove(organizationSlug, id),
     onSuccess: () => void invalidate(),
   })
 }

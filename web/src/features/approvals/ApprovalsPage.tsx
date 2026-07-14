@@ -15,11 +15,11 @@ type Filter = 'pending' | 'approved' | 'rejected' | 'all'
  * approve/reject pending requests — approving applies the change on the backend.
  */
 export function ApprovalsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const [filter, setFilter] = useState<Filter>('pending')
   const status: ChangeStatus | undefined = filter === 'all' ? undefined : filter
-  const changes = useChanges(tenantSlug, projectKey, status)
-  const review = useReviewChange(tenantSlug, projectKey)
+  const changes = useChanges(organizationSlug, projectKey, status)
+  const review = useReviewChange(organizationSlug, projectKey)
 
   return (
     <section className="space-y-6">

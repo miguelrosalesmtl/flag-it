@@ -11,13 +11,13 @@ import { useDeleteSegment, useSaveSegment, useSegment } from '@/features/segment
  * (editable) and its rules (read-only for now). Saving PUTs the full segment.
  */
 export function SegmentDetailPage() {
-  const { tenantSlug = '', projectKey = '', segKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '', segKey = '' } = useParams()
   const navigate = useNavigate()
-  const segment = useSegment(tenantSlug, projectKey, segKey)
-  const save = useSaveSegment(tenantSlug, projectKey, segKey)
-  const deleteSegment = useDeleteSegment(tenantSlug, projectKey)
+  const segment = useSegment(organizationSlug, projectKey, segKey)
+  const save = useSaveSegment(organizationSlug, projectKey, segKey)
+  const deleteSegment = useDeleteSegment(organizationSlug, projectKey)
 
-  const segmentsUrl = `/tenants/${tenantSlug}/projects/${projectKey}/segments`
+  const segmentsUrl = `/organizations/${organizationSlug}/projects/${projectKey}/segments`
 
   return (
     <section className="space-y-6">

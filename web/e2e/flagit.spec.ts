@@ -21,13 +21,13 @@ test('a fresh install runs the first-run setup wizard and lands in the app', asy
   await page.getByLabel('Password').fill('supersecret123')
   await page.getByRole('button', { name: 'Continue' }).click()
 
-  // Step 2: the first tenant. The slug auto-derives from the name.
-  await page.getByLabel('Tenant name').fill('Acme Inc')
-  await expect(page.getByLabel('Tenant slug')).toHaveValue('acme-inc')
+  // Step 2: the first organization. The slug auto-derives from the name.
+  await page.getByLabel('Organization name').fill('Acme Inc')
+  await expect(page.getByLabel('Organization slug')).toHaveValue('acme-inc')
   await page.getByRole('button', { name: 'Finish setup' }).click()
 
   // Setup signs the new superuser in and drops them on the first screen.
-  await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Organizations' })).toBeVisible()
 })
 
 test('a superuser manages platform users', async ({ page }) => {
@@ -35,7 +35,7 @@ test('a superuser manages platform users', async ({ page }) => {
   await page.getByLabel('Email').fill('admin@flag-it.dev')
   await page.getByLabel('Password').fill('supersecret123')
   await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Organizations' })).toBeVisible()
 
   // The superuser-only Users link in the header.
   await page.getByRole('link', { name: 'Users' }).click()
@@ -51,7 +51,7 @@ test('a superuser manages platform users', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'grace@example.com' })).toBeVisible()
 })
 
-test('a configured install shows login, signs in, and lists tenants', async ({ page }) => {
+test('a configured install shows login, signs in, and lists organizations', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByText('Sign in to flag-it')).toBeVisible()
@@ -59,7 +59,7 @@ test('a configured install shows login, signs in, and lists tenants', async ({ p
   await page.getByLabel('Password').fill('supersecret123')
   await page.getByRole('button', { name: 'Sign in' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Organizations' })).toBeVisible()
   await expect(page.getByText('Acme Inc')).toBeVisible()
 
   // Signing out returns to the login screen.
@@ -67,13 +67,13 @@ test('a configured install shows login, signs in, and lists tenants', async ({ p
   await expect(page.getByText('Sign in to flag-it')).toBeVisible()
 })
 
-test('drills from a tenant into its projects and a project into its flags', async ({ page }) => {
+test('drills from a organization into its projects and a project into its flags', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
   await page.getByLabel('Password').fill('supersecret123')
   await page.getByRole('button', { name: 'Sign in' }).click()
 
-  // Tenant -> Projects
+  // Organization -> Projects
   await page.getByRole('button', { name: 'Acme Inc' }).click()
   await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Checkout' })).toBeVisible()
@@ -276,7 +276,7 @@ test('shows roles and members in settings and adds a member', async ({ page }) =
 
   await page.getByRole('link', { name: 'Roles' }).click()
   await expect(page.getByRole('heading', { name: 'Roles' })).toBeVisible()
-  await expect(page.getByText('Tenant Admin')).toBeVisible()
+  await expect(page.getByText('Organization Admin')).toBeVisible()
 
   await page.getByRole('link', { name: 'Members' }).click()
   await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible()
@@ -653,7 +653,7 @@ test('shows flag lifecycle and flags stale flags', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'New checkout' })).toBeHidden()
 })
 
-test('shows the tenant audit log with a resource filter', async ({ page }) => {
+test('shows the organization audit log with a resource filter', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
   await page.getByLabel('Password').fill('supersecret123')

@@ -8,12 +8,12 @@ import { CreateRoleDialog } from '@/features/roles/components/CreateRoleDialog'
 import { RoleList } from '@/features/roles/components/RoleList'
 import { useCreateRole, usePermissions, useRoles } from '@/features/roles/hooks/useRoles'
 
-/** Container. Lists the tenant's roles and creates custom ones. */
+/** Container. Lists the organization's roles and creates custom ones. */
 export function RolesSettingsPage() {
-  const { tenantSlug = '' } = useParams()
-  const { data: roles, isPending, isError, error, refetch } = useRoles(tenantSlug)
+  const { organizationSlug = '' } = useParams()
+  const { data: roles, isPending, isError, error, refetch } = useRoles(organizationSlug)
   const permissions = usePermissions()
-  const createRole = useCreateRole(tenantSlug)
+  const createRole = useCreateRole(organizationSlug)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (

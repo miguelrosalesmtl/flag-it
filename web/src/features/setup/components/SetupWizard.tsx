@@ -31,7 +31,7 @@ function slugify(value: string): string {
 }
 
 /**
- * First-run wizard. Step 1 creates the admin account, step 2 the first tenant.
+ * First-run wizard. Step 1 creates the admin account, step 2 the first organization.
  * All of it is local UI state — the payload only leaves the component, once, on
  * completion. The container decides what "complete" means.
  */
@@ -40,17 +40,17 @@ export function SetupWizard({ onSubmit, isSubmitting, errorMessage }: SetupWizar
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [tenantName, setTenantName] = useState('')
-  const [tenantSlug, setTenantSlug] = useState('')
+  const [organizationName, setOrganizationName] = useState('')
+  const [organizationSlug, setOrganizationSlug] = useState('')
   // Track whether the user has hand-edited the slug; until then, mirror the name.
   const [slugEdited, setSlugEdited] = useState(false)
 
   const accountValid = email.trim() !== '' && password.length >= 8
-  const tenantValid = tenantName.trim() !== '' && tenantSlug.trim() !== ''
+  const organizationValid = organizationName.trim() !== '' && organizationSlug.trim() !== ''
 
-  function handleTenantNameChange(value: string) {
-    setTenantName(value)
-    if (!slugEdited) setTenantSlug(slugify(value))
+  function handleOrganizationNameChange(value: string) {
+    setOrganizationName(value)
+    if (!slugEdited) setOrganizationSlug(slugify(value))
   }
 
   function handleSubmit(event: FormEvent) {
@@ -59,13 +59,13 @@ export function SetupWizard({ onSubmit, isSubmitting, errorMessage }: SetupWizar
       if (accountValid) setStep(2)
       return
     }
-    if (tenantValid) {
+    if (organizationValid) {
       onSubmit({
         email,
         password,
         full_name: fullName || undefined,
-        tenant_name: tenantName,
-        tenant_slug: tenantSlug,
+        organization_name: organizationName,
+        organization_slug: organizationSlug,
       })
     }
   }
@@ -77,7 +77,7 @@ export function SetupWizard({ onSubmit, isSubmitting, errorMessage }: SetupWizar
         <CardDescription>
           {step === 1
             ? "Let's set things up. First, create the owner account."
-            : 'Now create your first tenant — an organization to hold projects.'}
+            : 'Now create your first organization — an organization to hold projects.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -128,23 +128,23 @@ export function SetupWizard({ onSubmit, isSubmitting, errorMessage }: SetupWizar
                 </p>
               ) : null}
               <div className="space-y-2">
-                <Label htmlFor="setup-tenant-name">Tenant name</Label>
+                <Label htmlFor="setup-organization-name">Organization name</Label>
                 <Input
-                  id="setup-tenant-name"
-                  value={tenantName}
-                  onChange={(e) => handleTenantNameChange(e.target.value)}
+                  id="setup-organization-name"
+                  value={organizationName}
+                  onChange={(e) => handleOrganizationNameChange(e.target.value)}
                   placeholder="Acme Inc"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="setup-tenant-slug">Tenant slug</Label>
+                <Label htmlFor="setup-organization-slug">Organization slug</Label>
                 <Input
-                  id="setup-tenant-slug"
-                  value={tenantSlug}
+                  id="setup-organization-slug"
+                  value={organizationSlug}
                   onChange={(e) => {
                     setSlugEdited(true)
-                    setTenantSlug(slugify(e.target.value))
+                    setOrganizationSlug(slugify(e.target.value))
                   }}
                   placeholder="acme"
                   required
@@ -160,7 +160,7 @@ export function SetupWizard({ onSubmit, isSubmitting, errorMessage }: SetupWizar
                 >
                   Back
                 </Button>
-                <Button type="submit" className="flex-1" disabled={!tenantValid || isSubmitting}>
+                <Button type="submit" className="flex-1" disabled={!organizationValid || isSubmitting}>
                   {isSubmitting ? 'Setting up…' : 'Finish setup'}
                 </Button>
               </div>

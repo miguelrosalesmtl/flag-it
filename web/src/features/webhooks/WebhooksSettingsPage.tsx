@@ -23,22 +23,22 @@ import {
 } from '@/features/webhooks/hooks/useWebhooks'
 
 /**
- * Container. A tenant's outbound webhooks (settings → integrations): register
+ * Container. A organization's outbound webhooks (settings → integrations): register
  * URLs, pick events, and manage delivery. Signing secrets are revealed once.
  */
 export function WebhooksSettingsPage() {
-  const { tenantSlug = '' } = useParams()
-  const webhooks = useWebhooks(tenantSlug)
-  const create = useCreateWebhook(tenantSlug)
-  const setEnabled = useSetWebhookEnabled(tenantSlug)
-  const reset = useResetWebhookSecret(tenantSlug)
-  const test = useTestWebhook(tenantSlug)
-  const remove = useDeleteWebhook(tenantSlug)
+  const { organizationSlug = '' } = useParams()
+  const webhooks = useWebhooks(organizationSlug)
+  const create = useCreateWebhook(organizationSlug)
+  const setEnabled = useSetWebhookEnabled(organizationSlug)
+  const reset = useResetWebhookSecret(organizationSlug)
+  const test = useTestWebhook(organizationSlug)
+  const remove = useDeleteWebhook(organizationSlug)
 
   const [revealedSecret, setRevealedSecret] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [deliveriesFor, setDeliveriesFor] = useState<string | null>(null)
-  const deliveries = useWebhookDeliveries(tenantSlug, deliveriesFor ?? '', deliveriesFor !== null)
+  const deliveries = useWebhookDeliveries(organizationSlug, deliveriesFor ?? '', deliveriesFor !== null)
 
   return (
     <section className="space-y-6">
@@ -46,7 +46,7 @@ export function WebhooksSettingsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Webhooks</h1>
           <p className="text-muted-foreground text-sm">
-            Receive signed POSTs when events happen in this tenant.
+            Receive signed POSTs when events happen in this organization.
           </p>
         </div>
         <CreateWebhookDialog

@@ -1,6 +1,6 @@
 # Feature-Flag Platform — Roadmap & Reference
 
-A self-hosted, multi-tenant feature-flag platform inspired by LaunchDarkly. We are
+A self-hosted, multi-organization feature-flag platform inspired by LaunchDarkly. We are
 **not** wire-compatible with LaunchDarkly and do **not** depend on their code — the
 goal is **feature parity with LaunchDarkly plus improvements** (notably true
 multi-tenancy), built our own way.
@@ -33,8 +33,8 @@ scaling/hardening list.
 The **infrastructure spine is largely done**; the **product surface** is thin.
 
 Built & verified:
-- ✅ Multi-tenant schema (tenants → projects → environments), Postgres 18, `uuidv7()` PKs
-- ✅ RBAC: superuser / tenant_admin / project writer·reader (live-tested, 12/12 cases)
+- ✅ Multi-organization schema (organizations → projects → environments), Postgres 18, `uuidv7()` PKs
+- ✅ RBAC: superuser / organization_admin / project writer·reader (live-tested, 12/12 cases)
 - ✅ Per-environment flag config (`flags` + `flag_environments`)
 - ✅ In-memory per-environment cache + Redis pub/sub propagation across replicas
 - ✅ goose migrations, embedded, verified against real PG18 (apply + full rollback)
@@ -134,11 +134,11 @@ internal, and centralizes audit/control. Implications:
 - ❌ Code references
 
 ### 3.7 Access control & admin — *foundation is ahead of a fresh start*
-- ✅ RBAC v2: **dynamic per-tenant roles** = permission bundles + scoped assignments
-      (superseded the hardcoded tenant_admin/writer/reader model)
-- ✅ Permission vocabulary; `Subject.Can(permission, resource)`; tenant/project scopes
-- ✅ Seeded system roles per tenant (tenant_admin/writer/reader) + **custom roles**
-- ✅ **True multi-tenancy** with cross-tenant superuser (improvement over LD)
+- ✅ RBAC v2: **dynamic per-organization roles** = permission bundles + scoped assignments
+      (superseded the hardcoded organization_admin/writer/reader model)
+- ✅ Permission vocabulary; `Subject.Can(permission, resource)`; organization/project scopes
+- ✅ Seeded system roles per organization (organization_admin/writer/reader) + **custom roles**
+- ✅ **True multi-tenancy** with cross-organization superuser (improvement over LD)
 - ✅ JWT auth kept **pluggable** (OIDC seam planned — authenticator maps token→userID)
 - ❌ Teams
 - ❌ Level-3 policy engine (resource patterns, allow/deny) — evolve from current bundles
@@ -157,8 +157,8 @@ internal, and centralizes audit/control. Implications:
 
 ## 4. Improvements over LaunchDarkly (our differentiators)
 
-- **Native multi-tenancy** — platform hosts many orgs; cross-tenant superuser. LD's
-  "account" is single-tenant per customer.
+- **Native multi-tenancy** — platform hosts many orgs; cross-organization superuser. LD's
+  "account" is single-organization per customer.
 - **Postgres as auditable source of truth** — SQL-queryable history, easy data
   residency and self-hosting.
 - **Unified context model from day one** — LD bolted multi-context onto a legacy
@@ -176,14 +176,14 @@ Ordered by value. Each phase should ship with migrations, tests, and a live chec
 - [x] End-to-end verify flags rework (2 replicas, pub/sub propagation) against live PG+Redis
 - [x] JWT auth (bcrypt passwords, login, token-verify middleware) + `createsuperuser` command
 - [x] Put management routes behind RBAC (authz middleware; verified 401/403 live)
-- [x] HTTP CRUD for tenants / projects / environments / users / memberships / role grants
-- [x] **Authz v2 — dynamic per-tenant roles** (permission bundles + scoped assignments;
+- [x] HTTP CRUD for organizations / projects / environments / users / memberships / role grants
+- [x] **Authz v2 — dynamic per-organization roles** (permission bundles + scoped assignments;
       seeded system roles + custom roles; migration 00006; live-verified, incl. HTTP)
 - [x] authN: own login with a **pluggable OIDC seam** (`tokenVerifier` interface; defaults
       to our JWT — swap in an OIDC verifier later without touching authz)
 - [x] **SDK-key management endpoint** (mint/list/revoke per environment; `sdk_key.manage`;
       full lifecycle live-verified — mint→eval→revoke→401)
-- [x] update/delete verbs (users/tenants/projects), list-users, and **filtered project
+- [x] update/delete verbs (users/organizations/projects), list-users, and **filtered project
       listing** (project-scoped users see only their granted projects)
 
 > Deferred to when a real IdP is wired: an actual OIDC verifier implementation (the seam
@@ -243,17 +243,17 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       updateFallthrough{Variation,Rollout}, add/removeTargets, add/removeRule,
       add/removePrerequisite). Surgical, concurrency-friendly, captures intent. Unit + e2e.
 - [x] **Audit log** — append-only `audit_log` (migration 00011); recorded best-effort from
-      the write handlers (actor from ctx, secret-safe), queryable `GET /tenants/{t}/audit`
+      the write handlers (actor from ctx, secret-safe), queryable `GET /organizations/{t}/audit`
       (filters: project/resource/before; `audit.read` permission). Live-verified (secret
       not leaked, RBAC enforced, comment + actor captured).
 - [x] **Keys-based CRUD** — the whole management API is now key-addressed:
-      `/tenants/{tenantSlug}/projects/{projectKey}/...` (was UUIDs). Handlers resolve
+      `/organizations/{organizationSlug}/projects/{projectKey}/...` (was UUIDs). Handlers resolve
       slug/key → internal IDs at the edge; authz/audit/store unchanged. All e2e re-verified.
 
 > Note: audit recording is best-effort (logged on failure, doesn't fail the write). A
 > future refinement is to record in the same transaction as the change.
-> API-contract change (for the UI): tenant is addressed by **slug**, project by **key** —
-> `/api/v1/tenants/{tenantSlug}/projects/{projectKey}/...`.
+> API-contract change (for the UI): organization is addressed by **slug**, project by **key** —
+> `/api/v1/organizations/{organizationSlug}/projects/{projectKey}/...`.
 
 ### Phase 6 — Events & analytics  ✅ CORE COMPLETE
 - [x] **Rolled-up evaluation counters** — server-side eval accumulates counts in memory
@@ -310,20 +310,20 @@ Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI
       is used in source — is deferred: it needs an external CLI scanner.)
 
 ### Phase 8 — Platform
-- [x] **Outbound webhooks** — a tenant registers a URL that receives signed
+- [x] **Outbound webhooks** — a organization registers a URL that receives signed
       (HMAC-SHA256) POSTs when subscribed events occur (migration 00018). The
       audit log doubles as the event stream: the audit service fans each recorded
       entry out to matching webhooks via an emitter seam, and a background
       deliverer sends them with retry/backoff, logging every attempt. Management
-      API under a tenant (create/list/enable/reset-secret/test/deliveries/delete),
+      API under a organization (create/list/enable/reset-secret/test/deliveries/delete),
       gated by a new `webhook.manage` permission. UI: settings → Integrations.
       (Pre-built Slack/Jira/Datadog/Terraform integrations still to come — this is
       the generic signed-webhook substrate they'd build on.)
 - [ ] SSO / SCIM, teams
-- [x] Custom roles — create per-tenant permission-bundle roles (UI permission picker)
+- [x] Custom roles — create per-organization permission-bundle roles (UI permission picker)
 - [ ] Data export
 - [x] **Web UI dashboard** — React + TypeScript SPA (`web/`) over the management API,
-      covering the full surface: first-run setup wizard, login/JWT session, tenants →
+      covering the full surface: first-run setup wizard, login/JWT session, organizations →
       projects, an LD-style project sidebar with a project switcher, environment-aware flag
       list (inline per-env toggles + server-side search), flag detail (on/off, default rule,
       individual targets, clause-based targeting rules), create-flag; segments (create +
@@ -345,7 +345,7 @@ per-call eval does not scale to hundreds of thousands):
       cap/shard connections per env (thundering-herd guard on frequent flag flips)
 - [ ] Server-side connection limits + backpressure + graceful drain (for many SSE conns)
 - [ ] Rate limiting on eval endpoints
-- [ ] Shard the flag cache by tenant/env (memory grows with total flags across all tenants)
+- [ ] Shard the flag cache by organization/env (memory grows with total flags across all organizations)
 - [ ] Load test (k6/vegeta) to find the real per-replica ceiling
 
 ---

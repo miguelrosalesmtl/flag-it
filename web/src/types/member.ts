@@ -1,4 +1,4 @@
-/** A tenant member with their tenant-scoped role (if any). */
+/** A organization member with their organization-scoped role (if any). */
 export interface Member {
   user_id: string
   email: string
@@ -6,7 +6,7 @@ export interface Member {
   role: string
 }
 
-/** Payload to add a member to a tenant. */
+/** Payload to add a member to a organization. */
 export interface AddMemberInput {
   email: string
   role?: string

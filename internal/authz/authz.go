@@ -21,7 +21,7 @@ func New(st *store.Store) *Service {
 }
 
 // Subject builds the authorization profile for a user: superuser status plus the
-// permissions they hold at each tenant and project scope. Call once per request
+// permissions they hold at each organization and project scope. Call once per request
 // and reuse for many checks.
 func (s *Service) Subject(ctx context.Context, userID string) (models.Subject, error) {
 	user, err := s.store.GetUserByID(ctx, userID)
@@ -30,10 +30,10 @@ func (s *Service) Subject(ctx context.Context, userID string) (models.Subject, e
 	}
 
 	subject := models.Subject{
-		UserID:       user.ID,
-		IsSuperuser:  user.IsSuperuser,
-		TenantPerms:  map[string]map[models.Permission]bool{},
-		ProjectPerms: map[string]map[models.Permission]bool{},
+		UserID:            user.ID,
+		IsSuperuser:       user.IsSuperuser,
+		OrganizationPerms: map[string]map[models.Permission]bool{},
+		ProjectPerms:      map[string]map[models.Permission]bool{},
 	}
 
 	grants, err := s.store.ListPermissionGrantsByUser(ctx, userID)
@@ -42,8 +42,8 @@ func (s *Service) Subject(ctx context.Context, userID string) (models.Subject, e
 	}
 	for _, g := range grants {
 		switch g.ScopeType {
-		case models.ScopeTenant:
-			addPerm(subject.TenantPerms, g.TenantID, g.Permission)
+		case models.ScopeOrganization:
+			addPerm(subject.OrganizationPerms, g.OrganizationID, g.Permission)
 		case models.ScopeProject:
 			addPerm(subject.ProjectPerms, g.ProjectID, g.Permission)
 		}

@@ -19,7 +19,7 @@ export interface WebhookListProps {
 }
 
 /**
- * Presentational. A tenant's outbound webhooks: URL, subscribed events, and
+ * Presentational. A organization's outbound webhooks: URL, subscribed events, and
  * enable / test / reset / delete controls. A freshly minted signing secret is
  * revealed once at the top (it can't be re-fetched).
  */

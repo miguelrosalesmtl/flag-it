@@ -14,9 +14,9 @@ import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
  * search. Opening a context carries the environment through as a query param.
  */
 export function ContextsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const environments = useEnvironments(tenantSlug, projectKey)
+  const environments = useEnvironments(organizationSlug, projectKey)
 
   const [picked, setPicked] = useState('')
   const envKey = picked || environments.data?.[0]?.key || ''
@@ -28,7 +28,7 @@ export function ContextsPage() {
     return () => clearTimeout(t)
   }, [query])
 
-  const contexts = useContexts(tenantSlug, projectKey, envKey, search)
+  const contexts = useContexts(organizationSlug, projectKey, envKey, search)
 
   return (
     <section className="space-y-6">
@@ -71,7 +71,7 @@ export function ContextsPage() {
               contexts={contexts.data}
               onOpen={(kind, key) =>
                 void navigate(
-                  `/tenants/${tenantSlug}/projects/${projectKey}/contexts/${encodeURIComponent(kind)}/${encodeURIComponent(key)}?env=${envKey}`,
+                  `/organizations/${organizationSlug}/projects/${projectKey}/contexts/${encodeURIComponent(kind)}/${encodeURIComponent(key)}?env=${envKey}`,
                 )
               }
             />

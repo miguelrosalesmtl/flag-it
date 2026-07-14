@@ -1,25 +1,25 @@
 import { api } from '@/api/client'
 import type { CreateWebhookInput, Webhook, WebhookDelivery } from '@/types/webhook'
 
-const base = (tenantSlug: string) => `/tenants/${tenantSlug}/webhooks`
+const base = (organizationSlug: string) => `/organizations/${organizationSlug}/webhooks`
 
 export const webhooksApi = {
-  list: (tenantSlug: string) =>
+  list: (organizationSlug: string) =>
     api
-      .get<{ webhooks: Webhook[] | null }>(base(tenantSlug))
+      .get<{ webhooks: Webhook[] | null }>(base(organizationSlug))
       .then((r) => r.webhooks ?? []),
-  create: (tenantSlug: string, input: CreateWebhookInput) =>
-    api.post<Webhook>(base(tenantSlug), input),
-  setEnabled: (tenantSlug: string, id: string, enabled: boolean) =>
-    api.post<Webhook>(`${base(tenantSlug)}/${id}/enabled`, { enabled }),
-  reset: (tenantSlug: string, id: string) =>
-    api.post<Webhook>(`${base(tenantSlug)}/${id}/reset`),
-  test: (tenantSlug: string, id: string) =>
-    api.post<WebhookDelivery>(`${base(tenantSlug)}/${id}/test`),
-  remove: (tenantSlug: string, id: string) =>
-    api.delete<void>(`${base(tenantSlug)}/${id}`),
-  deliveries: (tenantSlug: string, id: string) =>
+  create: (organizationSlug: string, input: CreateWebhookInput) =>
+    api.post<Webhook>(base(organizationSlug), input),
+  setEnabled: (organizationSlug: string, id: string, enabled: boolean) =>
+    api.post<Webhook>(`${base(organizationSlug)}/${id}/enabled`, { enabled }),
+  reset: (organizationSlug: string, id: string) =>
+    api.post<Webhook>(`${base(organizationSlug)}/${id}/reset`),
+  test: (organizationSlug: string, id: string) =>
+    api.post<WebhookDelivery>(`${base(organizationSlug)}/${id}/test`),
+  remove: (organizationSlug: string, id: string) =>
+    api.delete<void>(`${base(organizationSlug)}/${id}`),
+  deliveries: (organizationSlug: string, id: string) =>
     api
-      .get<{ deliveries: WebhookDelivery[] | null }>(`${base(tenantSlug)}/${id}/deliveries`)
+      .get<{ deliveries: WebhookDelivery[] | null }>(`${base(organizationSlug)}/${id}/deliveries`)
       .then((r) => r.deliveries ?? []),
 }

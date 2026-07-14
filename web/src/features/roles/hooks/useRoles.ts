@@ -4,10 +4,10 @@ import { rolesApi } from '@/api/endpoints/roles'
 import { queryKeys } from '@/lib/query-keys'
 import type { CreateRoleInput } from '@/types/role'
 
-export function useRoles(tenantSlug: string) {
+export function useRoles(organizationSlug: string) {
   return useQuery({
-    queryKey: queryKeys.roles(tenantSlug),
-    queryFn: () => rolesApi.list(tenantSlug),
+    queryKey: queryKeys.roles(organizationSlug),
+    queryFn: () => rolesApi.list(organizationSlug),
   })
 }
 
@@ -20,10 +20,10 @@ export function usePermissions() {
   })
 }
 
-export function useCreateRole(tenantSlug: string) {
+export function useCreateRole(organizationSlug: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: CreateRoleInput) => rolesApi.create(tenantSlug, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.roles(tenantSlug) }),
+    mutationFn: (input: CreateRoleInput) => rolesApi.create(organizationSlug, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.roles(organizationSlug) }),
   })
 }

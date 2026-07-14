@@ -17,20 +17,20 @@ const FILTERS = [
 ]
 
 /**
- * Container. The tenant's change history (audit log): every flag change,
+ * Container. The organization's change history (audit log): every flag change,
  * approval, key rotation, webhook edit, and role grant, newest first.
  */
 export function AuditPage() {
-  const { tenantSlug = '' } = useParams()
+  const { organizationSlug = '' } = useParams()
   const [resourceType, setResourceType] = useState('')
-  const audit = useAudit(tenantSlug, resourceType)
+  const audit = useAudit(organizationSlug, resourceType)
 
   return (
     <section className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Audit log</h1>
         <p className="text-muted-foreground text-sm">
-          Every change in this tenant, most recent first.
+          Every change in this organization, most recent first.
         </p>
       </header>
 

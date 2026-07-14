@@ -11,8 +11,8 @@ import (
 )
 
 type createWebhookInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	Body             struct {
 		URL         string   `json:"url" format:"uri" doc:"where to POST events"`
 		EventTypes  []string `json:"event_types" doc:"audit actions to subscribe to, or [\"*\"] for all"`
 		Description string   `json:"description,omitempty"`
@@ -20,18 +20,18 @@ type createWebhookInput struct {
 }
 
 type listWebhooksInput struct {
-	TenantSlug string `path:"tenantSlug"`
+	OrganizationSlug string `path:"organizationSlug"`
 }
 
 type webhookIDInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	WebhookID  string `path:"webhookId"`
+	OrganizationSlug string `path:"organizationSlug"`
+	WebhookID        string `path:"webhookId"`
 }
 
 type setWebhookEnabledInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	WebhookID  string `path:"webhookId"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	WebhookID        string `path:"webhookId"`
+	Body             struct {
 		Enabled bool `json:"enabled"`
 	}
 }
@@ -57,7 +57,7 @@ type listDeliveriesOutput struct {
 }
 
 func (s *Server) registerWebhooks() {
-	base := "/api/v1/tenants/{tenantSlug}/webhooks"
+	base := "/api/v1/organizations/{organizationSlug}/webhooks"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "create-webhook", Method: http.MethodPost, Path: base,
@@ -66,11 +66,11 @@ func (s *Server) registerWebhooks() {
 			"POSTs. The signing secret is returned only here and on reset.",
 		Tags: []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *createWebhookInput) (*webhookOutput, error) {
-		tenant, err := s.resolveTenant(ctx, in.TenantSlug)
+		organization, err := s.resolveOrganization(ctx, in.OrganizationSlug)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{TenantID: tenant.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{OrganizationID: organization.ID}); err != nil {
 			return nil, err
 		}
 		user, err := s.auth.GetUser(ctx, userID(ctx))
@@ -78,7 +78,7 @@ func (s *Server) registerWebhooks() {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
 		w, err := s.webhooks.Create(ctx, webhooks.WebhookInput{
-			TenantID:       tenant.ID,
+			OrganizationID: organization.ID,
 			URL:            in.Body.URL,
 			EventTypes:     in.Body.EventTypes,
 			Description:    in.Body.Description,
@@ -88,7 +88,7 @@ func (s *Server) registerWebhooks() {
 		if err != nil {
 			return nil, webhookError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: tenant.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: organization.ID,
 			Action: "webhook.created", ResourceType: "webhook", ResourceKey: w.ID,
 			Data: jsonData(map[string]any{"url": w.URL, "event_types": w.EventTypes})})
 		return &webhookOutput{Body: w}, nil
@@ -96,17 +96,17 @@ func (s *Server) registerWebhooks() {
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "list-webhooks", Method: http.MethodGet, Path: base,
-		Summary: "List a tenant's webhooks, without their secrets (requires webhook.manage)",
+		Summary: "List a organization's webhooks, without their secrets (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *listWebhooksInput) (*listWebhooksOutput, error) {
-		tenant, err := s.resolveTenant(ctx, in.TenantSlug)
+		organization, err := s.resolveOrganization(ctx, in.OrganizationSlug)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{TenantID: tenant.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{OrganizationID: organization.ID}); err != nil {
 			return nil, err
 		}
-		list, err := s.webhooks.List(ctx, tenant.ID)
+		list, err := s.webhooks.List(ctx, organization.ID)
 		if err != nil {
 			return nil, huma.Error500InternalServerError(err.Error())
 		}
@@ -123,7 +123,7 @@ func (s *Server) registerWebhooks() {
 		Summary: "Enable or disable a webhook (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *setWebhookEnabledInput) (*webhookOutput, error) {
-		tenant, w, err := s.resolveWebhook(ctx, in.TenantSlug, in.WebhookID)
+		organization, w, err := s.resolveWebhook(ctx, in.OrganizationSlug, in.WebhookID)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +135,7 @@ func (s *Server) registerWebhooks() {
 		if in.Body.Enabled {
 			action = "webhook.enabled"
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: tenant.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: organization.ID,
 			Action: action, ResourceType: "webhook", ResourceKey: w.ID})
 		updated.Secret = ""
 		return &webhookOutput{Body: updated}, nil
@@ -146,7 +146,7 @@ func (s *Server) registerWebhooks() {
 		Summary: "Reset a webhook's signing secret (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *webhookIDInput) (*webhookOutput, error) {
-		tenant, w, err := s.resolveWebhook(ctx, in.TenantSlug, in.WebhookID)
+		organization, w, err := s.resolveWebhook(ctx, in.OrganizationSlug, in.WebhookID)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func (s *Server) registerWebhooks() {
 		if err != nil {
 			return nil, webhookError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: tenant.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: organization.ID,
 			Action: "webhook.reset", ResourceType: "webhook", ResourceKey: w.ID})
 		return &webhookOutput{Body: updated}, nil
 	})
@@ -164,7 +164,7 @@ func (s *Server) registerWebhooks() {
 		Summary: "Send a test event to a webhook (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *webhookIDInput) (*deliveryOutput, error) {
-		_, w, err := s.resolveWebhook(ctx, in.TenantSlug, in.WebhookID)
+		_, w, err := s.resolveWebhook(ctx, in.OrganizationSlug, in.WebhookID)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +180,7 @@ func (s *Server) registerWebhooks() {
 		Summary: "List a webhook's recent delivery attempts (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer,
 	}, func(ctx context.Context, in *webhookIDInput) (*listDeliveriesOutput, error) {
-		_, w, err := s.resolveWebhook(ctx, in.TenantSlug, in.WebhookID)
+		_, w, err := s.resolveWebhook(ctx, in.OrganizationSlug, in.WebhookID)
 		if err != nil {
 			return nil, err
 		}
@@ -198,37 +198,37 @@ func (s *Server) registerWebhooks() {
 		Summary: "Delete a webhook (requires webhook.manage)",
 		Tags:    []string{"Webhooks"}, Security: bearer, DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *webhookIDInput) (*noContent, error) {
-		tenant, w, err := s.resolveWebhook(ctx, in.TenantSlug, in.WebhookID)
+		organization, w, err := s.resolveWebhook(ctx, in.OrganizationSlug, in.WebhookID)
 		if err != nil {
 			return nil, err
 		}
 		if err := s.webhooks.Delete(ctx, w.ID); err != nil {
 			return nil, webhookError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: tenant.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: organization.ID,
 			Action: "webhook.deleted", ResourceType: "webhook", ResourceKey: w.ID})
 		return &noContent{}, nil
 	})
 }
 
-// resolveWebhook resolves the tenant + a webhook, enforcing that the webhook
-// belongs to that tenant. Requires webhook.manage (all webhook ops do).
-func (s *Server) resolveWebhook(ctx context.Context, tenantSlug, webhookID string) (models.Tenant, models.Webhook, error) {
-	tenant, err := s.resolveTenant(ctx, tenantSlug)
+// resolveWebhook resolves the organization + a webhook, enforcing that the webhook
+// belongs to that organization. Requires webhook.manage (all webhook ops do).
+func (s *Server) resolveWebhook(ctx context.Context, organizationSlug, webhookID string) (models.Organization, models.Webhook, error) {
+	organization, err := s.resolveOrganization(ctx, organizationSlug)
 	if err != nil {
-		return models.Tenant{}, models.Webhook{}, err
+		return models.Organization{}, models.Webhook{}, err
 	}
-	if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{TenantID: tenant.ID}); err != nil {
-		return models.Tenant{}, models.Webhook{}, err
+	if err := s.authorize(ctx, models.PermWebhookManage, models.Resource{OrganizationID: organization.ID}); err != nil {
+		return models.Organization{}, models.Webhook{}, err
 	}
 	w, err := s.webhooks.Get(ctx, webhookID)
 	if err != nil {
-		return models.Tenant{}, models.Webhook{}, storeError(err, "webhook not found")
+		return models.Organization{}, models.Webhook{}, storeError(err, "webhook not found")
 	}
-	if w.TenantID != tenant.ID {
-		return models.Tenant{}, models.Webhook{}, huma.Error404NotFound("webhook not found")
+	if w.OrganizationID != organization.ID {
+		return models.Organization{}, models.Webhook{}, huma.Error404NotFound("webhook not found")
 	}
-	return tenant, w, nil
+	return organization, w, nil
 }
 
 // webhookError maps webhooks-service errors to HTTP statuses.

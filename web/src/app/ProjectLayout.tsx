@@ -41,17 +41,17 @@ function NavItem({ to, end, icon: Icon, label }: { to: string; end?: boolean; ic
 
 /**
  * The project shell. A left sidebar (project switcher + Features nav) around the
- * project's screens. Rendered for all /tenants/:t/projects/:p routes.
+ * project's screens. Rendered for all /organizations/:t/projects/:p routes.
  */
 export function ProjectLayout() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const projects = useProjects(tenantSlug)
+  const projects = useProjects(organizationSlug)
   const { data: user } = useMe()
   const logout = useLogout()
   const { environment, enableMocking } = getConfig()
 
-  const base = `/tenants/${tenantSlug}/projects/${projectKey}`
+  const base = `/organizations/${organizationSlug}/projects/${projectKey}`
 
   return (
     <div className="flex min-h-screen">
@@ -63,7 +63,7 @@ export function ProjectLayout() {
           <ProjectSwitcher
             projects={projects.data ?? []}
             currentKey={projectKey}
-            onSelect={(key) => void navigate(`/tenants/${tenantSlug}/projects/${key}`)}
+            onSelect={(key) => void navigate(`/organizations/${organizationSlug}/projects/${key}`)}
           />
         </div>
 

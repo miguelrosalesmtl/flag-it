@@ -11,17 +11,17 @@ import { useContext } from '@/features/contexts/hooks/useContexts'
  * environment comes from the ?env= query param the list navigates with.
  */
 export function ContextDetailPage() {
-  const { tenantSlug = '', projectKey = '', kind = '', key = '' } = useParams()
+  const { organizationSlug = '', projectKey = '', kind = '', key = '' } = useParams()
   const [searchParams] = useSearchParams()
   const envKey = searchParams.get('env') ?? ''
 
-  const detail = useContext(tenantSlug, projectKey, envKey, kind, key)
+  const detail = useContext(organizationSlug, projectKey, envKey, kind, key)
 
   return (
     <section className="space-y-6">
       <header className="space-y-1">
         <Link
-          to={`/tenants/${tenantSlug}/projects/${projectKey}/contexts`}
+          to={`/organizations/${organizationSlug}/projects/${projectKey}/contexts`}
           className="text-muted-foreground text-sm hover:underline"
         >
           ← Contexts

@@ -18,7 +18,7 @@ import type { Role } from '@/types/role'
 export interface AddMemberDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Tenant-scoped roles offered in the role dropdown. */
+  /** Organization-scoped roles offered in the role dropdown. */
   roles: Role[]
   /** Emitted with the email + optional role on submit. */
   onAdd: (input: AddMemberInput) => void
@@ -26,7 +26,7 @@ export interface AddMemberDialogProps {
   errorMessage?: string
 }
 
-/** Presentational. A controlled dialog to add an existing user to the tenant. */
+/** Presentational. A controlled dialog to add an existing user to the organization. */
 export function AddMemberDialog({
   open,
   onOpenChange,
@@ -56,7 +56,7 @@ export function AddMemberDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add member</DialogTitle>
-          <DialogDescription>Add an existing user to this tenant.</DialogDescription>
+          <DialogDescription>Add an existing user to this organization.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {errorMessage ? (

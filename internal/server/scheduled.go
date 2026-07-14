@@ -12,11 +12,11 @@ import (
 )
 
 type createScheduledInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Body             struct {
 		Comment      string              `json:"comment,omitempty" doc:"why this change is scheduled"`
 		ScheduledFor time.Time           `json:"scheduled_for" doc:"when to apply the change (RFC3339)"`
 		Instructions []flags.Instruction `json:"instructions"`
@@ -24,17 +24,17 @@ type createScheduledInput struct {
 }
 
 type listScheduledInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	Status     string `query:"status" doc:"filter by status: pending, applied, cancelled, or failed"`
-	Flag       string `query:"flag" doc:"filter by flag key"`
-	Env        string `query:"env" doc:"filter by environment key"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	Status           string `query:"status" doc:"filter by status: pending, applied, cancelled, or failed"`
+	Flag             string `query:"flag" doc:"filter by flag key"`
+	Env              string `query:"env" doc:"filter by environment key"`
 }
 
 type cancelScheduledInput struct {
-	TenantSlug  string `path:"tenantSlug"`
-	ProjectKey  string `path:"projectKey"`
-	ScheduledID string `path:"scheduledId"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	ScheduledID      string `path:"scheduledId"`
 }
 
 type scheduledOutput struct {
@@ -48,7 +48,7 @@ type listScheduledOutput struct {
 }
 
 func (s *Server) registerScheduled() {
-	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}"
+	base := "/api/v1/organizations/{organizationSlug}/projects/{projectKey}"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "create-scheduled-change", Method: http.MethodPost,
@@ -58,11 +58,11 @@ func (s *Server) registerScheduled() {
 			"scheduled_for passes. Cancel it before then to prevent it.",
 		Tags: []string{"Scheduled changes"}, Security: bearer,
 	}, func(ctx context.Context, in *createScheduledInput) (*scheduledOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -91,7 +91,7 @@ func (s *Server) registerScheduled() {
 		if err != nil {
 			return nil, changeError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "change.scheduled", ResourceType: "flag", ResourceKey: flag.Key,
 			Comment: in.Body.Comment,
 			Data: jsonData(map[string]any{
@@ -105,11 +105,11 @@ func (s *Server) registerScheduled() {
 		Summary: "List a project's scheduled changes (requires flag.read)",
 		Tags:    []string{"Scheduled changes"}, Security: bearer,
 	}, func(ctx context.Context, in *listScheduledInput) (*listScheduledOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		if in.Status != "" && in.Status != models.ScheduledStatusPending &&
@@ -132,11 +132,11 @@ func (s *Server) registerScheduled() {
 		Summary: "Cancel a pending scheduled change (requires flag.write)",
 		Tags:    []string{"Scheduled changes"}, Security: bearer,
 	}, func(ctx context.Context, in *cancelScheduledInput) (*scheduledOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		existing, err := s.governance.GetScheduled(ctx, in.ScheduledID)
@@ -150,7 +150,7 @@ func (s *Server) registerScheduled() {
 		if err != nil {
 			return nil, storeError(err, "scheduled change not found or already resolved")
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "change.schedule.cancelled", ResourceType: "flag", ResourceKey: sc.FlagKey,
 			Data: jsonData(map[string]any{"environment": sc.EnvironmentKey, "scheduled_change": sc.ID})})
 		return &scheduledOutput{Body: sc}, nil

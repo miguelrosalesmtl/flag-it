@@ -53,15 +53,15 @@ func TestCrossReplicaPropagation(t *testing.T) {
 	replicaA := flags.NewService(st, busA, log)
 	replicaB := flags.NewService(st, busB, log)
 
-	// --- Seed a tenant, project (auto envs), and a boolean flag. ---
+	// --- Seed a organization, project (auto envs), and a boolean flag. ---
 	suffix := time.Now().UnixNano()
-	tenant, err := st.CreateTenant(ctx, fmt.Sprintf("prop-%d", suffix), "Prop")
+	organization, err := st.CreateOrganization(ctx, fmt.Sprintf("prop-%d", suffix), "Prop")
 	if err != nil {
-		t.Fatalf("create tenant: %v", err)
+		t.Fatalf("create organization: %v", err)
 	}
-	defer pool.Exec(context.Background(), `DELETE FROM tenants WHERE id = $1`, tenant.ID)
+	defer pool.Exec(context.Background(), `DELETE FROM organizations WHERE id = $1`, organization.ID)
 
-	_, envs, err := st.CreateProject(ctx, tenant.ID, "app", "App")
+	_, envs, err := st.CreateProject(ctx, organization.ID, "app", "App")
 	if err != nil {
 		t.Fatalf("create project: %v", err)
 	}

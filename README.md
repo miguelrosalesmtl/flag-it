@@ -1,11 +1,11 @@
 # flag-it
 
-A self-hosted, multi-tenant feature-flagging platform in Go — a LaunchDarkly-style
+A self-hosted, multi-organization feature-flagging platform in Go — a LaunchDarkly-style
 service with **server-side evaluation**, a **React dashboard** (`web/`), and an
 API that runs as many identical replicas behind a load balancer.
 
-- **Multi-tenant**: Tenant → Project → Environment. A cross-tenant superuser sees
-  everything; per-tenant roles (permission bundles) scope everyone else.
+- **Multi-organization**: Organization → Project → Environment. A cross-organization superuser sees
+  everything; per-organization roles (permission bundles) scope everyone else.
 - **Server-side evaluation**: the targeting ruleset never leaves the backend.
   SDKs send a context and get back a value — they never receive the rules.
 - **Auto-generated OpenAPI**: the HTTP layer is [huma](https://huma.rocks) over
@@ -24,7 +24,7 @@ different audiences**, distinguished by their authentication:
 |---|---|---|
 | **Audience** | Humans configuring flags (the dashboard, admins, CI) | Apps evaluating flags at runtime (SDKs) |
 | **Auth** | JWT bearer (`Authorization: Bearer …`, from login) | SDK key (`X-SDK-Key: …`, minted per environment) |
-| **Paths** | `/api/v1/tenants/…` — flags, targeting, segments, projects, environments, SDK keys, members, roles, audit, approvals, scheduled changes, triggers, webhooks | `/api/v1/eval`, `/api/v1/eval/all`, `/api/v1/eval/stream` (SSE), `/api/v1/events` |
+| **Paths** | `/api/v1/organizations/…` — flags, targeting, segments, projects, environments, SDK keys, members, roles, audit, approvals, scheduled changes, triggers, webhooks | `/api/v1/eval`, `/api/v1/eval/all`, `/api/v1/eval/stream` (SSE), `/api/v1/events` |
 | **Traffic** | Low — a handful of admins | Potentially huge — every SDK instance, long-lived streams |
 | **Writes vs reads** | Read/write config | Read-only evaluation (+ pushes usage summaries) |
 
@@ -86,7 +86,7 @@ internal/
   store               Postgres persistence (the ONLY package that writes SQL)
   auth                JWT issue/verify, bcrypt, first-run bootstrap  ── service
   authz               Roles, permissions, Subject.Can(...)           ── service
-  catalog             Tenants / projects / environments / SDK keys   ── service
+  catalog             Organizations / projects / environments / SDK keys   ── service
   audit               Append-only change log                         ── service
   analytics           Buffered eval counters → rollups               ── service
   contexts            Records contexts seen during eval              ── service
@@ -125,7 +125,7 @@ make web-dev   # the dashboard on http://localhost:5173 (needs the API running)
 
 First run has no users, so the dashboard opens a **setup wizard** (or use the
 CLI: `./bin/server createsuperuser <email> <password>`). The wizard creates the
-first superuser + tenant via the public, one-time `POST /api/v1/setup`.
+first superuser + organization via the public, one-time `POST /api/v1/setup`.
 
 ## API reference
 
@@ -138,8 +138,8 @@ Full spec at `/docs` (Swagger UI) and `/openapi.yaml`. The shape:
 | GET/POST | `/api/v1/setup` | First-run: needs-setup check / bootstrap (public, one-time) |
 | POST | `/api/v1/auth/login` | Exchange credentials for a JWT |
 | GET | `/api/v1/me` | Current user |
-| — | `/api/v1/users`, `/api/v1/tenants`, `/api/v1/permissions` | Users, tenants, permission vocabulary |
-| — | `/api/v1/tenants/{t}/projects/{p}/flags` | Flag definitions (+ `/{flagKey}`, `/environments/{env}/flags` with on/off state) |
+| — | `/api/v1/users`, `/api/v1/organizations`, `/api/v1/permissions` | Users, organizations, permission vocabulary |
+| — | `/api/v1/organizations/{t}/projects/{p}/flags` | Flag definitions (+ `/{flagKey}`, `/environments/{env}/flags` with on/off state) |
 | PATCH | `…/flags/{flagKey}/environments/{env}` | Targeting via semantic instructions (turnFlagOn, addRule, reorderRules, updateRule, …) |
 | GET | `…/flags/lifecycle` | Flags annotated new/active/stale for cleanup (temporary flag detection) |
 | — | `…/segments`, `…/environments`, `…/environments/{env}/sdk-keys` | Segments, environments, SDK keys |
@@ -147,8 +147,8 @@ Full spec at `/docs` (Swagger UI) and `/openapi.yaml`. The shape:
 | — | `…/flags/{flagKey}/environments/{env}/changes`, `…/changes/{id}/approve`\|`reject` | Approval workflow: propose a change, review it |
 | — | `…/flags/{flagKey}/environments/{env}/scheduled-changes`, `…/scheduled-changes/{id}/cancel` | Schedule a change for a future time |
 | — | `…/flags/{flagKey}/environments/{env}/triggers`, `…/triggers/{id}/…` | Inbound-webhook triggers (create/list/enable/reset/delete) |
-| — | `/api/v1/tenants/{t}/webhooks`, `…/webhooks/{id}/deliveries` | Outbound webhooks + delivery log |
-| — | `/api/v1/tenants/{t}/roles`, `…/members`, `…/projects/{p}/roles`, `…/audit` | Roles, tenant members, project-scoped role grants, change history |
+| — | `/api/v1/organizations/{t}/webhooks`, `…/webhooks/{id}/deliveries` | Outbound webhooks + delivery log |
+| — | `/api/v1/organizations/{t}/roles`, `…/members`, `…/projects/{p}/roles`, `…/audit` | Roles, organization members, project-scoped role grants, change history |
 
 ### Client / SDK API (`X-SDK-Key`)
 
@@ -197,7 +197,7 @@ Plus:
 - **Flag lifecycle** — mark flags temporary; a derived new/active/stale status
   (from age + evaluation activity) surfaces cleanup candidates.
 - **Outbound webhooks** — the audit log doubles as an event stream: every
-  recorded entry is fanned out to subscribed tenant webhooks and delivered as an
+  recorded entry is fanned out to subscribed organization webhooks and delivered as an
   HMAC-signed POST, with retry/backoff and a per-webhook delivery log.
 
 All of the above are audited, and all are wired into the dashboard.

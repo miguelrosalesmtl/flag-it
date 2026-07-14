@@ -10,42 +10,42 @@
 export const queryKeys = {
   me: ['auth', 'me'] as const,
   setupStatus: ['setup', 'status'] as const,
-  tenants: ['tenants', 'list'] as const,
-  projects: (tenantSlug: string) => ['projects', tenantSlug] as const,
-  project: (tenantSlug: string, projectKey: string) =>
-    ['projects', tenantSlug, projectKey] as const,
-  flags: (tenantSlug: string, projectKey: string) => ['flags', tenantSlug, projectKey] as const,
-  flagLifecycle: (tenantSlug: string, projectKey: string) =>
-    ['flags', tenantSlug, projectKey, 'lifecycle'] as const,
-  envFlags: (tenantSlug: string, projectKey: string, envKey: string) =>
-    ['flags', tenantSlug, projectKey, 'env', envKey] as const,
-  flag: (tenantSlug: string, projectKey: string, flagKey: string) =>
-    ['flags', tenantSlug, projectKey, flagKey] as const,
-  flagConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
-    ['flags', tenantSlug, projectKey, flagKey, 'config', envKey] as const,
-  environments: (tenantSlug: string, projectKey: string) =>
-    ['environments', tenantSlug, projectKey] as const,
-  segments: (tenantSlug: string, projectKey: string) =>
-    ['segments', tenantSlug, projectKey] as const,
-  segment: (tenantSlug: string, projectKey: string, segKey: string) =>
-    ['segments', tenantSlug, projectKey, segKey] as const,
-  contexts: (tenantSlug: string, projectKey: string, envKey: string) =>
-    ['contexts', tenantSlug, projectKey, envKey] as const,
-  context: (tenantSlug: string, projectKey: string, envKey: string, kind: string, key: string) =>
-    ['contexts', tenantSlug, projectKey, envKey, kind, key] as const,
-  sdkKeys: (tenantSlug: string, projectKey: string, envKey: string) =>
-    ['sdk-keys', tenantSlug, projectKey, envKey] as const,
-  changes: (tenantSlug: string, projectKey: string) =>
-    ['changes', tenantSlug, projectKey] as const,
-  scheduledChanges: (tenantSlug: string, projectKey: string) =>
-    ['scheduled-changes', tenantSlug, projectKey] as const,
-  triggers: (tenantSlug: string, projectKey: string) =>
-    ['triggers', tenantSlug, projectKey] as const,
-  audit: (tenantSlug: string) => ['audit', tenantSlug] as const,
-  webhooks: (tenantSlug: string) => ['webhooks', tenantSlug] as const,
-  webhookDeliveries: (tenantSlug: string, id: string) =>
-    ['webhooks', tenantSlug, id, 'deliveries'] as const,
-  roles: (tenantSlug: string) => ['roles', tenantSlug] as const,
+  organizations: ['organizations', 'list'] as const,
+  projects: (organizationSlug: string) => ['projects', organizationSlug] as const,
+  project: (organizationSlug: string, projectKey: string) =>
+    ['projects', organizationSlug, projectKey] as const,
+  flags: (organizationSlug: string, projectKey: string) => ['flags', organizationSlug, projectKey] as const,
+  flagLifecycle: (organizationSlug: string, projectKey: string) =>
+    ['flags', organizationSlug, projectKey, 'lifecycle'] as const,
+  envFlags: (organizationSlug: string, projectKey: string, envKey: string) =>
+    ['flags', organizationSlug, projectKey, 'env', envKey] as const,
+  flag: (organizationSlug: string, projectKey: string, flagKey: string) =>
+    ['flags', organizationSlug, projectKey, flagKey] as const,
+  flagConfig: (organizationSlug: string, projectKey: string, flagKey: string, envKey: string) =>
+    ['flags', organizationSlug, projectKey, flagKey, 'config', envKey] as const,
+  environments: (organizationSlug: string, projectKey: string) =>
+    ['environments', organizationSlug, projectKey] as const,
+  segments: (organizationSlug: string, projectKey: string) =>
+    ['segments', organizationSlug, projectKey] as const,
+  segment: (organizationSlug: string, projectKey: string, segKey: string) =>
+    ['segments', organizationSlug, projectKey, segKey] as const,
+  contexts: (organizationSlug: string, projectKey: string, envKey: string) =>
+    ['contexts', organizationSlug, projectKey, envKey] as const,
+  context: (organizationSlug: string, projectKey: string, envKey: string, kind: string, key: string) =>
+    ['contexts', organizationSlug, projectKey, envKey, kind, key] as const,
+  sdkKeys: (organizationSlug: string, projectKey: string, envKey: string) =>
+    ['sdk-keys', organizationSlug, projectKey, envKey] as const,
+  changes: (organizationSlug: string, projectKey: string) =>
+    ['changes', organizationSlug, projectKey] as const,
+  scheduledChanges: (organizationSlug: string, projectKey: string) =>
+    ['scheduled-changes', organizationSlug, projectKey] as const,
+  triggers: (organizationSlug: string, projectKey: string) =>
+    ['triggers', organizationSlug, projectKey] as const,
+  audit: (organizationSlug: string) => ['audit', organizationSlug] as const,
+  webhooks: (organizationSlug: string) => ['webhooks', organizationSlug] as const,
+  webhookDeliveries: (organizationSlug: string, id: string) =>
+    ['webhooks', organizationSlug, id, 'deliveries'] as const,
+  roles: (organizationSlug: string) => ['roles', organizationSlug] as const,
   permissions: ['permissions'] as const,
-  members: (tenantSlug: string) => ['members', tenantSlug] as const,
+  members: (organizationSlug: string) => ['members', organizationSlug] as const,
 }
