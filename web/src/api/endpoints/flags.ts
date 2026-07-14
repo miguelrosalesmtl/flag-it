@@ -41,6 +41,8 @@ export const flagsApi = {
       .then((r) => r.flags ?? []),
   get: (tenantSlug: string, projectKey: string, flagKey: string) =>
     api.get<Flag>(`${flagBase(tenantSlug, projectKey)}/${flagKey}`),
+  remove: (tenantSlug: string, projectKey: string, flagKey: string) =>
+    api.delete<void>(`${flagBase(tenantSlug, projectKey)}/${flagKey}`),
   getConfig: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
     api.get<FlagConfig>(`${flagBase(tenantSlug, projectKey)}/${flagKey}/environments/${envKey}`),
   // Toggle via a semantic instruction — surgical and concurrency-safe, unlike a

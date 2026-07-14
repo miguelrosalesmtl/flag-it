@@ -14,4 +14,6 @@ export const projectsApi = {
       .then((r) => r.project),
   update: (tenantSlug: string, projectKey: string, name: string) =>
     api.patch<Project>(`/tenants/${tenantSlug}/projects/${projectKey}`, { name }),
+  remove: (tenantSlug: string, projectKey: string) =>
+    api.delete<void>(`/tenants/${tenantSlug}/projects/${projectKey}`),
 }

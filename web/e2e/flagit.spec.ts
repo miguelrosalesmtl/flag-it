@@ -426,6 +426,27 @@ test('edits a targeting rule in place', async ({ page }) => {
   await expect(page.getByText('user.country is one of [US]')).toBeHidden()
 })
 
+test('deletes a flag from its detail page', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+  await expect(page.getByRole('button', { name: 'New checkout' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'New checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+
+  // Delete, confirm in the dialog, and land back on the flags list without it.
+  await page.getByRole('button', { name: 'Delete flag' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Delete flag' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Flags' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'New checkout' })).toBeHidden()
+})
+
 test('adds a rollout rule bucketed by an attribute', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
@@ -649,7 +670,7 @@ test('creates a flag trigger, reveals its URL, then deletes it', async ({ page }
   await expect(page.getByText('PagerDuty incident')).toBeVisible()
 
   // Delete it; the empty state returns.
-  await page.getByRole('button', { name: 'Delete' }).click()
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
   await expect(page.getByText('No triggers.')).toBeVisible()
 })
 

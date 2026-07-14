@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TenantList } from '@/features/tenants/components/TenantList'
-import { useTenants } from '@/features/tenants/hooks/useTenants'
+import { useDeleteTenant, useTenants } from '@/features/tenants/hooks/useTenants'
 
 /**
  * Container. The first authenticated screen: lists the tenants the signed-in
@@ -13,6 +13,7 @@ import { useTenants } from '@/features/tenants/hooks/useTenants'
 export function TenantsPage() {
   const navigate = useNavigate()
   const { data: tenants, isPending, isError, error, refetch } = useTenants()
+  const deleteTenant = useDeleteTenant()
 
   return (
     <section className="space-y-6">
@@ -29,7 +30,12 @@ export function TenantsPage() {
       ) : isError ? (
         <ErrorState message={error.message} onRetry={() => void refetch()} />
       ) : (
-        <TenantList tenants={tenants} onOpen={(slug) => void navigate(`/tenants/${slug}`)} />
+        <TenantList
+          tenants={tenants}
+          onOpen={(slug) => void navigate(`/tenants/${slug}`)}
+          onDelete={(slug) => deleteTenant.mutate(slug)}
+          busy={deleteTenant.isPending}
+        />
       )}
     </section>
   )

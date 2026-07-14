@@ -5,4 +5,5 @@ import type { Tenant } from '@/types/tenant'
 // a plain array.
 export const tenantsApi = {
   list: () => api.get<{ tenants: Tenant[] | null }>('/tenants').then((r) => r.tenants ?? []),
+  remove: (tenantSlug: string) => api.delete<void>(`/tenants/${tenantSlug}`),
 }

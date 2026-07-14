@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EnvironmentTabs } from '@/features/environments/components/EnvironmentTabs'
@@ -14,6 +15,7 @@ import { CreateTriggerDialog } from '@/features/flags/components/CreateTriggerDi
 import { TriggersCard } from '@/features/flags/components/TriggersCard'
 import { useCreateChange } from '@/features/approvals/hooks/useChanges'
 import {
+  useDeleteFlag,
   useFlag,
   useFlagConfig,
   usePatchFlagConfig,
@@ -40,6 +42,7 @@ import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
  */
 export function FlagDetailPage() {
   const { tenantSlug = '', projectKey = '', flagKey = '' } = useParams()
+  const navigate = useNavigate()
   const flag = useFlag(tenantSlug, projectKey, flagKey)
   const environments = useEnvironments(tenantSlug, projectKey)
   const toggle = useToggleFlag(tenantSlug, projectKey, flagKey)
@@ -60,20 +63,32 @@ export function FlagDetailPage() {
   const setTriggerEnabled = useSetTriggerEnabled(tenantSlug, projectKey)
   const resetTrigger = useResetTrigger(tenantSlug, projectKey)
   const deleteTrigger = useDeleteTrigger(tenantSlug, projectKey)
+  const deleteFlag = useDeleteFlag(tenantSlug, projectKey)
   // A just-minted webhook URL to reveal once (create/reset return it).
   const [revealedUrl, setRevealedUrl] = useState<string | null>(null)
 
+  const flagsUrl = `/tenants/${tenantSlug}/projects/${projectKey}`
+
   return (
     <section className="space-y-6">
-      <header className="space-y-1">
-        <Link
-          to={`/tenants/${tenantSlug}/projects/${projectKey}`}
-          className="text-muted-foreground text-sm hover:underline"
-        >
-          ← Flags
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{flag.data?.name ?? flagKey}</h1>
-        <p className="text-muted-foreground font-mono text-sm">{flagKey}</p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <Link to={flagsUrl} className="text-muted-foreground text-sm hover:underline">
+            ← Flags
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight">{flag.data?.name ?? flagKey}</h1>
+          <p className="text-muted-foreground font-mono text-sm">{flagKey}</p>
+        </div>
+        <ConfirmDeleteDialog
+          triggerLabel="Delete flag"
+          title={`Delete ${flag.data?.name ?? flagKey}?`}
+          description="This removes the flag and its configuration in every environment. This cannot be undone."
+          confirmLabel="Delete flag"
+          busy={deleteFlag.isPending}
+          onConfirm={() =>
+            deleteFlag.mutate(flagKey, { onSuccess: () => void navigate(flagsUrl) })
+          }
+        />
       </header>
 
       {flag.isPending || environments.isPending ? (

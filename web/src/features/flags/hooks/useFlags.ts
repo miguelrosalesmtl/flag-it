@@ -120,3 +120,11 @@ export function usePatchFlagConfig(
     },
   })
 }
+
+export function useDeleteFlag(tenantSlug: string, projectKey: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (flagKey: string) => flagsApi.remove(tenantSlug, projectKey, flagKey),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['flags', tenantSlug, projectKey] }),
+  })
+}

@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router'
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ProjectList } from '@/features/projects/components/ProjectList'
-import { useProjects } from '@/features/projects/hooks/useProjects'
+import { useDeleteProject, useProjects } from '@/features/projects/hooks/useProjects'
 
 /** Container. The tenant's projects, in settings. Opening one goes to its flags. */
 export function ProjectsSettingsPage() {
   const { tenantSlug = '' } = useParams()
   const navigate = useNavigate()
   const { data: projects, isPending, isError, error, refetch } = useProjects(tenantSlug)
+  const deleteProject = useDeleteProject(tenantSlug)
 
   return (
     <section className="space-y-6">
@@ -29,6 +30,8 @@ export function ProjectsSettingsPage() {
         <ProjectList
           projects={projects}
           onOpen={(key) => void navigate(`/tenants/${tenantSlug}/projects/${key}`)}
+          onDelete={(key) => deleteProject.mutate(key)}
+          busy={deleteProject.isPending}
         />
       )}
     </section>
