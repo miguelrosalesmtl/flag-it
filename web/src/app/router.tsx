@@ -23,6 +23,7 @@ import { WebhooksSettingsPage } from '@/features/webhooks/WebhooksSettingsPage'
 import { GeneralSettingsPage } from '@/features/settings/GeneralSettingsPage'
 import { SettingsPlaceholder } from '@/features/settings/SettingsPlaceholder'
 import { TenantsPage } from '@/features/tenants/TenantsPage'
+import { UsersPage } from '@/features/users/UsersPage'
 
 export const router = createBrowserRouter([
   { path: '/setup', Component: SetupRoute },
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           { index: true, Component: TenantsPage },
+          { path: 'users', Component: UsersPage },
           { path: 'tenants/:tenantSlug', Component: ProjectsPage },
         ],
       },

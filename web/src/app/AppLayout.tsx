@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router'
+import { Link, Outlet } from 'react-router'
 
 import { EnvironmentBanner } from '@/components/environment-banner'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,15 @@ export function AppLayout() {
       <EnvironmentBanner environment={environment} mocking={enableMocking} />
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="font-semibold tracking-tight">flag-it</span>
+          <Link to="/" className="font-semibold tracking-tight">
+            flag-it
+          </Link>
           <div className="flex items-center gap-3">
+            {user?.is_superuser ? (
+              <Link to="/users" className="text-muted-foreground hover:text-foreground text-sm">
+                Users
+              </Link>
+            ) : null}
             {user ? <span className="text-muted-foreground text-sm">{user.email}</span> : null}
             <Button variant="outline" size="sm" onClick={() => logout()}>
               Sign out

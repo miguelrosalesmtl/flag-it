@@ -1,44 +1,44 @@
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CreateUserDialog } from '@/features/users/components/CreateUserDialog'
 import { UserList } from '@/features/users/components/UserList'
-import { useDeleteUser, useUsers } from '@/features/users/hooks/useUsers'
+import { useCreateUser, useDeleteUser, useUsers } from '@/features/users/hooks/useUsers'
 
 /**
- * Container.
- *
- * This is the seam. It is the only file in the feature allowed to touch hooks,
- * and it does the loading/error branching so that everything below it receives
- * nothing but resolved domain data.
- *
- * Copy this folder to start a new feature.
+ * Container. Platform user administration (superuser only): list users, create
+ * accounts, and delete them.
  */
 export function UsersPage() {
-  const { data: users, isPending, isError, error, refetch } = useUsers()
-  const deleteUser = useDeleteUser()
+  const users = useUsers()
+  const create = useCreateUser()
+  const remove = useDeleteUser()
 
   return (
-    <section className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-        <p className="text-muted-foreground text-sm">
-          Served by MSW fixtures. To hit a real backend, set <code>APP_API_URL</code> and{' '}
-          <code>APP_ENABLE_MOCKING=false</code> in <code>.env</code>.
-        </p>
+    <section className="mx-auto max-w-4xl space-y-6 px-6 py-8">
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+          <p className="text-muted-foreground text-sm">Platform accounts across all tenants.</p>
+        </div>
+        <CreateUserDialog
+          onCreate={(input) => create.mutate(input)}
+          isCreating={create.isPending}
+          errorMessage={create.isError ? 'Could not create the user.' : undefined}
+        />
       </header>
 
-      {isPending ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      {users.isPending ? (
+        <div className="space-y-2">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
         </div>
-      ) : isError ? (
-        <ErrorState message={error.message} onRetry={() => void refetch()} />
+      ) : users.isError ? (
+        <ErrorState message={users.error.message} onRetry={() => void users.refetch()} />
       ) : (
         <UserList
-          users={users}
-          onDelete={(id) => deleteUser.mutate(id)}
-          deletingId={deleteUser.isPending ? deleteUser.variables : null}
+          users={users.data}
+          onDelete={(id) => remove.mutate(id)}
+          busy={remove.isPending}
         />
       )}
     </section>
