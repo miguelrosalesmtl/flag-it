@@ -30,6 +30,27 @@ test('a fresh install runs the first-run setup wizard and lands in the app', asy
   await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible()
 })
 
+test('a superuser manages platform users', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page.getByRole('heading', { name: 'Tenants' })).toBeVisible()
+
+  // The superuser-only Users link in the header.
+  await page.getByRole('link', { name: 'Users' }).click()
+  await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'alan@example.com' })).toBeVisible()
+
+  // Create a user.
+  await page.getByRole('button', { name: 'New user' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Email').fill('grace@example.com')
+  await dialog.getByLabel('Password').fill('supersecret123')
+  await dialog.getByRole('button', { name: 'Create user' }).click()
+  await expect(page.getByRole('cell', { name: 'grace@example.com' })).toBeVisible()
+})
+
 test('a configured install shows login, signs in, and lists tenants', async ({ page }) => {
   await page.goto('/')
 

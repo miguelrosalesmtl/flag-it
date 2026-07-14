@@ -1,23 +1,25 @@
-import { UserCard } from '@/features/users/components/UserCard'
+import { Badge } from '@/components/ui/badge'
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import type { User } from '@/types/user'
 
 export interface UserListProps {
   /** Resolved users. Never undefined — the container waits for the data. */
   users: User[]
-  /** Emitted with the user's id when delete is clicked. Nothing is removed here. */
+  /** Emitted with a user's id to delete them (renders a guarded action). */
   onDelete?: (id: string) => void
-  /** Id of the user currently being deleted; disables that row's delete button. */
-  deletingId?: string | null
+  busy?: boolean
 }
 
-/**
- * Presentational.
- *
- * Note what is NOT in the props: `isLoading` and `error`. The container branches
- * on those and only renders this once data has resolved, so `users` is always a
- * real array and there is no state machine to reason about in here.
- */
-export function UserList({ users, onDelete, deletingId }: UserListProps) {
+/** Presentational. The platform user table with a guarded delete per row. */
+export function UserList({ users, onDelete, busy }: UserListProps) {
   if (users.length === 0) {
     return (
       <p className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
@@ -27,12 +29,48 @@ export function UserList({ users, onDelete, deletingId }: UserListProps) {
   }
 
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {users.map((user) => (
-        <li key={user.id}>
-          <UserCard user={user} onDelete={onDelete} isDeleting={deletingId === user.id} />
-        </li>
-      ))}
-    </ul>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Email</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Status</TableHead>
+          {onDelete ? <TableHead className="w-0" /> : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users.map((user) => (
+          <TableRow key={user.id}>
+            <TableCell className="font-medium">
+              {user.email}
+              {user.is_superuser ? (
+                <Badge variant="secondary" className="ml-2">
+                  Superuser
+                </Badge>
+              ) : null}
+            </TableCell>
+            <TableCell className="text-muted-foreground">{user.full_name || '—'}</TableCell>
+            <TableCell>
+              <Badge variant={user.is_active ? 'default' : 'destructive'}>
+                {user.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </TableCell>
+            {onDelete ? (
+              <TableCell className="text-right">
+                <ConfirmDeleteDialog
+                  triggerLabel="Delete"
+                  triggerVariant="ghost"
+                  title={`Delete ${user.email}?`}
+                  description="This permanently removes the user account. This cannot be undone."
+                  confirmLabel="Delete user"
+                  busy={busy}
+                  onConfirm={() => onDelete(user.id)}
+                />
+              </TableCell>
+            ) : null}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
 }

@@ -15,18 +15,17 @@ import type { SdkKey } from '@/types/sdk-key'
 import type { Segment } from '@/types/segment'
 import type { SetupInput } from '@/types/setup'
 import type { Tenant } from '@/types/tenant'
-import type { CreateUserInput, User } from '@/types/user'
+import type { User } from '@/types/user'
 
-const seed: User[] = [
-  { id: '1', name: 'Ada Lovelace', email: 'ada@example.com', role: 'admin' },
-  { id: '2', name: 'Alan Turing', email: 'alan@example.com', role: 'member' },
-  { id: '3', name: 'Grace Hopper', email: 'grace@example.com', role: 'admin' },
+const seedUsers: User[] = [
+  { id: '1', email: 'admin@flag-it.dev', full_name: 'Admin', is_superuser: true, is_active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
+  { id: '2', email: 'alan@example.com', full_name: 'Alan Turing', is_superuser: false, is_active: true, created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-01T00:00:00Z' },
 ]
 
-let users: User[] = [...seed]
+let mockUsers: User[] = [...seedUsers]
 
 export function resetUsers() {
-  users = [...seed]
+  mockUsers = [...seedUsers]
 }
 
 // --- flag-it backend (auth / setup / tenants) ---
@@ -331,23 +330,39 @@ export function resetBackend() {
 }
 
 export const handlers = [
-  http.get('/api/users', () => HttpResponse.json(users)),
+  // Platform users (superuser).
+  http.get('*/api/v1/users', () => HttpResponse.json({ users: mockUsers })),
 
-  http.get('/api/users/:id', ({ params }) => {
-    const user = users.find((u) => u.id === params.id)
-    if (!user) return new HttpResponse(null, { status: 404 })
+  http.post('*/api/v1/users', async ({ request }) => {
+    const input = (await request.json()) as {
+      email: string
+      full_name?: string
+      is_superuser?: boolean
+    }
+    const user: User = {
+      id: crypto.randomUUID(),
+      email: input.email,
+      full_name: input.full_name ?? '',
+      is_superuser: input.is_superuser ?? false,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    mockUsers = [...mockUsers, user]
     return HttpResponse.json(user)
   }),
 
-  http.post('/api/users', async ({ request }) => {
-    const input = (await request.json()) as CreateUserInput
-    const user: User = { ...input, id: crypto.randomUUID() }
-    users.push(user)
-    return HttpResponse.json(user, { status: 201 })
+  http.patch('*/api/v1/users/:userID', async ({ params, request }) => {
+    const u = mockUsers.find((x) => x.id === String(params.userID))
+    if (!u) return HttpResponse.json({ detail: 'not found' }, { status: 404 })
+    const body = (await request.json()) as { full_name: string; is_active: boolean }
+    u.full_name = body.full_name
+    u.is_active = body.is_active
+    return HttpResponse.json(u)
   }),
 
-  http.delete('/api/users/:id', ({ params }) => {
-    users = users.filter((u) => u.id !== params.id)
+  http.delete('*/api/v1/users/:userID', ({ params }) => {
+    mockUsers = mockUsers.filter((u) => u.id !== String(params.userID))
     return new HttpResponse(null, { status: 204 })
   }),
 
