@@ -11,6 +11,9 @@ API that runs as many identical replicas behind a load balancer.
 - **Auto-generated OpenAPI**: the HTTP layer is [huma](https://huma.rocks) over
   chi, so the spec is generated from the code. Browse `/docs`, fetch
   `/openapi.yaml`.
+- **Governance & operations**: approval workflows, scheduled changes, inbound
+  flag triggers, temporary-flag / stale detection, and signed outbound
+  webhooks — every change audited end to end.
 
 ## Two API surfaces
 
@@ -21,13 +24,15 @@ different audiences**, distinguished by their authentication:
 |---|---|---|
 | **Audience** | Humans configuring flags (the dashboard, admins, CI) | Apps evaluating flags at runtime (SDKs) |
 | **Auth** | JWT bearer (`Authorization: Bearer …`, from login) | SDK key (`X-SDK-Key: …`, minted per environment) |
-| **Paths** | `/api/v1/tenants/…` — flags, targeting, segments, projects, environments, SDK keys, members, roles, audit | `/api/v1/eval`, `/api/v1/eval/all`, `/api/v1/eval/stream` (SSE), `/api/v1/events` |
+| **Paths** | `/api/v1/tenants/…` — flags, targeting, segments, projects, environments, SDK keys, members, roles, audit, approvals, scheduled changes, triggers, webhooks | `/api/v1/eval`, `/api/v1/eval/all`, `/api/v1/eval/stream` (SSE), `/api/v1/events` |
 | **Traffic** | Low — a handful of admins | Potentially huge — every SDK instance, long-lived streams |
 | **Writes vs reads** | Read/write config | Read-only evaluation (+ pushes usage summaries) |
 
 **Today both surfaces run in the same process** — one binary, one OpenAPI, just
 endpoints scoped by different auth. That is deliberately simple and correct for
-now.
+now. (A third, narrow surface exists for **inbound flag triggers**:
+`POST /api/v1/triggers/{token}` takes no bearer or SDK key — the unguessable URL
+token *is* the credential, so an alerting system can flip a kill-switch.)
 
 Because they have **opposite scaling profiles**, they are designed to be pulled
 apart later without a rewrite: the `internal/` packages don't care which binary
@@ -65,6 +70,9 @@ code changes — only how it's deployed.
 - **Bounded writes for analytics & contexts.** Evaluation counts and seen
   contexts are buffered in memory and flushed to Postgres on an interval — never
   one write per eval.
+- **Background workers.** A scheduler applies due scheduled changes, and a
+  webhook deliverer sends signed events with retry/backoff — both run off the
+  request path as goroutines that drain on `SIGTERM`.
 
 ## Layout
 
@@ -83,6 +91,8 @@ internal/
   analytics           Buffered eval counters → rollups               ── service
   contexts            Records contexts seen during eval              ── service
   flags               Cache + evaluation engine (+ pure eval funcs)  ── service
+  governance          Approvals, scheduled changes, flag triggers    ── service
+  webhooks            Outbound webhook delivery (signed, retrying)    ── service
   pubsub              Redis pub/sub bus
   server              HTTP layer: huma operations (the ONLY place that knows HTTP)
 pkg/ffclient          Thin Go SDK (talks to the eval API)
@@ -130,10 +140,15 @@ Full spec at `/docs` (Swagger UI) and `/openapi.yaml`. The shape:
 | GET | `/api/v1/me` | Current user |
 | — | `/api/v1/users`, `/api/v1/tenants`, `/api/v1/permissions` | Users, tenants, permission vocabulary |
 | — | `/api/v1/tenants/{t}/projects/{p}/flags` | Flag definitions (+ `/{flagKey}`, `/environments/{env}/flags` with on/off state) |
-| PATCH | `…/flags/{flagKey}/environments/{env}` | Targeting via semantic instructions (turnFlagOn, addRule, …) |
+| PATCH | `…/flags/{flagKey}/environments/{env}` | Targeting via semantic instructions (turnFlagOn, addRule, reorderRules, updateRule, …) |
+| GET | `…/flags/lifecycle` | Flags annotated new/active/stale for cleanup (temporary flag detection) |
 | — | `…/segments`, `…/environments`, `…/environments/{env}/sdk-keys` | Segments, environments, SDK keys |
 | — | `…/environments/{env}/contexts` | Contexts seen during evaluation (+ detail with expected variations) |
-| — | `/api/v1/tenants/{t}/roles`, `…/members`, `…/audit` | Roles, members, change history |
+| — | `…/flags/{flagKey}/environments/{env}/changes`, `…/changes/{id}/approve`\|`reject` | Approval workflow: propose a change, review it |
+| — | `…/flags/{flagKey}/environments/{env}/scheduled-changes`, `…/scheduled-changes/{id}/cancel` | Schedule a change for a future time |
+| — | `…/flags/{flagKey}/environments/{env}/triggers`, `…/triggers/{id}/…` | Inbound-webhook triggers (create/list/enable/reset/delete) |
+| — | `/api/v1/tenants/{t}/webhooks`, `…/webhooks/{id}/deliveries` | Outbound webhooks + delivery log |
+| — | `/api/v1/tenants/{t}/roles`, `…/members`, `…/projects/{p}/roles`, `…/audit` | Roles, tenant members, project-scoped role grants, change history |
 
 ### Client / SDK API (`X-SDK-Key`)
 
@@ -144,6 +159,12 @@ Full spec at `/docs` (Swagger UI) and `/openapi.yaml`. The shape:
 | GET | `/api/v1/eval/stream` | Server-Sent Events — real-time flag updates |
 | POST | `/api/v1/events` | SDKs push rolled-up evaluation summaries |
 
+### Trigger webhooks (URL token)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/v1/triggers/{token}` | Fire a flag trigger — no bearer/SDK key; the token in the URL is the credential |
+
 ### Health (public)
 
 `GET /healthz` (liveness) · `GET /readyz` (readiness — pings Postgres + Redis).
@@ -151,9 +172,35 @@ Full spec at `/docs` (Swagger UI) and `/openapi.yaml`. The shape:
 ## Evaluation
 
 Server-side, LaunchDarkly-style: multi-kind contexts, prerequisites, individual
-targets, rules with clauses (14 operators incl. segmentMatch, semver, dates),
-and percentage rollouts with stable SHA-1 bucketing. The ruleset never ships to
+targets, and multiple ordered targeting rules (first match wins), each clause one
+of 15 operators (incl. `segmentMatch`, semver, dates). A rule serves a fixed
+variation or a **percentage rollout** with stable SHA-1 bucketing — bucketable by
+any attribute (`bucketBy`), by another context kind (`contextKind`, e.g. keep a
+whole org together), and reshuffleable with a `seed`. The ruleset never ships to
 clients; the SDK sends a context and receives `{value, variation, reason}`.
+
+## Governance & operations
+
+Every flag change is expressible as a set of **semantic instructions**
+(`turnFlagOn`, `addRule`, `reorderRules`, …). That one abstraction is applied
+directly on write, and reused by three controlled paths:
+
+- **Approval workflows** — propose a change as a change request; it applies only
+  when a reviewer approves it.
+- **Scheduled changes** — attach instructions to a future time; a background
+  scheduler applies them when due (cancellable until then).
+- **Flag triggers** — an unguessable inbound-webhook URL that applies a fixed
+  on/off action when POSTed to (see "Trigger webhooks" above).
+
+Plus:
+
+- **Flag lifecycle** — mark flags temporary; a derived new/active/stale status
+  (from age + evaluation activity) surfaces cleanup candidates.
+- **Outbound webhooks** — the audit log doubles as an event stream: every
+  recorded entry is fanned out to subscribed tenant webhooks and delivered as an
+  HMAC-signed POST, with retry/backoff and a per-webhook delivery log.
+
+All of the above are audited, and all are wired into the dashboard.
 
 ## Kubernetes notes
 
@@ -163,6 +210,8 @@ clients; the SDK sends a context and receives `{value, variation, reason}`.
 - Wire `/healthz` → `livenessProbe`, `/readyz` → `readinessProbe`.
 - `SIGTERM` triggers graceful shutdown within `SERVER_SHUTDOWN_TIMEOUT`.
 - Put `JWT_SECRET`, `POSTGRES_PASSWORD`, and `REDIS_PASSWORD` in a Secret.
+- Set `PUBLIC_URL` to the externally reachable base URL so generated flag-trigger
+  webhook URLs point at the right host.
 - To scale the client/eval surface independently, deploy the eval/stream
   endpoints as their own replica set (see "Two API surfaces").
 
