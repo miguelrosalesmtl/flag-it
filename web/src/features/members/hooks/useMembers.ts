@@ -18,3 +18,11 @@ export function useAddMember(tenantSlug: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.members(tenantSlug) }),
   })
 }
+
+/** Grant a user a project-scoped role on the given project. */
+export function useGrantProjectRole(tenantSlug: string, projectKey: string) {
+  return useMutation({
+    mutationFn: (input: { email: string; role: string }) =>
+      membersApi.grantProjectRole(tenantSlug, projectKey, input),
+  })
+}

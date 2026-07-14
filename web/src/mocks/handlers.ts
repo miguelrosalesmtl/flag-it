@@ -453,6 +453,20 @@ export const handlers = [
     return HttpResponse.json(role, { status: 201 })
   }),
 
+  // Grant a user a project-scoped role.
+  http.post(
+    '*/api/v1/tenants/:tenantSlug/projects/:projectKey/roles',
+    async ({ params, request }) => {
+      const input = (await request.json()) as { email: string; role: string }
+      return HttpResponse.json({
+        user_email: input.email,
+        role: input.role,
+        scope: 'project',
+        project_id: String(params.projectKey),
+      })
+    },
+  ),
+
   http.get('*/api/v1/tenants/:tenantSlug/members', () =>
     HttpResponse.json({ members: mockMembers }),
   ),
