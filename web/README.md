@@ -1,14 +1,16 @@
-# frontend-template-react
+# flag-it — dashboard
 
-[![CI](https://github.com/miguelrosalesmtl/frontend-template/actions/workflows/ci.yml/badge.svg)](https://github.com/miguelrosalesmtl/frontend-template/actions/workflows/ci.yml)
-
-A production-ready React + Vite starter to scaffold new applications from.
+The React + TypeScript dashboard for **flag-it** (the Go backend lives one level up).
+It speaks the management API and covers the full surface: first-run setup, login,
+organizations → projects → environments, flags & targeting, segments, contexts,
+approvals, scheduled changes, triggers, outbound webhooks, the audit log, and user
+administration.
 
 It is built around one idea: **components are dumb**. They receive props and emit
 callbacks. They never fetch, never subscribe to a store, never know what an API is.
-Everything else in the template exists to make that true — and, crucially, to _keep_
-it true: the architecture is enforced by ESLint, so a component that reaches for the
-network fails CI rather than quietly setting a precedent.
+Everything else exists to make that true — and, crucially, to _keep_ it true: the
+architecture is enforced by ESLint (`eslint-plugin-boundaries`), so a component that
+reaches for the network fails `pnpm lint` rather than quietly setting a precedent.
 
 ## What's in it
 
@@ -22,9 +24,10 @@ and edit its props live. That is the base you compose your own components from.
 the matrix. A presentational component _physically cannot_ import the API client or
 the store. It is a build error, not a code-review convention.
 
-**A complete worked feature.** `src/features/users/` is a full vertical slice —
-container, query hooks, pure components, a story, a component test, and a container
-test — that you copy to start a new feature.
+**Every feature is a vertical slice.** Each directory under `src/features/`
+(organizations, flags, segments, approvals, webhooks, …) is built the same way —
+a container, query hooks, pure components with stories, and MSW-backed tests — so
+you copy any one of them to start a new feature.
 
 **Build once, deploy anywhere.** No environment value is compiled into the bundle.
 The app fetches `/config.json` at boot and validates it with Zod, so the exact image
@@ -116,18 +119,17 @@ src/features/users/components/UserList.tsx
   <UserList>
     users: User[]
     onDelete?: (id: string) => void
-    deletingId?: string | null
+    busy?: boolean
 ```
 
 **`pnpm storybook`** is where you feed them values. Open a story and the **Controls** panel
-lets you edit every prop live — rename a user, flip `isDeleting`, clear `onDelete` and watch
-the delete button vanish. Controls and the props table are generated from the TypeScript
-types, so they cannot drift. The **Actions** panel logs each callback the component fires
-(`onDelete('1')`), which is its entire outward contract.
+lets you edit every prop live — clear `onDelete` and watch the delete button vanish.
+Controls and the props table are generated from the TypeScript types, so they cannot
+drift. The **Actions** panel logs each callback the component fires (`onDelete('1')`),
+which is its entire outward contract.
 
-Some stories also carry a `play` function that drives the component and asserts on it —
-see `ClickingDeleteEmitsTheUserId`, which clicks delete and checks the component emits the
-id _without_ removing anything, because deciding what a delete means is the container's job.
+Deciding what a callback _means_ is the container's job: a dumb component clicks
+"delete" and emits the id — it never removes anything itself.
 
 ## Architecture
 
@@ -171,17 +173,16 @@ can be in is a Storybook story.
 
 ```
 features/users/
-  UsersPage.tsx           container — the only file that touches hooks
-  hooks/useUsers.ts       queries + mutations — the only bridge to api/
+  UsersPage.tsx            container — the only file that touches hooks
+  hooks/useUsers.ts        queries + mutations — the only bridge to api/
   components/
-    UserList.tsx          pure
-    UserCard.tsx          pure
-    UserList.stories.tsx  renders with no providers at all
-    UserList.test.tsx     renders with no providers at all
-  UsersPage.test.tsx      exercises the full slice through MSW
+    UserList.tsx           pure
+    CreateUserDialog.tsx   pure
+    UserList.stories.tsx   renders with no providers at all
+  UsersPage.test.tsx       exercises the full slice through MSW
 ```
 
-## Contributing / CI
+## Contributing
 
 `main` is protected. Work happens on a branch and lands through a pull request:
 
@@ -192,27 +193,21 @@ git push -u origin feat/thing
 gh pr create
 ```
 
-Two checks must pass before a PR can merge:
+There is no CI wired up yet, so **the local gate is the gate** — run it before
+every push:
 
-| Check     | What it runs                                                                                                   |
-| --------- | -------------------------------------------------------------------------------------------------------------- |
-| `quality` | lint (**architectural boundaries**), typecheck, unit tests, app build, Storybook build, `prettier --check`     |
-| `e2e`     | 6 Playwright tests in real Chromium — config fetch, Zod validation, MSW startup, render, delete, error + retry |
+```bash
+pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e
+```
 
 The `lint` step is the load-bearing one. If a presentational component imports the API
 client or the store, if a source file lands in an unclassified directory, or if someone
-reads a custom `import.meta.env` var, the job fails and **GitHub refuses the merge** —
-`the base branch policy prohibits the merge`. That is what makes the architecture in this
-template a property of the repository rather than a note in a README.
+reads a custom `import.meta.env` var, it fails. That is what keeps the architecture a
+property of the repository rather than a note in a README — but until CI runs it, it
+only holds if you run lint. (`e2e` is currently 33 Playwright specs against MSW.)
 
-Run the whole pipeline locally before pushing:
-
-```bash
-pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e
-```
-
-Node and pnpm versions come from `.nvmrc` and `packageManager`, so CI, the Dockerfile,
-and your laptop cannot drift apart.
+Node and pnpm versions come from `.nvmrc` and `packageManager`, so the Dockerfile and
+your laptop cannot drift apart.
 
 ## Configuration
 
@@ -326,12 +321,11 @@ dev server, Vitest, and Playwright. One place to describe your backend, three co
 the browser or in a test:
 
 ```
-/?scenario=users-error    500 from GET /api/users
-/?scenario=users-empty    empty list
-/?scenario=users-slow     3s delay, to look at the skeletons
+/?scenario=needs-setup    the first-run setup wizard (an empty install)
+/?scenario=login-error    invalid-credentials response on login
 ```
 
 One caveat worth knowing: MSW runs in a **service worker**, which intercepts requests
 _beneath_ Playwright's `page.route` — so an E2E test cannot fulfil those calls from the
 outside. Steer the mock API with a scenario, or via `window.msw.worker` (exposed in dev),
-instead. `e2e/users.spec.ts` shows both.
+instead. `e2e/flagit.spec.ts` is the full suite.
