@@ -8,38 +8,38 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-const membershipColumns = `id, user_id, tenant_id, created_at, updated_at`
+const membershipColumns = `id, user_id, organization_id, created_at, updated_at`
 
-// CreateMembership records that a user belongs to a tenant (belonging only;
+// CreateMembership records that a user belongs to a organization (belonging only;
 // permissions come from role assignments). Idempotent.
-func (s *Store) CreateMembership(ctx context.Context, userID, tenantID string) (models.Membership, error) {
-	return insertMembership(ctx, s.pool, userID, tenantID)
+func (s *Store) CreateMembership(ctx context.Context, userID, organizationID string) (models.Membership, error) {
+	return insertMembership(ctx, s.pool, userID, organizationID)
 }
 
 // insertMembership is the querier-based body of CreateMembership, so it can run
 // inside a larger transaction (e.g. AddMember, GrantProjectRole).
-func insertMembership(ctx context.Context, q querier, userID, tenantID string) (models.Membership, error) {
+func insertMembership(ctx context.Context, q querier, userID, organizationID string) (models.Membership, error) {
 	const sql = `
-		INSERT INTO memberships (user_id, tenant_id)
+		INSERT INTO memberships (user_id, organization_id)
 		VALUES ($1, $2)
-		ON CONFLICT (user_id, tenant_id) DO UPDATE SET updated_at = now()
+		ON CONFLICT (user_id, organization_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + membershipColumns
-	return scanMembership(q.QueryRow(ctx, sql, userID, tenantID))
+	return scanMembership(q.QueryRow(ctx, sql, userID, organizationID))
 }
 
-// ListMembersByTenant returns a tenant's members with their tenant-scoped role
+// ListMembersByOrganization returns a organization's members with their organization-scoped role
 // (one row per user; the role is the alphabetically-first if several apply).
-func (s *Store) ListMembersByTenant(ctx context.Context, tenantID string) ([]models.Member, error) {
+func (s *Store) ListMembersByOrganization(ctx context.Context, organizationID string) ([]models.Member, error) {
 	const q = `
 		SELECT DISTINCT ON (u.id) u.id, u.email, u.full_name, COALESCE(r.key, '')
 		FROM memberships m
 		JOIN users u ON u.id = m.user_id
 		LEFT JOIN role_assignments ra
-			ON ra.user_id = u.id AND ra.tenant_id = $1 AND ra.scope_type = 'tenant'
+			ON ra.user_id = u.id AND ra.organization_id = $1 AND ra.scope_type = 'organization'
 		LEFT JOIN roles r ON r.id = ra.role_id
-		WHERE m.tenant_id = $1
+		WHERE m.organization_id = $1
 		ORDER BY u.id, r.key`
-	rows, err := s.pool.Query(ctx, q, tenantID)
+	rows, err := s.pool.Query(ctx, q, organizationID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list members: %w", err)
 	}
@@ -56,7 +56,7 @@ func (s *Store) ListMembersByTenant(ctx context.Context, tenantID string) ([]mod
 	return out, rows.Err()
 }
 
-// ListMembershipsByUser returns every tenant a user belongs to.
+// ListMembershipsByUser returns every organization a user belongs to.
 func (s *Store) ListMembershipsByUser(ctx context.Context, userID string) ([]models.Membership, error) {
 	rows, err := s.pool.Query(ctx,
 		`SELECT `+membershipColumns+` FROM memberships WHERE user_id = $1`, userID)
@@ -78,7 +78,7 @@ func (s *Store) ListMembershipsByUser(ctx context.Context, userID string) ([]mod
 
 func scanMembership(row pgx.Row) (models.Membership, error) {
 	var m models.Membership
-	if err := row.Scan(&m.ID, &m.UserID, &m.TenantID, &m.CreatedAt, &m.UpdatedAt); err != nil {
+	if err := row.Scan(&m.ID, &m.UserID, &m.OrganizationID, &m.CreatedAt, &m.UpdatedAt); err != nil {
 		return models.Membership{}, err
 	}
 	return m, nil

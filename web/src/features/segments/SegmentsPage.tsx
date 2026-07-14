@@ -11,9 +11,9 @@ import { useCreateSegment, useSegments } from '@/features/segments/hooks/useSegm
 
 /** Container. Lists a project's segments (server-side search) and creates new ones. */
 export function SegmentsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const createSegment = useCreateSegment(tenantSlug, projectKey)
+  const createSegment = useCreateSegment(organizationSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const [query, setQuery] = useState('')
@@ -24,7 +24,7 @@ export function SegmentsPage() {
   }, [query])
 
   const { data: segments, isPending, isError, error, refetch } = useSegments(
-    tenantSlug,
+    organizationSlug,
     projectKey,
     search,
   )
@@ -48,7 +48,7 @@ export function SegmentsPage() {
           createSegment.mutate(input, {
             onSuccess: () => {
               setDialogOpen(false)
-              void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/segments/${input.key}`)
+              void navigate(`/organizations/${organizationSlug}/projects/${projectKey}/segments/${input.key}`)
             },
           })
         }
@@ -84,7 +84,7 @@ export function SegmentsPage() {
         <SegmentList
           segments={segments}
           onOpen={(key) =>
-            void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/segments/${key}`)
+            void navigate(`/organizations/${organizationSlug}/projects/${projectKey}/segments/${key}`)
           }
         />
       )}

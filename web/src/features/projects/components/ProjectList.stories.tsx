@@ -7,7 +7,7 @@ import type { Project } from '@/types/project'
 const projects: Project[] = [
   {
     id: '1',
-    tenant_id: 't1',
+    organization_id: 't1',
     key: 'checkout',
     name: 'Checkout',
     created_at: '2026-07-12T00:00:00Z',
@@ -15,7 +15,7 @@ const projects: Project[] = [
   },
   {
     id: '2',
-    tenant_id: 't1',
+    organization_id: 't1',
     key: 'mobile-app',
     name: 'Mobile App',
     created_at: '2026-07-12T00:00:00Z',

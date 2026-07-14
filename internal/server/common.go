@@ -14,36 +14,36 @@ import (
 // noContent is the output type for 204 responses (no body).
 type noContent struct{}
 
-// resolveTenant resolves a URL tenant slug to the tenant (404 if unknown).
-func (s *Server) resolveTenant(ctx context.Context, slug string) (models.Tenant, error) {
-	t, err := s.catalog.TenantBySlug(ctx, slug)
+// resolveOrganization resolves a URL organization slug to the organization (404 if unknown).
+func (s *Server) resolveOrganization(ctx context.Context, slug string) (models.Organization, error) {
+	t, err := s.catalog.OrganizationBySlug(ctx, slug)
 	if err != nil {
-		return models.Tenant{}, storeError(err, "tenant not found")
+		return models.Organization{}, storeError(err, "organization not found")
 	}
 	return t, nil
 }
 
-// resolveProject resolves a URL project key within a tenant to the project.
-func (s *Server) resolveProject(ctx context.Context, tenantID, projectKey string) (models.Project, error) {
-	p, err := s.catalog.ProjectByKey(ctx, tenantID, projectKey)
+// resolveProject resolves a URL project key within a organization to the project.
+func (s *Server) resolveProject(ctx context.Context, organizationID, projectKey string) (models.Project, error) {
+	p, err := s.catalog.ProjectByKey(ctx, organizationID, projectKey)
 	if err != nil {
-		return models.Project{}, storeError(err, "project not found in tenant")
+		return models.Project{}, storeError(err, "project not found in organization")
 	}
 	return p, nil
 }
 
-// resolveScope resolves a tenant slug + project key to both records — the common
+// resolveScope resolves a organization slug + project key to both records — the common
 // prelude for project-scoped handlers.
-func (s *Server) resolveScope(ctx context.Context, tenantSlug, projectKey string) (models.Tenant, models.Project, error) {
-	tenant, err := s.resolveTenant(ctx, tenantSlug)
+func (s *Server) resolveScope(ctx context.Context, organizationSlug, projectKey string) (models.Organization, models.Project, error) {
+	organization, err := s.resolveOrganization(ctx, organizationSlug)
 	if err != nil {
-		return models.Tenant{}, models.Project{}, err
+		return models.Organization{}, models.Project{}, err
 	}
-	project, err := s.resolveProject(ctx, tenant.ID, projectKey)
+	project, err := s.resolveProject(ctx, organization.ID, projectKey)
 	if err != nil {
-		return models.Tenant{}, models.Project{}, err
+		return models.Organization{}, models.Project{}, err
 	}
-	return tenant, project, nil
+	return organization, project, nil
 }
 
 // resolveEnv returns an environment by key within a project.

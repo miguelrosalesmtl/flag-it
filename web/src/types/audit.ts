@@ -1,7 +1,7 @@
-/** One immutable record of a change, from the tenant's audit log. */
+/** One immutable record of a change, from the organization's audit log. */
 export interface AuditEntry {
   id: string
-  tenant_id?: string
+  organization_id?: string
   project_id?: string
   actor_id?: string
   actor_email: string

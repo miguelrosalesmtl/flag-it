@@ -1,21 +1,21 @@
 import { api } from '@/api/client'
 import type { SaveSegmentInput, Segment } from '@/types/segment'
 
-const segBase = (tenantSlug: string, projectKey: string) =>
-  `/tenants/${tenantSlug}/projects/${projectKey}/segments`
+const segBase = (organizationSlug: string, projectKey: string) =>
+  `/organizations/${organizationSlug}/projects/${projectKey}/segments`
 
 export const segmentsApi = {
-  list: (tenantSlug: string, projectKey: string, search = '') =>
+  list: (organizationSlug: string, projectKey: string, search = '') =>
     api
       .get<{ segments: Segment[] | null }>(
-        `${segBase(tenantSlug, projectKey)}?search=${encodeURIComponent(search)}`,
+        `${segBase(organizationSlug, projectKey)}?search=${encodeURIComponent(search)}`,
       )
       .then((r) => r.segments ?? []),
-  get: (tenantSlug: string, projectKey: string, segKey: string) =>
-    api.get<Segment>(`${segBase(tenantSlug, projectKey)}/${segKey}`),
+  get: (organizationSlug: string, projectKey: string, segKey: string) =>
+    api.get<Segment>(`${segBase(organizationSlug, projectKey)}/${segKey}`),
   // Create or update a segment (the key is addressed in the path; PUT).
-  save: (tenantSlug: string, projectKey: string, segKey: string, body: SaveSegmentInput) =>
-    api.put<Segment>(`${segBase(tenantSlug, projectKey)}/${segKey}`, body),
-  remove: (tenantSlug: string, projectKey: string, segKey: string) =>
-    api.delete<void>(`${segBase(tenantSlug, projectKey)}/${segKey}`),
+  save: (organizationSlug: string, projectKey: string, segKey: string, body: SaveSegmentInput) =>
+    api.put<Segment>(`${segBase(organizationSlug, projectKey)}/${segKey}`, body),
+  remove: (organizationSlug: string, projectKey: string, segKey: string) =>
+    api.delete<void>(`${segBase(organizationSlug, projectKey)}/${segKey}`),
 }

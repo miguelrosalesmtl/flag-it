@@ -14,7 +14,7 @@ components:
           format: email
           type: string
         role:
-          description: optional tenant-scoped role key (e.g. tenant_admin)
+          description: optional organization-scoped role key (e.g. organization_admin)
           type: string
       required:
         - email
@@ -53,13 +53,13 @@ components:
         data: {}
         id:
           type: string
+        organization_id:
+          type: string
         project_id:
           type: string
         resource_key:
           type: string
         resource_type:
-          type: string
-        tenant_id:
           type: string
       required:
         - id
@@ -200,6 +200,24 @@ components:
         - key
         - name
       type: object
+    CreateOrganizationInputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/CreateOrganizationInputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+      required:
+        - slug
+        - name
+      type: object
     CreateProjectInputBody:
       additionalProperties: false
       properties:
@@ -264,7 +282,7 @@ components:
             - "null"
         scope:
           enum:
-            - tenant
+            - organization
             - project
           type: string
       required:
@@ -318,24 +336,6 @@ components:
           type: string
       required:
         - kind
-      type: object
-    CreateTenantInputBody:
-      additionalProperties: false
-      properties:
-        $schema:
-          description: A URL to the JSON Schema for this object.
-          examples:
-            - http://localhost:8080/schemas/CreateTenantInputBody.json
-          format: uri
-          readOnly: true
-          type: string
-        name:
-          type: string
-        slug:
-          type: string
-      required:
-        - slug
-        - name
       type: object
     CreateTriggerInputBody:
       additionalProperties: false
@@ -1179,6 +1179,25 @@ components:
       required:
         - members
       type: object
+    ListOrganizationsOutputBody:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/ListOrganizationsOutputBody.json
+          format: uri
+          readOnly: true
+          type: string
+        organizations:
+          items:
+            $ref: "#/components/schemas/Organization"
+          type:
+            - array
+            - "null"
+      required:
+        - organizations
+      type: object
     ListPermissionsOutputBody:
       additionalProperties: false
       properties:
@@ -1292,25 +1311,6 @@ components:
             - "null"
       required:
         - segments
-      type: object
-    ListTenantsOutputBody:
-      additionalProperties: false
-      properties:
-        $schema:
-          description: A URL to the JSON Schema for this object.
-          examples:
-            - http://localhost:8080/schemas/ListTenantsOutputBody.json
-          format: uri
-          readOnly: true
-          type: string
-        tenants:
-          items:
-            $ref: "#/components/schemas/Tenant"
-          type:
-            - array
-            - "null"
-      required:
-        - tenants
       type: object
     ListTriggersOutputBody:
       additionalProperties: false
@@ -1431,7 +1431,7 @@ components:
           type: string
         id:
           type: string
-        tenant_id:
+        organization_id:
           type: string
         updated_at:
           format: date-time
@@ -1441,7 +1441,36 @@ components:
       required:
         - id
         - user_id
-        - tenant_id
+        - organization_id
+        - created_at
+        - updated_at
+      type: object
+    Organization:
+      additionalProperties: false
+      properties:
+        $schema:
+          description: A URL to the JSON Schema for this object.
+          examples:
+            - http://localhost:8080/schemas/Organization.json
+          format: uri
+          readOnly: true
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - slug
+        - name
         - created_at
         - updated_at
       type: object
@@ -1498,14 +1527,14 @@ components:
           type: string
         name:
           type: string
-        tenant_id:
+        organization_id:
           type: string
         updated_at:
           format: date-time
           type: string
       required:
         - id
-        - tenant_id
+        - organization_id
         - key
         - name
         - created_at
@@ -1548,6 +1577,8 @@ components:
           type: string
         name:
           type: string
+        organization_id:
+          type: string
         permissions:
           items:
             type: string
@@ -1556,14 +1587,12 @@ components:
             - "null"
         scope:
           type: string
-        tenant_id:
-          type: string
         updated_at:
           format: date-time
           type: string
       required:
         - id
-        - tenant_id
+        - organization_id
         - key
         - name
         - description
@@ -1588,13 +1617,13 @@ components:
           type: string
         id:
           type: string
+        organization_id:
+          type: string
         project_id:
           type: string
         role_id:
           type: string
         scope_type:
-          type: string
-        tenant_id:
           type: string
         updated_at:
           format: date-time
@@ -2035,15 +2064,15 @@ components:
         full_name:
           description: display name
           type: string
+        organization_name:
+          description: first organization's display name
+          type: string
+        organization_slug:
+          description: first organization's url slug
+          type: string
         password:
           description: first superuser's password
           minLength: 8
-          type: string
-        tenant_name:
-          description: first tenant's display name
-          type: string
-        tenant_slug:
-          description: first tenant's url slug
           type: string
       required:
         - email
@@ -2059,8 +2088,8 @@ components:
           format: uri
           readOnly: true
           type: string
-        tenant:
-          $ref: "#/components/schemas/Tenant"
+        organization:
+          $ref: "#/components/schemas/Organization"
         token:
           type: string
         user:
@@ -2101,35 +2130,6 @@ components:
       required:
         - values
         - variation
-      type: object
-    Tenant:
-      additionalProperties: false
-      properties:
-        $schema:
-          description: A URL to the JSON Schema for this object.
-          examples:
-            - http://localhost:8080/schemas/Tenant.json
-          format: uri
-          readOnly: true
-          type: string
-        created_at:
-          format: date-time
-          type: string
-        id:
-          type: string
-        name:
-          type: string
-        slug:
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-      required:
-        - id
-        - slug
-        - name
-        - created_at
-        - updated_at
       type: object
     TriggerBody:
       additionalProperties: false
@@ -2189,13 +2189,13 @@ components:
         - created_by_email
         - created_at
       type: object
-    UpdateProjectInputBody:
+    UpdateOrganizationInputBody:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - http://localhost:8080/schemas/UpdateProjectInputBody.json
+            - http://localhost:8080/schemas/UpdateOrganizationInputBody.json
           format: uri
           readOnly: true
           type: string
@@ -2204,13 +2204,13 @@ components:
       required:
         - name
       type: object
-    UpdateTenantInputBody:
+    UpdateProjectInputBody:
       additionalProperties: false
       properties:
         $schema:
           description: A URL to the JSON Schema for this object.
           examples:
-            - http://localhost:8080/schemas/UpdateTenantInputBody.json
+            - http://localhost:8080/schemas/UpdateProjectInputBody.json
           format: uri
           readOnly: true
           type: string
@@ -2332,15 +2332,15 @@ components:
             - "null"
         id:
           type: string
-        secret:
+        organization_id:
           type: string
-        tenant_id:
+        secret:
           type: string
         url:
           type: string
       required:
         - id
-        - tenant_id
+        - organization_id
         - url
         - event_types
         - description
@@ -2419,7 +2419,7 @@ components:
       name: X-SDK-Key
       type: apiKey
 info:
-  description: Multi-tenant feature-flag service (LaunchDarkly-style, server-side evaluation).
+  description: Multi-organization feature-flag service (LaunchDarkly-style, server-side evaluation).
   title: Feature-Flag Platform API
   version: 0.1.0
 openapi: 3.1.0
@@ -2565,6 +2565,2097 @@ paths:
       summary: Current authenticated user
       tags:
         - Auth
+  /api/v1/organizations:
+    get:
+      operationId: list-organizations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListOrganizationsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List all organizations (superuser only)
+      tags:
+        - Organizations
+    post:
+      operationId: create-organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrganizationInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a organization (superuser only); seeds default roles
+      tags:
+        - Organizations
+  /api/v1/organizations/{organizationSlug}:
+    delete:
+      operationId: delete-organization
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a organization (superuser only); cascades
+      tags:
+        - Organizations
+    get:
+      operationId: get-organization
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a organization by slug (requires organization.read)
+      tags:
+        - Organizations
+    patch:
+      operationId: update-organization
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrganizationInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Update organization name (requires organization.update)
+      tags:
+        - Organizations
+  /api/v1/organizations/{organizationSlug}/audit:
+    get:
+      operationId: list-audit
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - description: max entries (default 50, max 200)
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: max entries (default 50, max 200)
+            format: int64
+            type: integer
+        - description: filter by project UUID
+          explode: false
+          in: query
+          name: project_id
+          schema:
+            description: filter by project UUID
+            type: string
+        - description: e.g. flag, segment, sdk_key, role
+          explode: false
+          in: query
+          name: resource_type
+          schema:
+            description: e.g. flag, segment, sdk_key, role
+            type: string
+        - explode: false
+          in: query
+          name: resource_key
+          schema:
+            type: string
+        - description: "id cursor: return entries older than this id"
+          explode: false
+          in: query
+          name: before
+          schema:
+            description: "id cursor: return entries older than this id"
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAuditOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a organization's change history (requires audit.read)
+      tags:
+        - Audit
+  /api/v1/organizations/{organizationSlug}/members:
+    get:
+      operationId: list-members
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMembersOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a organization's members (requires member.manage)
+      tags:
+        - Members
+    post:
+      operationId: add-member
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMemberInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddMemberOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Add a member to a organization (requires member.manage)
+      tags:
+        - Members
+  /api/v1/organizations/{organizationSlug}/projects:
+    get:
+      operationId: list-projects
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProjectsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List projects the caller can read
+      tags:
+        - Projects
+    post:
+      operationId: create-project
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateProjectOutputBody"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a project (requires project.create); seeds production + staging
+      tags:
+        - Projects
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}:
+    delete:
+      operationId: delete-project
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a project (requires project.delete); cascades
+      tags:
+        - Projects
+    get:
+      operationId: get-project
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a project (requires project.read)
+      tags:
+        - Projects
+    patch:
+      operationId: update-project
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Update project name (requires project.update)
+      tags:
+        - Projects
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/changes:
+    get:
+      operationId: list-change-requests
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: "filter by status: pending, approved, or rejected"
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: "filter by status: pending, approved, or rejected"
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListChangesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's change requests (requires flag.read)
+      tags:
+        - Approvals
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/changes/{changeId}/approve:
+    post:
+      operationId: approve-change-request
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: changeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Approve a change request and apply it (requires flag.write)
+      tags:
+        - Approvals
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/changes/{changeId}/reject:
+    post:
+      operationId: reject-change-request
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: changeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reject a change request without applying it (requires flag.write)
+      tags:
+        - Approvals
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments:
+    get:
+      operationId: list-environments
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: filter by environment name or key
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by environment name or key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvironmentsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's environments (requires project.read)
+      tags:
+        - Environments
+    post:
+      operationId: create-environment
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEnvironmentInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environment"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create an environment (requires project.update); backfills flag configs
+      tags:
+        - Environments
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/contexts:
+    get:
+      operationId: list-contexts
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - description: filter by context kind or key
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by context kind or key
+            type: string
+        - description: max contexts (default 100, max 500)
+          explode: false
+          in: query
+          name: limit
+          schema:
+            description: max contexts (default 100, max 500)
+            format: int64
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListContextsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List contexts seen during evaluation in an environment (requires flag.read)
+      tags:
+        - Contexts
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/contexts/{kind}/{key}:
+    get:
+      operationId: get-context
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: kind
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetContextOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: A seen context's attributes and how every flag evaluates for it (requires flag.read)
+      tags:
+        - Contexts
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/flags:
+    get:
+      operationId: list-env-flags
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - description: filter by flag name, key, or description
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by flag name, key, or description
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvFlagsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flags with their on/off state in one environment (requires flag.read)
+      tags:
+        - Flags
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys:
+    get:
+      operationId: list-sdk-keys
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSdkKeysOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List an environment's SDK keys (requires sdk_key.manage)
+      tags:
+        - SDK Keys
+    post:
+      operationId: create-sdk-key
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSdkKeyInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SdkKey"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Mint an SDK key (requires sdk_key.manage); response includes the secret
+      tags:
+        - SDK Keys
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys/{keyID}:
+    delete:
+      operationId: revoke-sdk-key
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: keyID
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Revoke an SDK key (requires sdk_key.manage)
+      tags:
+        - SDK Keys
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags:
+    get:
+      operationId: list-flags
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListFlagsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flag definitions (requires flag.read)
+      tags:
+        - Flags
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/lifecycle:
+    get:
+      description: Each flag is annotated with new/active/inactive derived from age and evaluation activity, plus its last-evaluated time and temporary marker.
+      operationId: list-flag-lifecycle
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListFlagLifecycleOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flags with a lifecycle status for stale detection (requires flag.read)
+      tags:
+        - Flags
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}:
+    delete:
+      operationId: delete-flag
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a flag (requires flag.delete); cascades its configs
+      tags:
+        - Flags
+    get:
+      operationId: get-flag
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flag"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a flag definition (requires flag.read)
+      tags:
+        - Flags
+    put:
+      operationId: save-flag
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFlagInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flag"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create or update a flag definition (requires flag.write)
+      tags:
+        - Flags
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}:
+    get:
+      operationId: get-flag-config
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a flag's configuration in one environment (requires flag.read)
+      tags:
+        - Flags
+    patch:
+      description: Surgical, concurrency-friendly edits (turnFlagOn, addRule, addTargets, …) instead of replacing the whole config.
+      operationId: patch-flag-config
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchFlagConfigInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Apply semantic instructions to a flag's env config (requires flag.write)
+      tags:
+        - Flags
+    put:
+      operationId: save-flag-config
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFlagConfigInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagConfig"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Set a flag's targeting config in an environment (requires flag.write)
+      tags:
+        - Flags
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/changes:
+    post:
+      description: Records a set of semantic instructions as a pending change request. The change is applied only when a reviewer approves it.
+      operationId: create-change-request
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChangeInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Propose a flag change for review (requires flag.read)
+      tags:
+        - Approvals
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/scheduled-changes:
+    post:
+      description: Records semantic instructions to be applied automatically once scheduled_for passes. Cancel it before then to prevent it.
+      operationId: create-scheduled-change
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledChange"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Schedule a flag change to apply at a future time (requires flag.write)
+      tags:
+        - Scheduled changes
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats:
+    get:
+      operationId: flag-stats
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+        - description: lookback window, e.g. 1h, 24h (default 24h)
+          explode: false
+          in: query
+          name: since
+          schema:
+            description: lookback window, e.g. 1h, 24h (default 24h)
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlagStatsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Evaluation counts per variation for a flag in an environment (requires flag.read)
+      tags:
+        - Analytics
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/triggers:
+    post:
+      description: Returns a one-time URL. POST to it (no auth — the token is the credential) to apply the action. The URL is shown only on create and reset.
+      operationId: create-trigger
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: flagKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: envKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTriggerInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a flag trigger webhook (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/roles:
+    post:
+      operationId: grant-project-role
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantProjectRoleInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleAssignment"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Grant a user a project-scoped role (requires member.manage)
+      tags:
+        - Members
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/scheduled-changes:
+    get:
+      operationId: list-scheduled-changes
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: "filter by status: pending, applied, cancelled, or failed"
+          explode: false
+          in: query
+          name: status
+          schema:
+            description: "filter by status: pending, applied, cancelled, or failed"
+            type: string
+        - description: filter by flag key
+          explode: false
+          in: query
+          name: flag
+          schema:
+            description: filter by flag key
+            type: string
+        - description: filter by environment key
+          explode: false
+          in: query
+          name: env
+          schema:
+            description: filter by environment key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListScheduledOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's scheduled changes (requires flag.read)
+      tags:
+        - Scheduled changes
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/scheduled-changes/{scheduledId}/cancel:
+    post:
+      operationId: cancel-scheduled-change
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: scheduledId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledChange"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Cancel a pending scheduled change (requires flag.write)
+      tags:
+        - Scheduled changes
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/segments:
+    get:
+      operationId: list-segments
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: filter by segment name, key, or description
+          explode: false
+          in: query
+          name: search
+          schema:
+            description: filter by segment name, key, or description
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSegmentsOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's segments (requires flag.read)
+      tags:
+        - Segments
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/segments/{segKey}:
+    delete:
+      operationId: delete-segment
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a segment (requires flag.write)
+      tags:
+        - Segments
+    get:
+      operationId: get-segment
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Segment"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Get a segment (requires flag.read)
+      tags:
+        - Segments
+    put:
+      operationId: save-segment
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: segKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSegmentInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Segment"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create or update a segment (requires flag.write)
+      tags:
+        - Segments
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/triggers:
+    get:
+      operationId: list-triggers
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - description: filter by flag key
+          explode: false
+          in: query
+          name: flag
+          schema:
+            description: filter by flag key
+            type: string
+        - description: filter by environment key
+          explode: false
+          in: query
+          name: env
+          schema:
+            description: filter by environment key
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListTriggersOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a project's flag triggers, without their secret URLs (requires flag.read)
+      tags:
+        - Triggers
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/triggers/{triggerId}:
+    delete:
+      operationId: delete-trigger
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a flag trigger (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/triggers/{triggerId}/enabled:
+    post:
+      operationId: set-trigger-enabled
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTriggerEnabledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Enable or disable a flag trigger (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/organizations/{organizationSlug}/projects/{projectKey}/triggers/{triggerId}/reset:
+    post:
+      operationId: reset-trigger
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: projectKey
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: triggerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reset a trigger's URL token, invalidating the old URL (requires flag.write)
+      tags:
+        - Triggers
+  /api/v1/organizations/{organizationSlug}/roles:
+    get:
+      operationId: list-roles
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListRolesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a organization's roles (requires role.manage)
+      tags:
+        - Roles
+    post:
+      operationId: create-role
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Create a custom role (requires role.manage)
+      tags:
+        - Roles
+  /api/v1/organizations/{organizationSlug}/webhooks:
+    get:
+      operationId: list-webhooks
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListWebhooksOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a organization's webhooks, without their secrets (requires webhook.manage)
+      tags:
+        - Webhooks
+    post:
+      description: Subscribed events (audit actions, or "*" for all) are delivered as signed POSTs. The signing secret is returned only here and on reset.
+      operationId: create-webhook
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Register an outbound webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/organizations/{organizationSlug}/webhooks/{webhookId}:
+    delete:
+      operationId: delete-webhook
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Delete a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/organizations/{organizationSlug}/webhooks/{webhookId}/deliveries:
+    get:
+      operationId: list-webhook-deliveries
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListDeliveriesOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: List a webhook's recent delivery attempts (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/organizations/{organizationSlug}/webhooks/{webhookId}/enabled:
+    post:
+      operationId: set-webhook-enabled
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetWebhookEnabledInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Enable or disable a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/organizations/{organizationSlug}/webhooks/{webhookId}/reset:
+    post:
+      operationId: reset-webhook-secret
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Reset a webhook's signing secret (requires webhook.manage)
+      tags:
+        - Webhooks
+  /api/v1/organizations/{organizationSlug}/webhooks/{webhookId}/test:
+    post:
+      operationId: test-webhook
+      parameters:
+        - in: path
+          name: organizationSlug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookDelivery"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearerAuth: []
+      summary: Send a test event to a webhook (requires webhook.manage)
+      tags:
+        - Webhooks
   /api/v1/permissions:
     get:
       operationId: list-permissions
@@ -2626,2100 +4717,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
-      summary: Create the first superuser and tenant (one-time, fresh install only)
+      summary: Create the first superuser and organization (one-time, fresh install only)
       tags:
         - Setup
-  /api/v1/tenants:
-    get:
-      operationId: list-tenants
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListTenantsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List all tenants (superuser only)
-      tags:
-        - Tenants
-    post:
-      operationId: create-tenant
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTenantInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tenant"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create a tenant (superuser only); seeds default roles
-      tags:
-        - Tenants
-  /api/v1/tenants/{tenantSlug}:
-    delete:
-      operationId: delete-tenant
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a tenant (superuser only); cascades
-      tags:
-        - Tenants
-    get:
-      operationId: get-tenant
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tenant"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Get a tenant by slug (requires tenant.read)
-      tags:
-        - Tenants
-    patch:
-      operationId: update-tenant
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateTenantInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Tenant"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Update tenant name (requires tenant.update)
-      tags:
-        - Tenants
-  /api/v1/tenants/{tenantSlug}/audit:
-    get:
-      operationId: list-audit
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - description: max entries (default 50, max 200)
-          explode: false
-          in: query
-          name: limit
-          schema:
-            description: max entries (default 50, max 200)
-            format: int64
-            type: integer
-        - description: filter by project UUID
-          explode: false
-          in: query
-          name: project_id
-          schema:
-            description: filter by project UUID
-            type: string
-        - description: e.g. flag, segment, sdk_key, role
-          explode: false
-          in: query
-          name: resource_type
-          schema:
-            description: e.g. flag, segment, sdk_key, role
-            type: string
-        - explode: false
-          in: query
-          name: resource_key
-          schema:
-            type: string
-        - description: "id cursor: return entries older than this id"
-          explode: false
-          in: query
-          name: before
-          schema:
-            description: "id cursor: return entries older than this id"
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListAuditOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a tenant's change history (requires audit.read)
-      tags:
-        - Audit
-  /api/v1/tenants/{tenantSlug}/members:
-    get:
-      operationId: list-members
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListMembersOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a tenant's members (requires member.manage)
-      tags:
-        - Members
-    post:
-      operationId: add-member
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AddMemberInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AddMemberOutputBody"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Add a member to a tenant (requires member.manage)
-      tags:
-        - Members
-  /api/v1/tenants/{tenantSlug}/projects:
-    get:
-      operationId: list-projects
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListProjectsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List projects the caller can read
-      tags:
-        - Projects
-    post:
-      operationId: create-project
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateProjectInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateProjectOutputBody"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create a project (requires project.create); seeds production + staging
-      tags:
-        - Projects
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}:
-    delete:
-      operationId: delete-project
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a project (requires project.delete); cascades
-      tags:
-        - Projects
-    get:
-      operationId: get-project
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Project"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Get a project (requires project.read)
-      tags:
-        - Projects
-    patch:
-      operationId: update-project
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProjectInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Project"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Update project name (requires project.update)
-      tags:
-        - Projects
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes:
-    get:
-      operationId: list-change-requests
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - description: "filter by status: pending, approved, or rejected"
-          explode: false
-          in: query
-          name: status
-          schema:
-            description: "filter by status: pending, approved, or rejected"
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListChangesOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's change requests (requires flag.read)
-      tags:
-        - Approvals
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes/{changeId}/approve:
-    post:
-      operationId: approve-change-request
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: changeId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ReviewChangeInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChangeRequest"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Approve a change request and apply it (requires flag.write)
-      tags:
-        - Approvals
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/changes/{changeId}/reject:
-    post:
-      operationId: reject-change-request
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: changeId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ReviewChangeInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChangeRequest"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Reject a change request without applying it (requires flag.write)
-      tags:
-        - Approvals
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments:
-    get:
-      operationId: list-environments
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - description: filter by environment name or key
-          explode: false
-          in: query
-          name: search
-          schema:
-            description: filter by environment name or key
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListEnvironmentsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's environments (requires project.read)
-      tags:
-        - Environments
-    post:
-      operationId: create-environment
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateEnvironmentInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Environment"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create an environment (requires project.update); backfills flag configs
-      tags:
-        - Environments
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/contexts:
-    get:
-      operationId: list-contexts
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-        - description: filter by context kind or key
-          explode: false
-          in: query
-          name: search
-          schema:
-            description: filter by context kind or key
-            type: string
-        - description: max contexts (default 100, max 500)
-          explode: false
-          in: query
-          name: limit
-          schema:
-            description: max contexts (default 100, max 500)
-            format: int64
-            type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListContextsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List contexts seen during evaluation in an environment (requires flag.read)
-      tags:
-        - Contexts
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/contexts/{kind}/{key}:
-    get:
-      operationId: get-context
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: kind
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: key
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetContextOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: A seen context's attributes and how every flag evaluates for it (requires flag.read)
-      tags:
-        - Contexts
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/flags:
-    get:
-      operationId: list-env-flags
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-        - description: filter by flag name, key, or description
-          explode: false
-          in: query
-          name: search
-          schema:
-            description: filter by flag name, key, or description
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListEnvFlagsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's flags with their on/off state in one environment (requires flag.read)
-      tags:
-        - Flags
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys:
-    get:
-      operationId: list-sdk-keys
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListSdkKeysOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List an environment's SDK keys (requires sdk_key.manage)
-      tags:
-        - SDK Keys
-    post:
-      operationId: create-sdk-key
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateSdkKeyInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SdkKey"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Mint an SDK key (requires sdk_key.manage); response includes the secret
-      tags:
-        - SDK Keys
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/environments/{envKey}/sdk-keys/{keyID}:
-    delete:
-      operationId: revoke-sdk-key
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: keyID
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Revoke an SDK key (requires sdk_key.manage)
-      tags:
-        - SDK Keys
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags:
-    get:
-      operationId: list-flags
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListFlagsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's flag definitions (requires flag.read)
-      tags:
-        - Flags
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/lifecycle:
-    get:
-      description: Each flag is annotated with new/active/inactive derived from age and evaluation activity, plus its last-evaluated time and temporary marker.
-      operationId: list-flag-lifecycle
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListFlagLifecycleOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's flags with a lifecycle status for stale detection (requires flag.read)
-      tags:
-        - Flags
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}:
-    delete:
-      operationId: delete-flag
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a flag (requires flag.delete); cascades its configs
-      tags:
-        - Flags
-    get:
-      operationId: get-flag
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Flag"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Get a flag definition (requires flag.read)
-      tags:
-        - Flags
-    put:
-      operationId: save-flag
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveFlagInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Flag"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create or update a flag definition (requires flag.write)
-      tags:
-        - Flags
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}:
-    get:
-      operationId: get-flag-config
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FlagConfig"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Get a flag's configuration in one environment (requires flag.read)
-      tags:
-        - Flags
-    patch:
-      description: Surgical, concurrency-friendly edits (turnFlagOn, addRule, addTargets, …) instead of replacing the whole config.
-      operationId: patch-flag-config
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PatchFlagConfigInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FlagConfig"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Apply semantic instructions to a flag's env config (requires flag.write)
-      tags:
-        - Flags
-    put:
-      operationId: save-flag-config
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveFlagConfigInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FlagConfig"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Set a flag's targeting config in an environment (requires flag.write)
-      tags:
-        - Flags
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/changes:
-    post:
-      description: Records a set of semantic instructions as a pending change request. The change is applied only when a reviewer approves it.
-      operationId: create-change-request
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateChangeInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChangeRequest"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Propose a flag change for review (requires flag.read)
-      tags:
-        - Approvals
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/scheduled-changes:
-    post:
-      description: Records semantic instructions to be applied automatically once scheduled_for passes. Cancel it before then to prevent it.
-      operationId: create-scheduled-change
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateScheduledInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScheduledChange"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Schedule a flag change to apply at a future time (requires flag.write)
-      tags:
-        - Scheduled changes
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats:
-    get:
-      operationId: flag-stats
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-        - description: lookback window, e.g. 1h, 24h (default 24h)
-          explode: false
-          in: query
-          name: since
-          schema:
-            description: lookback window, e.g. 1h, 24h (default 24h)
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FlagStatsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Evaluation counts per variation for a flag in an environment (requires flag.read)
-      tags:
-        - Analytics
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/triggers:
-    post:
-      description: Returns a one-time URL. POST to it (no auth — the token is the credential) to apply the action. The URL is shown only on create and reset.
-      operationId: create-trigger
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: flagKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: envKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateTriggerInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TriggerBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create a flag trigger webhook (requires flag.write)
-      tags:
-        - Triggers
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/roles:
-    post:
-      operationId: grant-project-role
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GrantProjectRoleInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoleAssignment"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Grant a user a project-scoped role (requires member.manage)
-      tags:
-        - Members
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/scheduled-changes:
-    get:
-      operationId: list-scheduled-changes
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - description: "filter by status: pending, applied, cancelled, or failed"
-          explode: false
-          in: query
-          name: status
-          schema:
-            description: "filter by status: pending, applied, cancelled, or failed"
-            type: string
-        - description: filter by flag key
-          explode: false
-          in: query
-          name: flag
-          schema:
-            description: filter by flag key
-            type: string
-        - description: filter by environment key
-          explode: false
-          in: query
-          name: env
-          schema:
-            description: filter by environment key
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListScheduledOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's scheduled changes (requires flag.read)
-      tags:
-        - Scheduled changes
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/scheduled-changes/{scheduledId}/cancel:
-    post:
-      operationId: cancel-scheduled-change
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: scheduledId
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScheduledChange"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Cancel a pending scheduled change (requires flag.write)
-      tags:
-        - Scheduled changes
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/segments:
-    get:
-      operationId: list-segments
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - description: filter by segment name, key, or description
-          explode: false
-          in: query
-          name: search
-          schema:
-            description: filter by segment name, key, or description
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListSegmentsOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's segments (requires flag.read)
-      tags:
-        - Segments
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/segments/{segKey}:
-    delete:
-      operationId: delete-segment
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: segKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a segment (requires flag.write)
-      tags:
-        - Segments
-    get:
-      operationId: get-segment
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: segKey
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Segment"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Get a segment (requires flag.read)
-      tags:
-        - Segments
-    put:
-      operationId: save-segment
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: segKey
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SaveSegmentInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Segment"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create or update a segment (requires flag.write)
-      tags:
-        - Segments
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers:
-    get:
-      operationId: list-triggers
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - description: filter by flag key
-          explode: false
-          in: query
-          name: flag
-          schema:
-            description: filter by flag key
-            type: string
-        - description: filter by environment key
-          explode: false
-          in: query
-          name: env
-          schema:
-            description: filter by environment key
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListTriggersOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a project's flag triggers, without their secret URLs (requires flag.read)
-      tags:
-        - Triggers
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}:
-    delete:
-      operationId: delete-trigger
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: triggerId
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a flag trigger (requires flag.write)
-      tags:
-        - Triggers
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}/enabled:
-    post:
-      operationId: set-trigger-enabled
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: triggerId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetTriggerEnabledInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TriggerBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Enable or disable a flag trigger (requires flag.write)
-      tags:
-        - Triggers
-  /api/v1/tenants/{tenantSlug}/projects/{projectKey}/triggers/{triggerId}/reset:
-    post:
-      operationId: reset-trigger
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: projectKey
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: triggerId
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TriggerBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Reset a trigger's URL token, invalidating the old URL (requires flag.write)
-      tags:
-        - Triggers
-  /api/v1/tenants/{tenantSlug}/roles:
-    get:
-      operationId: list-roles
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListRolesOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a tenant's roles (requires role.manage)
-      tags:
-        - Roles
-    post:
-      operationId: create-role
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateRoleInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Role"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Create a custom role (requires role.manage)
-      tags:
-        - Roles
-  /api/v1/tenants/{tenantSlug}/webhooks:
-    get:
-      operationId: list-webhooks
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListWebhooksOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a tenant's webhooks, without their secrets (requires webhook.manage)
-      tags:
-        - Webhooks
-    post:
-      description: Subscribed events (audit actions, or "*" for all) are delivered as signed POSTs. The signing secret is returned only here and on reset.
-      operationId: create-webhook
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateWebhookInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Webhook"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Register an outbound webhook (requires webhook.manage)
-      tags:
-        - Webhooks
-  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}:
-    delete:
-      operationId: delete-webhook
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: webhookId
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Delete a webhook (requires webhook.manage)
-      tags:
-        - Webhooks
-  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/deliveries:
-    get:
-      operationId: list-webhook-deliveries
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: webhookId
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListDeliveriesOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: List a webhook's recent delivery attempts (requires webhook.manage)
-      tags:
-        - Webhooks
-  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/enabled:
-    post:
-      operationId: set-webhook-enabled
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: webhookId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetWebhookEnabledInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Webhook"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Enable or disable a webhook (requires webhook.manage)
-      tags:
-        - Webhooks
-  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/reset:
-    post:
-      operationId: reset-webhook-secret
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: webhookId
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Webhook"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Reset a webhook's signing secret (requires webhook.manage)
-      tags:
-        - Webhooks
-  /api/v1/tenants/{tenantSlug}/webhooks/{webhookId}/test:
-    post:
-      operationId: test-webhook
-      parameters:
-        - in: path
-          name: tenantSlug
-          required: true
-          schema:
-            type: string
-        - in: path
-          name: webhookId
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/WebhookDelivery"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearerAuth: []
-      summary: Send a test event to a webhook (requires webhook.manage)
-      tags:
-        - Webhooks
   /api/v1/triggers/{token}:
     post:
       description: POST here — typically from an alerting or CI system — to apply the trigger's action.

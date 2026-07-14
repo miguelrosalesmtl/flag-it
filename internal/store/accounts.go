@@ -9,24 +9,24 @@ import (
 
 // Atomic multi-write workflows for the identity/RBAC domain. Each wraps several
 // writes in a single transaction so a partial failure never leaves a membership
-// without its role, or a superuser without their tenant.
+// without its role, or a superuser without their organization.
 
-// AddMember creates (or refreshes) a tenant membership and, when tenantRoleID is
-// non-empty, assigns that tenant-scoped role — atomically.
-func (s *Store) AddMember(ctx context.Context, userID, tenantID, tenantRoleID string) (models.Membership, *models.RoleAssignment, error) {
+// AddMember creates (or refreshes) a organization membership and, when organizationRoleID is
+// non-empty, assigns that organization-scoped role — atomically.
+func (s *Store) AddMember(ctx context.Context, userID, organizationID, organizationRoleID string) (models.Membership, *models.RoleAssignment, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return models.Membership{}, nil, fmt.Errorf("store: begin: %w", err)
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
 
-	membership, err := insertMembership(ctx, tx, userID, tenantID)
+	membership, err := insertMembership(ctx, tx, userID, organizationID)
 	if err != nil {
 		return models.Membership{}, nil, err
 	}
 	var assignment *models.RoleAssignment
-	if tenantRoleID != "" {
-		a, err := assignTenantRole(ctx, tx, userID, tenantRoleID, tenantID)
+	if organizationRoleID != "" {
+		a, err := assignOrganizationRole(ctx, tx, userID, organizationRoleID, organizationID)
 		if err != nil {
 			return models.Membership{}, nil, err
 		}
@@ -38,16 +38,16 @@ func (s *Store) AddMember(ctx context.Context, userID, tenantID, tenantRoleID st
 	return membership, assignment, nil
 }
 
-// GrantProjectRole ensures the user is a member of the tenant and assigns them a
+// GrantProjectRole ensures the user is a member of the organization and assigns them a
 // project-scoped role — atomically.
-func (s *Store) GrantProjectRole(ctx context.Context, userID, tenantID, projectID, roleID string) (models.RoleAssignment, error) {
+func (s *Store) GrantProjectRole(ctx context.Context, userID, organizationID, projectID, roleID string) (models.RoleAssignment, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return models.RoleAssignment{}, fmt.Errorf("store: begin: %w", err)
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
 
-	if _, err := insertMembership(ctx, tx, userID, tenantID); err != nil {
+	if _, err := insertMembership(ctx, tx, userID, organizationID); err != nil {
 		return models.RoleAssignment{}, err
 	}
 	assignment, err := assignProjectRole(ctx, tx, userID, roleID, projectID)
@@ -60,9 +60,9 @@ func (s *Store) GrantProjectRole(ctx context.Context, userID, tenantID, projectI
 	return assignment, nil
 }
 
-// Bootstrap creates the first superuser and, optionally, the first tenant (with
+// Bootstrap creates the first superuser and, optionally, the first organization (with
 // its seeded roles) — atomically. Used by first-run setup.
-func (s *Store) Bootstrap(ctx context.Context, email, passwordHash, fullName, tenantSlug, tenantName string) (models.User, *models.Tenant, error) {
+func (s *Store) Bootstrap(ctx context.Context, email, passwordHash, fullName, organizationSlug, organizationName string) (models.User, *models.Organization, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return models.User{}, nil, fmt.Errorf("store: begin: %w", err)
@@ -73,16 +73,16 @@ func (s *Store) Bootstrap(ctx context.Context, email, passwordHash, fullName, te
 	if err != nil {
 		return models.User{}, nil, err
 	}
-	var tenant *models.Tenant
-	if tenantSlug != "" {
-		t, err := insertTenantWithRoles(ctx, tx, tenantSlug, tenantName)
+	var organization *models.Organization
+	if organizationSlug != "" {
+		t, err := insertOrganizationWithRoles(ctx, tx, organizationSlug, organizationName)
 		if err != nil {
 			return models.User{}, nil, err
 		}
-		tenant = &t
+		organization = &t
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return models.User{}, nil, fmt.Errorf("store: commit: %w", err)
 	}
-	return user, tenant, nil
+	return user, organization, nil
 }

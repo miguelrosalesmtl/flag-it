@@ -17,10 +17,10 @@ import { useCreateFlag, useEnvFlags, useToggleEnvFlag } from '@/features/flags/h
  * server-side (debounced), so the list scales past what a client can hold.
  */
 export function FlagsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const environments = useEnvironments(tenantSlug, projectKey)
-  const createFlag = useCreateFlag(tenantSlug, projectKey)
+  const environments = useEnvironments(organizationSlug, projectKey)
+  const createFlag = useCreateFlag(organizationSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   // Default to the first environment until the user picks another.
@@ -35,8 +35,8 @@ export function FlagsPage() {
     return () => clearTimeout(t)
   }, [query])
 
-  const flags = useEnvFlags(tenantSlug, projectKey, envKey, search)
-  const toggle = useToggleEnvFlag(tenantSlug, projectKey, envKey)
+  const flags = useEnvFlags(organizationSlug, projectKey, envKey, search)
+  const toggle = useToggleEnvFlag(organizationSlug, projectKey, envKey)
 
   return (
     <section className="space-y-6">
@@ -52,7 +52,7 @@ export function FlagsPage() {
           createFlag.mutate(input, {
             onSuccess: (flag) => {
               setDialogOpen(false)
-              void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${flag.key}`)
+              void navigate(`/organizations/${organizationSlug}/projects/${projectKey}/flags/${flag.key}`)
             },
           })
         }
@@ -102,7 +102,7 @@ export function FlagsPage() {
             <FlagList
               flags={flags.data}
               onOpen={(key) =>
-                void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+                void navigate(`/organizations/${organizationSlug}/projects/${projectKey}/flags/${key}`)
               }
               onToggle={(flagKey, on) => toggle.mutate({ flagKey, on })}
               togglingKey={toggle.isPending ? toggle.variables.flagKey : null}

@@ -1,4 +1,4 @@
-// Package webhooks delivers outbound event notifications: a tenant registers a
+// Package webhooks delivers outbound event notifications: a organization registers a
 // URL, and subscribed events (audit entries) are delivered to it as signed POSTs
 // by a background worker with retries.
 package webhooks
@@ -39,7 +39,7 @@ func New(st *store.Store, log *slog.Logger) *Service {
 
 // WebhookInput is the typed request to create a webhook.
 type WebhookInput struct {
-	TenantID       string
+	OrganizationID string
 	URL            string
 	EventTypes     []string
 	Description    string
@@ -65,7 +65,7 @@ func (s *Service) Create(ctx context.Context, in WebhookInput) (models.Webhook, 
 		return models.Webhook{}, err
 	}
 	return s.store.CreateWebhook(ctx, models.Webhook{
-		TenantID:       in.TenantID,
+		OrganizationID: in.OrganizationID,
 		URL:            in.URL,
 		Secret:         secret,
 		EventTypes:     in.EventTypes,
@@ -75,9 +75,9 @@ func (s *Service) Create(ctx context.Context, in WebhookInput) (models.Webhook, 
 	})
 }
 
-// List returns a tenant's webhooks.
-func (s *Service) List(ctx context.Context, tenantID string) ([]models.Webhook, error) {
-	return s.store.ListWebhooksByTenant(ctx, tenantID)
+// List returns a organization's webhooks.
+func (s *Service) List(ctx context.Context, organizationID string) ([]models.Webhook, error) {
+	return s.store.ListWebhooksByOrganization(ctx, organizationID)
 }
 
 // Get returns one webhook by id.
@@ -109,15 +109,15 @@ func (s *Service) ListDeliveries(ctx context.Context, webhookID string, limit in
 	return s.store.ListWebhookDeliveries(ctx, webhookID, limit)
 }
 
-// Enqueue fans an event out to every enabled webhook in the tenant that
+// Enqueue fans an event out to every enabled webhook in the organization that
 // subscribes to it, creating a pending delivery each. It implements the audit
 // service's event-emitter seam; failures are logged, never propagated, so they
 // cannot fail the audited operation.
-func (s *Service) Enqueue(ctx context.Context, tenantID, eventType string, payload json.RawMessage) {
-	if tenantID == "" {
-		return // platform-level events have no tenant to route to
+func (s *Service) Enqueue(ctx context.Context, organizationID, eventType string, payload json.RawMessage) {
+	if organizationID == "" {
+		return // platform-level events have no organization to route to
 	}
-	hooks, err := s.store.ListEnabledWebhooksByTenant(ctx, tenantID)
+	hooks, err := s.store.ListEnabledWebhooksByOrganization(ctx, organizationID)
 	if err != nil {
 		s.log.Warn("webhooks: enqueue lookup failed", slog.String("error", err.Error()))
 		return

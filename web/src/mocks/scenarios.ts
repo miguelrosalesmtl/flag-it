@@ -28,8 +28,8 @@ export const scenarios: Record<string, RequestHandler[]> = {
     http.post('*/api/v1/setup', async ({ request }) => {
       const input = (await request.json()) as {
         email: string
-        tenant_slug?: string
-        tenant_name?: string
+        organization_slug?: string
+        organization_name?: string
       }
       return HttpResponse.json(
         {
@@ -43,11 +43,11 @@ export const scenarios: Record<string, RequestHandler[]> = {
             created_at: '2026-07-12T00:00:00Z',
             updated_at: '2026-07-12T00:00:00Z',
           },
-          tenant: input.tenant_slug
+          organization: input.organization_slug
             ? {
                 id: 't1',
-                slug: input.tenant_slug,
-                name: input.tenant_name ?? input.tenant_slug,
+                slug: input.organization_slug,
+                name: input.organization_name ?? input.organization_slug,
                 created_at: '2026-07-12T00:00:00Z',
                 updated_at: '2026-07-12T00:00:00Z',
               }

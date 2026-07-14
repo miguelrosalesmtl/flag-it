@@ -1,10 +1,10 @@
 -- +goose Up
--- Outbound webhooks: a tenant registers a URL to receive signed POSTs when
+-- Outbound webhooks: a organization registers a URL to receive signed POSTs when
 -- events happen (an event is any audit entry whose action the webhook subscribes
 -- to; '*' subscribes to all).
 CREATE TABLE webhooks (
     id                uuid PRIMARY KEY DEFAULT uuidv7(),
-    tenant_id         uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    organization_id         uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     url               text NOT NULL,
     secret            text NOT NULL,
     event_types       text[] NOT NULL DEFAULT '{}', -- audit actions, or '*'
@@ -15,7 +15,7 @@ CREATE TABLE webhooks (
     created_at        timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX webhooks_tenant_idx ON webhooks (tenant_id, created_at DESC);
+CREATE INDEX webhooks_organization_idx ON webhooks (organization_id, created_at DESC);
 
 -- The delivery queue + log: one row per (webhook, event), retried with backoff.
 CREATE TABLE webhook_deliveries (

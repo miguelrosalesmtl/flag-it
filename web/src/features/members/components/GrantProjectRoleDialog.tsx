@@ -28,7 +28,7 @@ export interface GrantProjectRoleDialogProps {
 
 /**
  * Presentational. Grant a user a project-scoped role — access to a single
- * project, distinct from tenant-wide membership.
+ * project, distinct from organization-wide membership.
  */
 export function GrantProjectRoleDialog({
   projectKey,

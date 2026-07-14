@@ -1,34 +1,34 @@
 import { api } from '@/api/client'
 import type { CreateTriggerInput, FlagTrigger } from '@/types/trigger'
 
-const base = (tenantSlug: string, projectKey: string) =>
-  `/tenants/${tenantSlug}/projects/${projectKey}`
+const base = (organizationSlug: string, projectKey: string) =>
+  `/organizations/${organizationSlug}/projects/${projectKey}`
 
 export const triggersApi = {
   // A flag+environment's triggers (tokens/urls omitted server-side).
-  list: (tenantSlug: string, projectKey: string, flagKey: string, envKey: string) =>
+  list: (organizationSlug: string, projectKey: string, flagKey: string, envKey: string) =>
     api
       .get<{ triggers: FlagTrigger[] | null }>(
-        `${base(tenantSlug, projectKey)}/triggers?flag=${flagKey}&env=${envKey}`,
+        `${base(organizationSlug, projectKey)}/triggers?flag=${flagKey}&env=${envKey}`,
       )
       .then((r) => r.triggers ?? []),
   // Create a trigger; the response carries the one-time url + token.
   create: (
-    tenantSlug: string,
+    organizationSlug: string,
     projectKey: string,
     flagKey: string,
     envKey: string,
     input: CreateTriggerInput,
   ) =>
     api.post<FlagTrigger>(
-      `${base(tenantSlug, projectKey)}/flags/${flagKey}/environments/${envKey}/triggers`,
+      `${base(organizationSlug, projectKey)}/flags/${flagKey}/environments/${envKey}/triggers`,
       input,
     ),
-  setEnabled: (tenantSlug: string, projectKey: string, id: string, enabled: boolean) =>
-    api.post<FlagTrigger>(`${base(tenantSlug, projectKey)}/triggers/${id}/enabled`, { enabled }),
+  setEnabled: (organizationSlug: string, projectKey: string, id: string, enabled: boolean) =>
+    api.post<FlagTrigger>(`${base(organizationSlug, projectKey)}/triggers/${id}/enabled`, { enabled }),
   // Reset the token; the response carries the new one-time url.
-  reset: (tenantSlug: string, projectKey: string, id: string) =>
-    api.post<FlagTrigger>(`${base(tenantSlug, projectKey)}/triggers/${id}/reset`),
-  remove: (tenantSlug: string, projectKey: string, id: string) =>
-    api.delete<void>(`${base(tenantSlug, projectKey)}/triggers/${id}`),
+  reset: (organizationSlug: string, projectKey: string, id: string) =>
+    api.post<FlagTrigger>(`${base(organizationSlug, projectKey)}/triggers/${id}/reset`),
+  remove: (organizationSlug: string, projectKey: string, id: string) =>
+    api.delete<void>(`${base(organizationSlug, projectKey)}/triggers/${id}`),
 }

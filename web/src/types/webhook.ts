@@ -1,10 +1,10 @@
 /**
- * A tenant's outbound webhook: a URL that receives signed POSTs when subscribed
+ * A organization's outbound webhook: a URL that receives signed POSTs when subscribed
  * events occur. The `secret` is returned only on create/reset (shown once).
  */
 export interface Webhook {
   id: string
-  tenant_id: string
+  organization_id: string
   url: string
   secret?: string
   event_types: string[]

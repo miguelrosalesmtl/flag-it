@@ -33,14 +33,14 @@ there is no field to call. Every domain has a service (`auth`, `authz`, `catalog
 `audit`, `flags`, `analytics`); even a one-line read goes through it. If you find
 yourself wanting `s.store.X()` in a handler, add the method to the owning service
 instead. New resource with no obvious home? It belongs in `catalog` (the
-tenant→project→environment→sdk-key hierarchy) or a new service — never inline.
+organization→project→environment→sdk-key hierarchy) or a new service — never inline.
 
 ## What a handler may do (and nothing more)
 
 A `server/*.go` operation handler is an adapter. Its entire job:
 
 1. **Validate input shape** (presence, format — much of it via huma struct tags).
-2. **Resolve** the URL to entities (`resolveTenant`/`resolveScope`/`resolveEnv`,
+2. **Resolve** the URL to entities (`resolveOrganization`/`resolveScope`/`resolveEnv`,
    which themselves call the `catalog` service).
 3. **Authorize** (`s.authorize(...)` / `s.requireSuperuser(...)`).
 4. **Call a service method** — always a service, never `s.store`. Even a plain
@@ -53,7 +53,7 @@ If a handler does more than this, logic has leaked. In particular, a handler MUS
   if the second fails, the first already committed. Move the whole thing into one
   **service method that wraps a `store` transaction** (see `store.AddMember`,
   `store.Bootstrap`). Partial writes are never acceptable.
-- **Implement domain policy.** Reaching into `subject.TenantPerms[...]` /
+- **Implement domain policy.** Reaching into `subject.OrganizationPerms[...]` /
   `subject.ProjectPerms[...]`, deciding what a role may do, filtering a list by
   permission — that belongs on `models.Subject` or an `authz` method (see
   `Subject.ReadableProjects`).
@@ -74,11 +74,11 @@ transport and makes it untestable off the HTTP path.
 ## Transactions live in the store
 
 Multi-write atomicity is a persistence concern. The pattern (already in the code):
-extract a `querier`-based helper (`insertMembership`, `assignTenantRole`,
-`insertUser`, `insertTenantWithRoles`) that runs against either the pool or a
+extract a `querier`-based helper (`insertMembership`, `assignOrganizationRole`,
+`insertUser`, `insertOrganizationWithRoles`) that runs against either the pool or a
 `pgx.Tx`, then add a `Store` method that opens a transaction and composes the
 helpers (`store.AddMember`, `store.GrantProjectRole`, `store.Bootstrap`,
-`store.CreateTenant`). The service calls that one method; the store guarantees
+`store.CreateOrganization`). The service calls that one method; the store guarantees
 all-or-nothing.
 
 ## Where does X go? (decision table)
@@ -87,7 +87,7 @@ all-or-nothing.
 - "It decides whether a subject may do something" → `models.Subject` (pure) or `authz`
 - "It writes two rows that must both succeed" → a `store` method with a tx, called by a service
 - "It reads/writes one row, no rules" → a thin method on the owning service (`catalog`/`auth`/`authz`/…), which calls the `store`; the handler calls the service, never the store
-- "It's a tenant/project/environment/sdk-key operation" → `catalog`
+- "It's a organization/project/environment/sdk-key operation" → `catalog`
 - "It records or lists an audit entry" → `audit`
 - "It evaluates a flag" → `flags` (pure functions; the `Service` loads data and calls them)
 - "It turns an error into a 4xx/5xx" → the handler (via a mapper); never the service

@@ -5,13 +5,13 @@ import type {
   ScheduledStatus,
 } from '@/types/scheduled-change'
 
-const base = (tenantSlug: string, projectKey: string) =>
-  `/tenants/${tenantSlug}/projects/${projectKey}`
+const base = (organizationSlug: string, projectKey: string) =>
+  `/organizations/${organizationSlug}/projects/${projectKey}`
 
 export const scheduledChangesApi = {
   // A project's scheduled changes, optionally filtered by status/flag/env.
   list: (
-    tenantSlug: string,
+    organizationSlug: string,
     projectKey: string,
     filters: { status?: ScheduledStatus; flag?: string; env?: string } = {},
   ) => {
@@ -22,23 +22,23 @@ export const scheduledChangesApi = {
     const qs = params.toString()
     return api
       .get<{ scheduled_changes: ScheduledChange[] | null }>(
-        `${base(tenantSlug, projectKey)}/scheduled-changes${qs ? `?${qs}` : ''}`,
+        `${base(organizationSlug, projectKey)}/scheduled-changes${qs ? `?${qs}` : ''}`,
       )
       .then((r) => r.scheduled_changes ?? [])
   },
   // Schedule a change to a flag in one environment.
   create: (
-    tenantSlug: string,
+    organizationSlug: string,
     projectKey: string,
     flagKey: string,
     envKey: string,
     input: CreateScheduledChangeInput,
   ) =>
     api.post<ScheduledChange>(
-      `${base(tenantSlug, projectKey)}/flags/${flagKey}/environments/${envKey}/scheduled-changes`,
+      `${base(organizationSlug, projectKey)}/flags/${flagKey}/environments/${envKey}/scheduled-changes`,
       input,
     ),
   // Cancel a pending scheduled change.
-  cancel: (tenantSlug: string, projectKey: string, id: string) =>
-    api.post<ScheduledChange>(`${base(tenantSlug, projectKey)}/scheduled-changes/${id}/cancel`),
+  cancel: (organizationSlug: string, projectKey: string, id: string) =>
+    api.post<ScheduledChange>(`${base(organizationSlug, projectKey)}/scheduled-changes/${id}/cancel`),
 }

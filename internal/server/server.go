@@ -91,7 +91,7 @@ func New(
 	}))
 
 	config := huma.DefaultConfig("Feature-Flag Platform API", "0.1.0")
-	config.Info.Description = "Multi-tenant feature-flag service (LaunchDarkly-style, server-side evaluation)."
+	config.Info.Description = "Multi-organization feature-flag service (LaunchDarkly-style, server-side evaluation)."
 	config.Servers = []*huma.Server{{URL: "http://localhost:" + strconv.Itoa(cfg.Port)}}
 	config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
 		"bearerAuth": {Type: "http", Scheme: "bearer", BearerFormat: "JWT"},
@@ -108,7 +108,7 @@ func New(
 	s.registerSetup()
 	s.registerAuth()
 	s.registerUsers()
-	s.registerTenants()
+	s.registerOrganizations()
 	s.registerRoles()
 	s.registerProjects()
 	s.registerSDKKeys()

@@ -1,5 +1,5 @@
 // Package audit is the service for the append-only change log: recording entries
-// (attributed to an actor) and querying a tenant's history.
+// (attributed to an actor) and querying a organization's history.
 package audit
 
 import (
@@ -16,7 +16,7 @@ import (
 // (outbound webhooks). It is the seam that lets the audit log double as the event
 // stream without the audit package depending on webhooks.
 type EventEmitter interface {
-	Enqueue(ctx context.Context, tenantID, eventType string, payload json.RawMessage)
+	Enqueue(ctx context.Context, organizationID, eventType string, payload json.RawMessage)
 }
 
 // Service records and lists audit entries.
@@ -68,9 +68,9 @@ func (s *Service) write(ctx context.Context, e models.AuditEntry) {
 }
 
 // emit fans the recorded entry out to the event emitter (webhooks). Best-effort:
-// only tenant-scoped events route, and any failure is swallowed by the emitter.
+// only organization-scoped events route, and any failure is swallowed by the emitter.
 func (s *Service) emit(ctx context.Context, e models.AuditEntry) {
-	if s.emitter == nil || e.TenantID == "" {
+	if s.emitter == nil || e.OrganizationID == "" {
 		return
 	}
 	if e.CreatedAt.IsZero() {
@@ -80,7 +80,7 @@ func (s *Service) emit(ctx context.Context, e models.AuditEntry) {
 	if err != nil {
 		return
 	}
-	s.emitter.Enqueue(ctx, e.TenantID, e.Action, payload)
+	s.emitter.Enqueue(ctx, e.OrganizationID, e.Action, payload)
 }
 
 // ListParams filters an audit query. Mirrors the store filter but keeps the
@@ -93,9 +93,9 @@ type ListParams struct {
 	Limit        int
 }
 
-// List returns a tenant's change history, newest first.
-func (s *Service) List(ctx context.Context, tenantID string, p ListParams) ([]models.AuditEntry, error) {
-	return s.store.ListAuditEntries(ctx, tenantID, store.AuditFilter{
+// List returns a organization's change history, newest first.
+func (s *Service) List(ctx context.Context, organizationID string, p ListParams) ([]models.AuditEntry, error) {
+	return s.store.ListAuditEntries(ctx, organizationID, store.AuditFilter{
 		ProjectID:    p.ProjectID,
 		ResourceType: p.ResourceType,
 		ResourceKey:  p.ResourceKey,

@@ -14,7 +14,7 @@ export interface MemberListProps {
   members: Member[]
 }
 
-/** Presentational. Lists a tenant's members and their role. */
+/** Presentational. Lists a organization's members and their role. */
 export function MemberList({ members }: MemberListProps) {
   if (members.length === 0) {
     return (

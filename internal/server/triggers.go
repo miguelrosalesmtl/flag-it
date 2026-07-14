@@ -19,34 +19,34 @@ type triggerBody struct {
 }
 
 type createTriggerInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Body             struct {
 		Action      string `json:"action" enum:"on,off" doc:"what firing the webhook does"`
 		Description string `json:"description,omitempty" doc:"e.g. the integration that fires it"`
 	}
 }
 
 type listTriggersInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	Flag       string `query:"flag" doc:"filter by flag key"`
-	Env        string `query:"env" doc:"filter by environment key"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	Flag             string `query:"flag" doc:"filter by flag key"`
+	Env              string `query:"env" doc:"filter by environment key"`
 }
 
 type triggerIDInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	TriggerID  string `path:"triggerId"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	TriggerID        string `path:"triggerId"`
 }
 
 type setTriggerEnabledInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	TriggerID  string `path:"triggerId"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	TriggerID        string `path:"triggerId"`
+	Body             struct {
 		Enabled bool `json:"enabled"`
 	}
 }
@@ -81,7 +81,7 @@ func (s *Server) triggerURL(token string) string {
 }
 
 func (s *Server) registerTriggers() {
-	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}"
+	base := "/api/v1/organizations/{organizationSlug}/projects/{projectKey}"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "create-trigger", Method: http.MethodPost,
@@ -91,11 +91,11 @@ func (s *Server) registerTriggers() {
 			"to apply the action. The URL is shown only on create and reset.",
 		Tags: []string{"Triggers"}, Security: bearer,
 	}, func(ctx context.Context, in *createTriggerInput) (*triggerOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -123,7 +123,7 @@ func (s *Server) registerTriggers() {
 		if err != nil {
 			return nil, triggerError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "trigger.created", ResourceType: "flag", ResourceKey: flag.Key,
 			Data: jsonData(map[string]any{"environment": env.Key, "trigger": t.ID, "trigger_action": t.Action})})
 		return &triggerOutput{Body: triggerBody{FlagTrigger: t, URL: s.triggerURL(t.Token)}}, nil
@@ -134,11 +134,11 @@ func (s *Server) registerTriggers() {
 		Summary: "List a project's flag triggers, without their secret URLs (requires flag.read)",
 		Tags:    []string{"Triggers"}, Security: bearer,
 	}, func(ctx context.Context, in *listTriggersInput) (*listTriggersOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		list, err := s.governance.ListTriggers(ctx, project.ID, in.Flag, in.Env)
@@ -159,7 +159,7 @@ func (s *Server) registerTriggers() {
 		Summary: "Enable or disable a flag trigger (requires flag.write)",
 		Tags:    []string{"Triggers"}, Security: bearer,
 	}, func(ctx context.Context, in *setTriggerEnabledInput) (*triggerOutput, error) {
-		project, t, err := s.resolveTrigger(ctx, in.TenantSlug, in.ProjectKey, in.TriggerID)
+		project, t, err := s.resolveTrigger(ctx, in.OrganizationSlug, in.ProjectKey, in.TriggerID)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +171,7 @@ func (s *Server) registerTriggers() {
 		if in.Body.Enabled {
 			action = "trigger.enabled"
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: action, ResourceType: "flag", ResourceKey: t.FlagKey,
 			Data: jsonData(map[string]any{"environment": t.EnvironmentKey, "trigger": t.ID})})
 		updated.Token = ""
@@ -184,7 +184,7 @@ func (s *Server) registerTriggers() {
 		Summary: "Reset a trigger's URL token, invalidating the old URL (requires flag.write)",
 		Tags:    []string{"Triggers"}, Security: bearer,
 	}, func(ctx context.Context, in *triggerIDInput) (*triggerOutput, error) {
-		project, t, err := s.resolveTrigger(ctx, in.TenantSlug, in.ProjectKey, in.TriggerID)
+		project, t, err := s.resolveTrigger(ctx, in.OrganizationSlug, in.ProjectKey, in.TriggerID)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (s *Server) registerTriggers() {
 		if err != nil {
 			return nil, triggerError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "trigger.reset", ResourceType: "flag", ResourceKey: t.FlagKey,
 			Data: jsonData(map[string]any{"environment": t.EnvironmentKey, "trigger": t.ID})})
 		return &triggerOutput{Body: triggerBody{FlagTrigger: updated, URL: s.triggerURL(updated.Token)}}, nil
@@ -205,14 +205,14 @@ func (s *Server) registerTriggers() {
 		Tags:    []string{"Triggers"}, Security: bearer,
 		DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *triggerIDInput) (*noContent, error) {
-		project, t, err := s.resolveTrigger(ctx, in.TenantSlug, in.ProjectKey, in.TriggerID)
+		project, t, err := s.resolveTrigger(ctx, in.OrganizationSlug, in.ProjectKey, in.TriggerID)
 		if err != nil {
 			return nil, err
 		}
 		if err := s.governance.DeleteTrigger(ctx, t.ID); err != nil {
 			return nil, triggerError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "trigger.deleted", ResourceType: "flag", ResourceKey: t.FlagKey,
 			Data: jsonData(map[string]any{"environment": t.EnvironmentKey, "trigger": t.ID})})
 		return &noContent{}, nil
@@ -241,12 +241,12 @@ func (s *Server) registerTriggers() {
 
 // resolveTrigger resolves the project + a trigger, enforcing that the trigger
 // belongs to that project. Requires flag.write (all mutating trigger ops do).
-func (s *Server) resolveTrigger(ctx context.Context, tenantSlug, projectKey, triggerID string) (models.Project, models.FlagTrigger, error) {
-	_, project, err := s.resolveScope(ctx, tenantSlug, projectKey)
+func (s *Server) resolveTrigger(ctx context.Context, organizationSlug, projectKey, triggerID string) (models.Project, models.FlagTrigger, error) {
+	_, project, err := s.resolveScope(ctx, organizationSlug, projectKey)
 	if err != nil {
 		return models.Project{}, models.FlagTrigger{}, err
 	}
-	if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+	if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 		return models.Project{}, models.FlagTrigger{}, err
 	}
 	t, err := s.governance.GetTrigger(ctx, triggerID)
@@ -260,14 +260,14 @@ func (s *Server) resolveTrigger(ctx context.Context, tenantSlug, projectKey, tri
 }
 
 // recordTriggerAudit records a fire. The actor is the trigger itself (the fire is
-// unauthenticated), so the tenant is resolved from the trigger's project.
+// unauthenticated), so the organization is resolved from the trigger's project.
 func (s *Server) recordTriggerAudit(ctx context.Context, t models.FlagTrigger) {
 	project, err := s.catalog.ProjectByID(ctx, t.ProjectID)
 	if err != nil {
 		s.log.Warn("trigger audit: project lookup failed", "error", err)
 		return
 	}
-	s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+	s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 		Action: "trigger.fired", ResourceType: "flag", ResourceKey: t.FlagKey,
 		Data: jsonData(map[string]any{"environment": t.EnvironmentKey, "trigger": t.ID, "trigger_action": t.Action})})
 }

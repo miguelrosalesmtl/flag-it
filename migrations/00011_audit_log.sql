@@ -2,7 +2,7 @@
 -- Immutable change history. Append-only: no updates/deletes in normal operation.
 CREATE TABLE audit_log (
     id            uuid PRIMARY KEY DEFAULT uuidv7(),
-    tenant_id     uuid REFERENCES tenants(id)  ON DELETE CASCADE,   -- null = platform-level
+    organization_id     uuid REFERENCES organizations(id)  ON DELETE CASCADE,   -- null = platform-level
     project_id    uuid REFERENCES projects(id) ON DELETE SET NULL,  -- keep entry if project deleted
     actor_id      uuid,                                             -- not FK: survives user deletion
     actor_email   text NOT NULL DEFAULT '',
@@ -14,10 +14,10 @@ CREATE TABLE audit_log (
     created_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- Query paths: recent activity per tenant / per project, and by resource.
-CREATE INDEX audit_log_tenant_created_idx  ON audit_log (tenant_id, id DESC);
+-- Query paths: recent activity per organization / per project, and by resource.
+CREATE INDEX audit_log_organization_created_idx  ON audit_log (organization_id, id DESC);
 CREATE INDEX audit_log_project_created_idx ON audit_log (project_id, id DESC);
-CREATE INDEX audit_log_resource_idx        ON audit_log (tenant_id, resource_type, resource_key);
+CREATE INDEX audit_log_resource_idx        ON audit_log (organization_id, resource_type, resource_key);
 
 -- +goose Down
 DROP TABLE audit_log;

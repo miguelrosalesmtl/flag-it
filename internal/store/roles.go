@@ -11,59 +11,59 @@ import (
 )
 
 // querier is satisfied by both *pgxpool.Pool and pgx.Tx, so role helpers can run
-// standalone or inside the tenant-creation transaction.
+// standalone or inside the organization-creation transaction.
 type querier interface {
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-const roleColumns = `id, tenant_id, key, name, description, scope, is_system, created_at, updated_at`
-const roleAssignmentColumns = `id, user_id, role_id, scope_type, tenant_id, project_id, created_at, updated_at`
+const roleColumns = `id, organization_id, key, name, description, scope, is_system, created_at, updated_at`
+const roleAssignmentColumns = `id, user_id, role_id, scope_type, organization_id, project_id, created_at, updated_at`
 
-// defaultRoles are seeded (as system roles) into every new tenant.
+// defaultRoles are seeded (as system roles) into every new organization.
 var defaultRoles = []struct {
 	Key, Name, Description string
 	Scope                  models.ScopeType
 	Permissions            []models.Permission
 }{
-	{"tenant_admin", "Tenant Admin", "Full control of the tenant.", models.ScopeTenant, models.AllPermissions},
+	{"organization_admin", "Organization Admin", "Full control of the organization.", models.ScopeOrganization, models.AllPermissions},
 	{"writer", "Writer", "Create and edit flags in a project.", models.ScopeProject,
 		[]models.Permission{models.PermProjectRead, models.PermFlagRead, models.PermFlagWrite, models.PermFlagDelete}},
 	{"reader", "Reader", "View flags in a project.", models.ScopeProject,
 		[]models.Permission{models.PermProjectRead, models.PermFlagRead}},
 }
 
-// seedDefaultRoles creates the system roles for a tenant. Runs inside the
-// tenant-creation transaction.
-func seedDefaultRoles(ctx context.Context, q querier, tenantID string) error {
+// seedDefaultRoles creates the system roles for a organization. Runs inside the
+// organization-creation transaction.
+func seedDefaultRoles(ctx context.Context, q querier, organizationID string) error {
 	for _, dr := range defaultRoles {
-		if _, err := createRole(ctx, q, tenantID, dr.Key, dr.Name, dr.Description, dr.Scope, true, dr.Permissions); err != nil {
+		if _, err := createRole(ctx, q, organizationID, dr.Key, dr.Name, dr.Description, dr.Scope, true, dr.Permissions); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// CreateRole creates a custom (non-system) role for a tenant.
-func (s *Store) CreateRole(ctx context.Context, tenantID, key, name, description string, scope models.ScopeType, perms []models.Permission) (models.Role, error) {
+// CreateRole creates a custom (non-system) role for a organization.
+func (s *Store) CreateRole(ctx context.Context, organizationID, key, name, description string, scope models.ScopeType, perms []models.Permission) (models.Role, error) {
 	for _, p := range perms {
 		if !models.IsValidPermission(p) {
 			return models.Role{}, fmt.Errorf("store: unknown permission %q", p)
 		}
 	}
-	if scope != models.ScopeTenant && scope != models.ScopeProject {
+	if scope != models.ScopeOrganization && scope != models.ScopeProject {
 		return models.Role{}, fmt.Errorf("store: invalid role scope %q", scope)
 	}
-	return createRole(ctx, s.pool, tenantID, key, name, description, scope, false, perms)
+	return createRole(ctx, s.pool, organizationID, key, name, description, scope, false, perms)
 }
 
-func createRole(ctx context.Context, q querier, tenantID, key, name, description string, scope models.ScopeType, isSystem bool, perms []models.Permission) (models.Role, error) {
+func createRole(ctx context.Context, q querier, organizationID, key, name, description string, scope models.ScopeType, isSystem bool, perms []models.Permission) (models.Role, error) {
 	const q1 = `
-		INSERT INTO roles (tenant_id, key, name, description, scope, is_system)
+		INSERT INTO roles (organization_id, key, name, description, scope, is_system)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING ` + roleColumns
-	role, err := scanRole(q.QueryRow(ctx, q1, tenantID, key, name, description, string(scope), isSystem))
+	role, err := scanRole(q.QueryRow(ctx, q1, organizationID, key, name, description, string(scope), isSystem))
 	if err != nil {
 		return models.Role{}, fmt.Errorf("store: insert role: %w", err)
 	}
@@ -77,9 +77,9 @@ func createRole(ctx context.Context, q querier, tenantID, key, name, description
 	return role, nil
 }
 
-// GetRoleByKey returns a tenant's role (with its permissions) by key.
-func (s *Store) GetRoleByKey(ctx context.Context, tenantID, key string) (models.Role, error) {
-	row := s.pool.QueryRow(ctx, `SELECT `+roleColumns+` FROM roles WHERE tenant_id = $1 AND key = $2`, tenantID, key)
+// GetRoleByKey returns a organization's role (with its permissions) by key.
+func (s *Store) GetRoleByKey(ctx context.Context, organizationID, key string) (models.Role, error) {
+	row := s.pool.QueryRow(ctx, `SELECT `+roleColumns+` FROM roles WHERE organization_id = $1 AND key = $2`, organizationID, key)
 	role, err := scanRole(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return models.Role{}, ErrNotFound
@@ -95,9 +95,9 @@ func (s *Store) GetRoleByKey(ctx context.Context, tenantID, key string) (models.
 	return role, nil
 }
 
-// ListRolesByTenant returns all roles for a tenant, each with its permissions.
-func (s *Store) ListRolesByTenant(ctx context.Context, tenantID string) ([]models.Role, error) {
-	rows, err := s.pool.Query(ctx, `SELECT `+roleColumns+` FROM roles WHERE tenant_id = $1 ORDER BY key`, tenantID)
+// ListRolesByOrganization returns all roles for a organization, each with its permissions.
+func (s *Store) ListRolesByOrganization(ctx context.Context, organizationID string) ([]models.Role, error) {
+	rows, err := s.pool.Query(ctx, `SELECT `+roleColumns+` FROM roles WHERE organization_id = $1 ORDER BY key`, organizationID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list roles: %w", err)
 	}
@@ -141,18 +141,18 @@ func (s *Store) loadRolePermissions(ctx context.Context, roleID string) ([]model
 	return out, rows.Err()
 }
 
-// AssignTenantRole grants a user a tenant-scoped role. Idempotent.
-func (s *Store) AssignTenantRole(ctx context.Context, userID, roleID, tenantID string) (models.RoleAssignment, error) {
-	return assignTenantRole(ctx, s.pool, userID, roleID, tenantID)
+// AssignOrganizationRole grants a user a organization-scoped role. Idempotent.
+func (s *Store) AssignOrganizationRole(ctx context.Context, userID, roleID, organizationID string) (models.RoleAssignment, error) {
+	return assignOrganizationRole(ctx, s.pool, userID, roleID, organizationID)
 }
 
-func assignTenantRole(ctx context.Context, q querier, userID, roleID, tenantID string) (models.RoleAssignment, error) {
+func assignOrganizationRole(ctx context.Context, q querier, userID, roleID, organizationID string) (models.RoleAssignment, error) {
 	const sql = `
-		INSERT INTO role_assignments (user_id, role_id, scope_type, tenant_id)
-		VALUES ($1, $2, 'tenant', $3)
-		ON CONFLICT (user_id, role_id, tenant_id, project_id) DO UPDATE SET updated_at = now()
+		INSERT INTO role_assignments (user_id, role_id, scope_type, organization_id)
+		VALUES ($1, $2, 'organization', $3)
+		ON CONFLICT (user_id, role_id, organization_id, project_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + roleAssignmentColumns
-	return scanRoleAssignment(q.QueryRow(ctx, sql, userID, roleID, tenantID))
+	return scanRoleAssignment(q.QueryRow(ctx, sql, userID, roleID, organizationID))
 }
 
 // AssignProjectRole grants a user a project-scoped role. Idempotent.
@@ -164,7 +164,7 @@ func assignProjectRole(ctx context.Context, q querier, userID, roleID, projectID
 	const sql = `
 		INSERT INTO role_assignments (user_id, role_id, scope_type, project_id)
 		VALUES ($1, $2, 'project', $3)
-		ON CONFLICT (user_id, role_id, tenant_id, project_id) DO UPDATE SET updated_at = now()
+		ON CONFLICT (user_id, role_id, organization_id, project_id) DO UPDATE SET updated_at = now()
 		RETURNING ` + roleAssignmentColumns
 	return scanRoleAssignment(q.QueryRow(ctx, sql, userID, roleID, projectID))
 }
@@ -173,7 +173,7 @@ func assignProjectRole(ctx context.Context, q querier, userID, roleID, projectID
 // permission) grants, for building an authorization Subject.
 func (s *Store) ListPermissionGrantsByUser(ctx context.Context, userID string) ([]models.PermissionGrant, error) {
 	const q = `
-		SELECT ra.scope_type, ra.tenant_id, ra.project_id, rp.permission
+		SELECT ra.scope_type, ra.organization_id, ra.project_id, rp.permission
 		FROM role_assignments ra
 		JOIN role_permissions rp ON rp.role_id = ra.role_id
 		WHERE ra.user_id = $1`
@@ -186,17 +186,17 @@ func (s *Store) ListPermissionGrantsByUser(ctx context.Context, userID string) (
 	out := make([]models.PermissionGrant, 0)
 	for rows.Next() {
 		var (
-			scopeType string
-			tenantID  *string
-			projectID *string
-			perm      string
+			scopeType      string
+			organizationID *string
+			projectID      *string
+			perm           string
 		)
-		if err := rows.Scan(&scopeType, &tenantID, &projectID, &perm); err != nil {
+		if err := rows.Scan(&scopeType, &organizationID, &projectID, &perm); err != nil {
 			return nil, err
 		}
 		g := models.PermissionGrant{ScopeType: models.ScopeType(scopeType), Permission: models.Permission(perm)}
-		if tenantID != nil {
-			g.TenantID = *tenantID
+		if organizationID != nil {
+			g.OrganizationID = *organizationID
 		}
 		if projectID != nil {
 			g.ProjectID = *projectID
@@ -211,7 +211,7 @@ func scanRole(row pgx.Row) (models.Role, error) {
 		r     models.Role
 		scope string
 	)
-	if err := row.Scan(&r.ID, &r.TenantID, &r.Key, &r.Name, &r.Description, &scope, &r.IsSystem, &r.CreatedAt, &r.UpdatedAt); err != nil {
+	if err := row.Scan(&r.ID, &r.OrganizationID, &r.Key, &r.Name, &r.Description, &scope, &r.IsSystem, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		return models.Role{}, err
 	}
 	r.Scope = models.ScopeType(scope)
@@ -223,7 +223,7 @@ func scanRoleAssignment(row pgx.Row) (models.RoleAssignment, error) {
 		a         models.RoleAssignment
 		scopeType string
 	)
-	if err := row.Scan(&a.ID, &a.UserID, &a.RoleID, &scopeType, &a.TenantID, &a.ProjectID, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	if err := row.Scan(&a.ID, &a.UserID, &a.RoleID, &scopeType, &a.OrganizationID, &a.ProjectID, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		return models.RoleAssignment{}, err
 	}
 	a.ScopeType = models.ScopeType(scopeType)

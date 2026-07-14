@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
-import { TenantList } from '@/features/tenants/components/TenantList'
-import type { Tenant } from '@/types/tenant'
+import { OrganizationList } from '@/features/organizations/components/OrganizationList'
+import type { Organization } from '@/types/organization'
 
-const tenants: Tenant[] = [
+const organizations: Organization[] = [
   {
     id: '1',
     slug: 'acme',
@@ -22,18 +22,18 @@ const tenants: Tenant[] = [
 ]
 
 const meta = {
-  title: 'Tenants/TenantList',
-  component: TenantList,
+  title: 'Organizations/OrganizationList',
+  component: OrganizationList,
   args: { onOpen: fn() },
-} satisfies Meta<typeof TenantList>
+} satisfies Meta<typeof OrganizationList>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: { tenants },
+  args: { organizations },
 }
 
 export const Empty: Story = {
-  args: { tenants: [] },
+  args: { organizations: [] },
 }

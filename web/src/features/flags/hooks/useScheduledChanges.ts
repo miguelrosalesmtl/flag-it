@@ -6,23 +6,23 @@ import type { CreateScheduledChangeInput, ScheduledStatus } from '@/types/schedu
 
 /** Scheduled changes for one flag + environment (the flag-detail card). */
 export function useScheduledChanges(
-  tenantSlug: string,
+  organizationSlug: string,
   projectKey: string,
   flagKey: string,
   envKey: string,
   status?: ScheduledStatus,
 ) {
   return useQuery({
-    queryKey: [...queryKeys.scheduledChanges(tenantSlug, projectKey), flagKey, envKey, status ?? 'all'],
+    queryKey: [...queryKeys.scheduledChanges(organizationSlug, projectKey), flagKey, envKey, status ?? 'all'],
     queryFn: () =>
-      scheduledChangesApi.list(tenantSlug, projectKey, { flag: flagKey, env: envKey, status }),
+      scheduledChangesApi.list(organizationSlug, projectKey, { flag: flagKey, env: envKey, status }),
     enabled: envKey !== '',
   })
 }
 
 /** Schedule a change to a flag in one environment. */
 export function useCreateScheduledChange(
-  tenantSlug: string,
+  organizationSlug: string,
   projectKey: string,
   flagKey: string,
   envKey: string,
@@ -30,22 +30,22 @@ export function useCreateScheduledChange(
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateScheduledChangeInput) =>
-      scheduledChangesApi.create(tenantSlug, projectKey, flagKey, envKey, input),
+      scheduledChangesApi.create(organizationSlug, projectKey, flagKey, envKey, input),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: queryKeys.scheduledChanges(tenantSlug, projectKey),
+        queryKey: queryKeys.scheduledChanges(organizationSlug, projectKey),
       }),
   })
 }
 
 /** Cancel a pending scheduled change. */
-export function useCancelScheduledChange(tenantSlug: string, projectKey: string) {
+export function useCancelScheduledChange(organizationSlug: string, projectKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => scheduledChangesApi.cancel(tenantSlug, projectKey, id),
+    mutationFn: (id: string) => scheduledChangesApi.cancel(organizationSlug, projectKey, id),
     onSuccess: () =>
       queryClient.invalidateQueries({
-        queryKey: queryKeys.scheduledChanges(tenantSlug, projectKey),
+        queryKey: queryKeys.scheduledChanges(organizationSlug, projectKey),
       }),
   })
 }

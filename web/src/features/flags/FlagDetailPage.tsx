@@ -41,33 +41,33 @@ import { useEnvironments } from '@/features/environments/hooks/useEnvironments'
  * PATCH (turnFlagOn/turnFlagOff) on the backend.
  */
 export function FlagDetailPage() {
-  const { tenantSlug = '', projectKey = '', flagKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '', flagKey = '' } = useParams()
   const navigate = useNavigate()
-  const flag = useFlag(tenantSlug, projectKey, flagKey)
-  const environments = useEnvironments(tenantSlug, projectKey)
-  const toggle = useToggleFlag(tenantSlug, projectKey, flagKey)
+  const flag = useFlag(organizationSlug, projectKey, flagKey)
+  const environments = useEnvironments(organizationSlug, projectKey)
+  const toggle = useToggleFlag(organizationSlug, projectKey, flagKey)
 
   // Default to the first environment until the user picks another. Derived, so
   // no effect is needed to seed it once the list loads.
   const [picked, setPicked] = useState('')
   const envKey = picked || environments.data?.[0]?.key || ''
-  const config = useFlagConfig(tenantSlug, projectKey, flagKey, envKey)
-  const patch = usePatchFlagConfig(tenantSlug, projectKey, flagKey, envKey)
-  const requestChange = useCreateChange(tenantSlug, projectKey, flagKey, envKey)
-  const scheduledChanges = useScheduledChanges(tenantSlug, projectKey, flagKey, envKey)
-  const scheduleChange = useCreateScheduledChange(tenantSlug, projectKey, flagKey, envKey)
-  const cancelScheduled = useCancelScheduledChange(tenantSlug, projectKey)
+  const config = useFlagConfig(organizationSlug, projectKey, flagKey, envKey)
+  const patch = usePatchFlagConfig(organizationSlug, projectKey, flagKey, envKey)
+  const requestChange = useCreateChange(organizationSlug, projectKey, flagKey, envKey)
+  const scheduledChanges = useScheduledChanges(organizationSlug, projectKey, flagKey, envKey)
+  const scheduleChange = useCreateScheduledChange(organizationSlug, projectKey, flagKey, envKey)
+  const cancelScheduled = useCancelScheduledChange(organizationSlug, projectKey)
 
-  const triggers = useTriggers(tenantSlug, projectKey, flagKey, envKey)
-  const createTrigger = useCreateTrigger(tenantSlug, projectKey, flagKey, envKey)
-  const setTriggerEnabled = useSetTriggerEnabled(tenantSlug, projectKey)
-  const resetTrigger = useResetTrigger(tenantSlug, projectKey)
-  const deleteTrigger = useDeleteTrigger(tenantSlug, projectKey)
-  const deleteFlag = useDeleteFlag(tenantSlug, projectKey)
+  const triggers = useTriggers(organizationSlug, projectKey, flagKey, envKey)
+  const createTrigger = useCreateTrigger(organizationSlug, projectKey, flagKey, envKey)
+  const setTriggerEnabled = useSetTriggerEnabled(organizationSlug, projectKey)
+  const resetTrigger = useResetTrigger(organizationSlug, projectKey)
+  const deleteTrigger = useDeleteTrigger(organizationSlug, projectKey)
+  const deleteFlag = useDeleteFlag(organizationSlug, projectKey)
   // A just-minted webhook URL to reveal once (create/reset return it).
   const [revealedUrl, setRevealedUrl] = useState<string | null>(null)
 
-  const flagsUrl = `/tenants/${tenantSlug}/projects/${projectKey}`
+  const flagsUrl = `/organizations/${organizationSlug}/projects/${projectKey}`
 
   return (
     <section className="space-y-6">

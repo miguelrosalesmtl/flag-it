@@ -101,7 +101,7 @@ export function CreateUserDialog({ onCreate, isCreating, errorMessage }: CreateU
               onCheckedChange={(v) => setSuperuser(v === true)}
             />
             <Label htmlFor="user-superuser" className="font-normal">
-              Superuser (full cross-tenant access)
+              Superuser (full cross-organization access)
             </Label>
           </div>
           <DialogFooter>

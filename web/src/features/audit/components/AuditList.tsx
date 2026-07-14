@@ -6,7 +6,7 @@ export interface AuditListProps {
   entries: AuditEntry[]
 }
 
-/** Presentational. A tenant's change history: who did what, to which resource, when. */
+/** Presentational. A organization's change history: who did what, to which resource, when. */
 export function AuditList({ entries }: AuditListProps) {
   if (entries.length === 0) {
     return (

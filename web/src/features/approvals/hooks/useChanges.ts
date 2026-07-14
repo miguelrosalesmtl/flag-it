@@ -5,16 +5,16 @@ import { queryKeys } from '@/lib/query-keys'
 import type { ChangeStatus, CreateChangeInput } from '@/types/change'
 
 /** A project's change requests, optionally filtered by status. */
-export function useChanges(tenantSlug: string, projectKey: string, status?: ChangeStatus) {
+export function useChanges(organizationSlug: string, projectKey: string, status?: ChangeStatus) {
   return useQuery({
-    queryKey: [...queryKeys.changes(tenantSlug, projectKey), status ?? 'all'],
-    queryFn: () => changesApi.list(tenantSlug, projectKey, status),
+    queryKey: [...queryKeys.changes(organizationSlug, projectKey), status ?? 'all'],
+    queryFn: () => changesApi.list(organizationSlug, projectKey, status),
   })
 }
 
 /** Propose a change to a flag in one environment (held for review). */
 export function useCreateChange(
-  tenantSlug: string,
+  organizationSlug: string,
   projectKey: string,
   flagKey: string,
   envKey: string,
@@ -22,9 +22,9 @@ export function useCreateChange(
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateChangeInput) =>
-      changesApi.create(tenantSlug, projectKey, flagKey, envKey, input),
+      changesApi.create(organizationSlug, projectKey, flagKey, envKey, input),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.changes(tenantSlug, projectKey) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.changes(organizationSlug, projectKey) }),
   })
 }
 
@@ -33,7 +33,7 @@ export function useCreateChange(
  * backend, so we invalidate the change list and every flag-config/env-flag view
  * (the config may have shifted).
  */
-export function useReviewChange(tenantSlug: string, projectKey: string) {
+export function useReviewChange(organizationSlug: string, projectKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
@@ -46,12 +46,12 @@ export function useReviewChange(tenantSlug: string, projectKey: string) {
       comment?: string
     }) =>
       action === 'approve'
-        ? changesApi.approve(tenantSlug, projectKey, id, comment)
-        : changesApi.reject(tenantSlug, projectKey, id, comment),
+        ? changesApi.approve(organizationSlug, projectKey, id, comment)
+        : changesApi.reject(organizationSlug, projectKey, id, comment),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.changes(tenantSlug, projectKey) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.changes(organizationSlug, projectKey) })
       // Approving mutates flag config; refresh flag views broadly.
-      void queryClient.invalidateQueries({ queryKey: ['flags', tenantSlug, projectKey] })
+      void queryClient.invalidateQueries({ queryKey: ['flags', organizationSlug, projectKey] })
     },
   })
 }

@@ -26,11 +26,11 @@ type ingestEventsInput struct {
 // --- Flag stats query (JWT + flag.read) ---
 
 type flagStatsInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Since      string `query:"since" doc:"lookback window, e.g. 1h, 24h (default 24h)"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Since            string `query:"since" doc:"lookback window, e.g. 1h, 24h (default 24h)"`
 }
 
 type flagStatsOutput struct {
@@ -65,15 +65,15 @@ func (s *Server) registerAnalytics() {
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "flag-stats", Method: http.MethodGet,
-		Path:    "/api/v1/tenants/{tenantSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats",
+		Path:    "/api/v1/organizations/{organizationSlug}/projects/{projectKey}/flags/{flagKey}/environments/{envKey}/stats",
 		Summary: "Evaluation counts per variation for a flag in an environment (requires flag.read)",
 		Tags:    []string{"Analytics"}, Security: bearer,
 	}, func(ctx context.Context, in *flagStatsInput) (*flagStatsOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)

@@ -2,23 +2,23 @@ import { useNavigate } from 'react-router'
 
 import { ErrorState } from '@/components/error-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TenantList } from '@/features/tenants/components/TenantList'
-import { useDeleteTenant, useTenants } from '@/features/tenants/hooks/useTenants'
+import { OrganizationList } from '@/features/organizations/components/OrganizationList'
+import { useDeleteOrganization, useOrganizations } from '@/features/organizations/hooks/useOrganizations'
 
 /**
- * Container. The first authenticated screen: lists the tenants the signed-in
+ * Container. The first authenticated screen: lists the organizations the signed-in
  * user can see. Branches on load/error so the list component only ever receives
  * resolved data.
  */
-export function TenantsPage() {
+export function OrganizationsPage() {
   const navigate = useNavigate()
-  const { data: tenants, isPending, isError, error, refetch } = useTenants()
-  const deleteTenant = useDeleteTenant()
+  const { data: organizations, isPending, isError, error, refetch } = useOrganizations()
+  const deleteOrganization = useDeleteOrganization()
 
   return (
     <section className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Tenants</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Organizations</h1>
         <p className="text-muted-foreground text-sm">Organizations you have access to.</p>
       </header>
 
@@ -30,11 +30,11 @@ export function TenantsPage() {
       ) : isError ? (
         <ErrorState message={error.message} onRetry={() => void refetch()} />
       ) : (
-        <TenantList
-          tenants={tenants}
-          onOpen={(slug) => void navigate(`/tenants/${slug}`)}
-          onDelete={(slug) => deleteTenant.mutate(slug)}
-          busy={deleteTenant.isPending}
+        <OrganizationList
+          organizations={organizations}
+          onOpen={(slug) => void navigate(`/organizations/${slug}`)}
+          onDelete={(slug) => deleteOrganization.mutate(slug)}
+          busy={deleteOrganization.isPending}
         />
       )}
     </section>

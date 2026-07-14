@@ -10,7 +10,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-const auditColumns = `id, tenant_id, project_id, actor_id, actor_email, action, resource_type, resource_key, comment, data, created_at`
+const auditColumns = `id, organization_id, project_id, actor_id, actor_email, action, resource_type, resource_key, comment, data, created_at`
 
 // CreateAuditEntry appends an audit record.
 func (s *Store) CreateAuditEntry(ctx context.Context, e models.AuditEntry) error {
@@ -19,10 +19,10 @@ func (s *Store) CreateAuditEntry(ctx context.Context, e models.AuditEntry) error
 		data = []byte("{}")
 	}
 	const q = `
-		INSERT INTO audit_log (tenant_id, project_id, actor_id, actor_email, action, resource_type, resource_key, comment, data)
+		INSERT INTO audit_log (organization_id, project_id, actor_id, actor_email, action, resource_type, resource_key, comment, data)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := s.pool.Exec(ctx, q,
-		nullIfEmpty(e.TenantID), nullIfEmpty(e.ProjectID), nullIfEmpty(e.ActorID),
+		nullIfEmpty(e.OrganizationID), nullIfEmpty(e.ProjectID), nullIfEmpty(e.ActorID),
 		e.ActorEmail, e.Action, e.ResourceType, e.ResourceKey, e.Comment, data)
 	if err != nil {
 		return fmt.Errorf("store: create audit entry: %w", err)
@@ -30,7 +30,7 @@ func (s *Store) CreateAuditEntry(ctx context.Context, e models.AuditEntry) error
 	return nil
 }
 
-// AuditFilter narrows an audit query within a tenant.
+// AuditFilter narrows an audit query within a organization.
 type AuditFilter struct {
 	ProjectID    string
 	ResourceType string
@@ -39,11 +39,11 @@ type AuditFilter struct {
 	Limit        int
 }
 
-// ListAuditEntries returns a tenant's audit entries, newest first (uuidv7 ids
+// ListAuditEntries returns a organization's audit entries, newest first (uuidv7 ids
 // sort by time), filtered and paginated.
-func (s *Store) ListAuditEntries(ctx context.Context, tenantID string, f AuditFilter) ([]models.AuditEntry, error) {
-	conds := []string{"tenant_id = $1"}
-	args := []any{tenantID}
+func (s *Store) ListAuditEntries(ctx context.Context, organizationID string, f AuditFilter) ([]models.AuditEntry, error) {
+	conds := []string{"organization_id = $1"}
+	args := []any{organizationID}
 	add := func(expr string, val any) {
 		args = append(args, val)
 		conds = append(conds, fmt.Sprintf(expr, len(args)))
@@ -95,7 +95,7 @@ func scanAuditEntry(row pgx.Row) (models.AuditEntry, error) {
 		&e.ResourceType, &e.ResourceKey, &e.Comment, &data, &e.CreatedAt); err != nil {
 		return models.AuditEntry{}, err
 	}
-	e.TenantID = deref(tid)
+	e.OrganizationID = deref(tid)
 	e.ProjectID = deref(pid)
 	e.ActorID = deref(aid)
 	e.Data = data

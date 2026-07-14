@@ -4,17 +4,17 @@ import { segmentsApi } from '@/api/endpoints/segments'
 import { queryKeys } from '@/lib/query-keys'
 import type { CreateSegmentInput, SaveSegmentInput } from '@/types/segment'
 
-export function useSegments(tenantSlug: string, projectKey: string, search = '') {
+export function useSegments(organizationSlug: string, projectKey: string, search = '') {
   return useQuery({
-    queryKey: [...queryKeys.segments(tenantSlug, projectKey), search],
-    queryFn: () => segmentsApi.list(tenantSlug, projectKey, search),
+    queryKey: [...queryKeys.segments(organizationSlug, projectKey), search],
+    queryFn: () => segmentsApi.list(organizationSlug, projectKey, search),
   })
 }
 
-export function useSegment(tenantSlug: string, projectKey: string, segKey: string) {
+export function useSegment(organizationSlug: string, projectKey: string, segKey: string) {
   return useQuery({
-    queryKey: queryKeys.segment(tenantSlug, projectKey, segKey),
-    queryFn: () => segmentsApi.get(tenantSlug, projectKey, segKey),
+    queryKey: queryKeys.segment(organizationSlug, projectKey, segKey),
+    queryFn: () => segmentsApi.get(organizationSlug, projectKey, segKey),
   })
 }
 
@@ -26,36 +26,36 @@ const emptyDefinition = {
   rules: [],
 }
 
-export function useCreateSegment(tenantSlug: string, projectKey: string) {
+export function useCreateSegment(organizationSlug: string, projectKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateSegmentInput) =>
-      segmentsApi.save(tenantSlug, projectKey, input.key, {
+      segmentsApi.save(organizationSlug, projectKey, input.key, {
         name: input.name,
         description: input.description ?? '',
         ...emptyDefinition,
       }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.segments(tenantSlug, projectKey) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.segments(organizationSlug, projectKey) }),
   })
 }
 
-export function useSaveSegment(tenantSlug: string, projectKey: string, segKey: string) {
+export function useSaveSegment(organizationSlug: string, projectKey: string, segKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: SaveSegmentInput) => segmentsApi.save(tenantSlug, projectKey, segKey, body),
+    mutationFn: (body: SaveSegmentInput) => segmentsApi.save(organizationSlug, projectKey, segKey, body),
     onSuccess: (segment) => {
-      queryClient.setQueryData(queryKeys.segment(tenantSlug, projectKey, segKey), segment)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.segments(tenantSlug, projectKey) })
+      queryClient.setQueryData(queryKeys.segment(organizationSlug, projectKey, segKey), segment)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.segments(organizationSlug, projectKey) })
     },
   })
 }
 
-export function useDeleteSegment(tenantSlug: string, projectKey: string) {
+export function useDeleteSegment(organizationSlug: string, projectKey: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (segKey: string) => segmentsApi.remove(tenantSlug, projectKey, segKey),
+    mutationFn: (segKey: string) => segmentsApi.remove(organizationSlug, projectKey, segKey),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.segments(tenantSlug, projectKey) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.segments(organizationSlug, projectKey) }),
   })
 }

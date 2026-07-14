@@ -14,9 +14,9 @@ type Filter = 'all' | 'stale' | 'temporary'
  * clean up. Filter to stale (inactive) or temporary; open a flag to act on it.
  */
 export function LifecyclePage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
   const navigate = useNavigate()
-  const lifecycle = useFlagLifecycle(tenantSlug, projectKey)
+  const lifecycle = useFlagLifecycle(organizationSlug, projectKey)
   const [filter, setFilter] = useState<Filter>('all')
 
   const flags = (lifecycle.data ?? []).filter((f) => {
@@ -54,7 +54,7 @@ export function LifecyclePage() {
         <FlagLifecycleList
           flags={flags}
           onOpen={(key) =>
-            void navigate(`/tenants/${tenantSlug}/projects/${projectKey}/flags/${key}`)
+            void navigate(`/organizations/${organizationSlug}/projects/${projectKey}/flags/${key}`)
           }
         />
       )}

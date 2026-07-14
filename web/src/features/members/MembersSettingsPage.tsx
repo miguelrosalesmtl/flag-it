@@ -10,17 +10,17 @@ import { MemberList } from '@/features/members/components/MemberList'
 import { useAddMember, useGrantProjectRole, useMembers } from '@/features/members/hooks/useMembers'
 import { useRoles } from '@/features/roles/hooks/useRoles'
 
-/** Container. Lists a tenant's members and adds new ones (with an optional role). */
+/** Container. Lists a organization's members and adds new ones (with an optional role). */
 export function MembersSettingsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
-  const members = useMembers(tenantSlug)
-  const roles = useRoles(tenantSlug)
-  const addMember = useAddMember(tenantSlug)
-  const grantRole = useGrantProjectRole(tenantSlug, projectKey)
+  const { organizationSlug = '', projectKey = '' } = useParams()
+  const members = useMembers(organizationSlug)
+  const roles = useRoles(organizationSlug)
+  const addMember = useAddMember(organizationSlug)
+  const grantRole = useGrantProjectRole(organizationSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const tenantRoles = (roles.data ?? []).filter((r) => r.scope === 'tenant')
+  const organizationRoles = (roles.data ?? []).filter((r) => r.scope === 'organization')
   const projectRoles = (roles.data ?? []).filter((r) => r.scope === 'project')
 
   return (
@@ -28,7 +28,7 @@ export function MembersSettingsPage() {
       <header className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
-          <p className="text-muted-foreground text-sm">Users with access to this tenant.</p>
+          <p className="text-muted-foreground text-sm">Users with access to this organization.</p>
         </div>
         <div className="flex gap-2">
           <GrantProjectRoleDialog
@@ -51,7 +51,7 @@ export function MembersSettingsPage() {
       <AddMemberDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        roles={tenantRoles}
+        roles={organizationRoles}
         onAdd={(input) => addMember.mutate(input, { onSuccess: () => setDialogOpen(false) })}
         isAdding={addMember.isPending}
         errorMessage={

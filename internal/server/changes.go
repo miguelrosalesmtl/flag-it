@@ -12,27 +12,27 @@ import (
 )
 
 type createChangeInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	FlagKey    string `path:"flagKey"`
-	EnvKey     string `path:"envKey"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	FlagKey          string `path:"flagKey"`
+	EnvKey           string `path:"envKey"`
+	Body             struct {
 		Comment      string              `json:"comment,omitempty" doc:"why this change is proposed"`
 		Instructions []flags.Instruction `json:"instructions"`
 	}
 }
 
 type listChangesInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	Status     string `query:"status" doc:"filter by status: pending, approved, or rejected"`
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	Status           string `query:"status" doc:"filter by status: pending, approved, or rejected"`
 }
 
 type reviewChangeInput struct {
-	TenantSlug string `path:"tenantSlug"`
-	ProjectKey string `path:"projectKey"`
-	ChangeID   string `path:"changeId"`
-	Body       struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	ChangeID         string `path:"changeId"`
+	Body             struct {
 		Comment string `json:"comment,omitempty" doc:"reviewer note"`
 	}
 }
@@ -48,7 +48,7 @@ type listChangesOutput struct {
 }
 
 func (s *Server) registerChanges() {
-	base := "/api/v1/tenants/{tenantSlug}/projects/{projectKey}"
+	base := "/api/v1/organizations/{organizationSlug}/projects/{projectKey}"
 
 	huma.Register(s.api, huma.Operation{
 		OperationID: "create-change-request", Method: http.MethodPost,
@@ -58,13 +58,13 @@ func (s *Server) registerChanges() {
 			"The change is applied only when a reviewer approves it.",
 		Tags: []string{"Approvals"}, Security: bearer,
 	}, func(ctx context.Context, in *createChangeInput) (*changeOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
 		// Proposing needs only read: the point of approvals is that the proposer
 		// may not have write. Applying (approve) requires flag.write below.
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		flag, err := s.flags.GetFlag(ctx, project.ID, in.FlagKey)
@@ -92,7 +92,7 @@ func (s *Server) registerChanges() {
 		if err != nil {
 			return nil, changeError(err)
 		}
-		s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+		s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 			Action: "change.requested", ResourceType: "flag", ResourceKey: flag.Key,
 			Comment: in.Body.Comment,
 			Data:    jsonData(map[string]any{"environment": env.Key, "change_request": cr.ID})})
@@ -105,11 +105,11 @@ func (s *Server) registerChanges() {
 		Summary: "List a project's change requests (requires flag.read)",
 		Tags:    []string{"Approvals"}, Security: bearer,
 	}, func(ctx context.Context, in *listChangesInput) (*listChangesOutput, error) {
-		_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 			return nil, err
 		}
 		if in.Status != "" && in.Status != models.ChangeStatusPending &&
@@ -147,11 +147,11 @@ func (s *Server) registerChanges() {
 // reviewChange is the shared approve/reject path: it authorizes, verifies the
 // request belongs to the project, applies the review, and audits.
 func (s *Server) reviewChange(ctx context.Context, in *reviewChangeInput, approve bool) (*changeOutput, error) {
-	_, project, err := s.resolveScope(ctx, in.TenantSlug, in.ProjectKey)
+	_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{TenantID: project.TenantID, ProjectID: project.ID}); err != nil {
+	if err := s.authorize(ctx, models.PermFlagWrite, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
 		return nil, err
 	}
 	existing, err := s.governance.Get(ctx, in.ChangeID)
@@ -177,7 +177,7 @@ func (s *Server) reviewChange(ctx context.Context, in *reviewChangeInput, approv
 	if err != nil {
 		return nil, changeError(err)
 	}
-	s.audit(ctx, models.AuditEntry{TenantID: project.TenantID, ProjectID: project.ID,
+	s.audit(ctx, models.AuditEntry{OrganizationID: project.OrganizationID, ProjectID: project.ID,
 		Action: action, ResourceType: "flag", ResourceKey: cr.FlagKey,
 		Comment: in.Body.Comment,
 		Data:    jsonData(map[string]any{"environment": cr.EnvironmentKey, "change_request": cr.ID})})

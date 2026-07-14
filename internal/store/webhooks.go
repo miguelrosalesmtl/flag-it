@@ -10,27 +10,27 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-const webhookColumns = `id, tenant_id, url, secret, event_types, description, enabled,
+const webhookColumns = `id, organization_id, url, secret, event_types, description, enabled,
 	created_by, created_by_email, created_at`
 
 // CreateWebhook inserts a webhook and returns it.
 func (s *Store) CreateWebhook(ctx context.Context, w models.Webhook) (models.Webhook, error) {
 	const q = `
-		INSERT INTO webhooks (tenant_id, url, secret, event_types, description, created_by, created_by_email)
+		INSERT INTO webhooks (organization_id, url, secret, event_types, description, created_by, created_by_email)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING ` + webhookColumns
-	row := s.pool.QueryRow(ctx, q, w.TenantID, w.URL, w.Secret, w.EventTypes, w.Description, w.CreatedBy, w.CreatedByEmail)
+	row := s.pool.QueryRow(ctx, q, w.OrganizationID, w.URL, w.Secret, w.EventTypes, w.Description, w.CreatedBy, w.CreatedByEmail)
 	return scanWebhook(row)
 }
 
-// ListWebhooksByTenant lists a tenant's webhooks, newest first.
-func (s *Store) ListWebhooksByTenant(ctx context.Context, tenantID string) ([]models.Webhook, error) {
-	return s.queryWebhooks(ctx, `SELECT `+webhookColumns+` FROM webhooks WHERE tenant_id = $1 ORDER BY created_at DESC`, tenantID)
+// ListWebhooksByOrganization lists a organization's webhooks, newest first.
+func (s *Store) ListWebhooksByOrganization(ctx context.Context, organizationID string) ([]models.Webhook, error) {
+	return s.queryWebhooks(ctx, `SELECT `+webhookColumns+` FROM webhooks WHERE organization_id = $1 ORDER BY created_at DESC`, organizationID)
 }
 
-// ListEnabledWebhooksByTenant returns a tenant's enabled webhooks (delivery fan-out).
-func (s *Store) ListEnabledWebhooksByTenant(ctx context.Context, tenantID string) ([]models.Webhook, error) {
-	return s.queryWebhooks(ctx, `SELECT `+webhookColumns+` FROM webhooks WHERE tenant_id = $1 AND enabled = true`, tenantID)
+// ListEnabledWebhooksByOrganization returns a organization's enabled webhooks (delivery fan-out).
+func (s *Store) ListEnabledWebhooksByOrganization(ctx context.Context, organizationID string) ([]models.Webhook, error) {
+	return s.queryWebhooks(ctx, `SELECT `+webhookColumns+` FROM webhooks WHERE organization_id = $1 AND enabled = true`, organizationID)
 }
 
 func (s *Store) queryWebhooks(ctx context.Context, q string, args ...any) ([]models.Webhook, error) {
@@ -165,7 +165,7 @@ func (s *Store) UpdateWebhookDeliveryResult(ctx context.Context, d models.Webhoo
 
 func scanWebhook(row pgx.Row) (models.Webhook, error) {
 	var w models.Webhook
-	err := row.Scan(&w.ID, &w.TenantID, &w.URL, &w.Secret, &w.EventTypes, &w.Description, &w.Enabled,
+	err := row.Scan(&w.ID, &w.OrganizationID, &w.URL, &w.Secret, &w.EventTypes, &w.Description, &w.Enabled,
 		&w.CreatedBy, &w.CreatedByEmail, &w.CreatedAt)
 	if err != nil {
 		return models.Webhook{}, err

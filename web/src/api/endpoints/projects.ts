@@ -2,18 +2,18 @@ import { api } from '@/api/client'
 import type { CreateProjectInput, Project } from '@/types/project'
 
 export const projectsApi = {
-  list: (tenantSlug: string) =>
+  list: (organizationSlug: string) =>
     api
-      .get<{ projects: Project[] | null }>(`/tenants/${tenantSlug}/projects`)
+      .get<{ projects: Project[] | null }>(`/organizations/${organizationSlug}/projects`)
       .then((r) => r.projects ?? []),
-  get: (tenantSlug: string, projectKey: string) =>
-    api.get<Project>(`/tenants/${tenantSlug}/projects/${projectKey}`),
-  create: (tenantSlug: string, input: CreateProjectInput) =>
+  get: (organizationSlug: string, projectKey: string) =>
+    api.get<Project>(`/organizations/${organizationSlug}/projects/${projectKey}`),
+  create: (organizationSlug: string, input: CreateProjectInput) =>
     api
-      .post<{ project: Project }>(`/tenants/${tenantSlug}/projects`, input)
+      .post<{ project: Project }>(`/organizations/${organizationSlug}/projects`, input)
       .then((r) => r.project),
-  update: (tenantSlug: string, projectKey: string, name: string) =>
-    api.patch<Project>(`/tenants/${tenantSlug}/projects/${projectKey}`, { name }),
-  remove: (tenantSlug: string, projectKey: string) =>
-    api.delete<void>(`/tenants/${tenantSlug}/projects/${projectKey}`),
+  update: (organizationSlug: string, projectKey: string, name: string) =>
+    api.patch<Project>(`/organizations/${organizationSlug}/projects/${projectKey}`, { name }),
+  remove: (organizationSlug: string, projectKey: string) =>
+    api.delete<void>(`/organizations/${organizationSlug}/projects/${projectKey}`),
 }

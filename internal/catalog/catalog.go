@@ -1,4 +1,4 @@
-// Package catalog is the service for the org-structure hierarchy: tenants,
+// Package catalog is the service for the org-structure hierarchy: organizations,
 // projects, environments, and SDK keys. Handlers call this; only this package
 // (through the store) touches their persistence.
 package catalog
@@ -17,7 +17,7 @@ import (
 // ErrInvalidSDKKeyKind is returned when an SDK key kind is neither server nor client.
 var ErrInvalidSDKKeyKind = errors.New("catalog: sdk key kind must be 'server' or 'client'")
 
-// Service owns tenant/project/environment/sdk-key operations, including the
+// Service owns organization/project/environment/sdk-key operations, including the
 // SDK-key lookup cache used on the evaluation hot path.
 type Service struct {
 	store    *store.Store
@@ -35,36 +35,36 @@ func (s *Service) Ping(ctx context.Context) error {
 	return s.store.Ping(ctx)
 }
 
-// --- Tenants ---
+// --- Organizations ---
 
-func (s *Service) CreateTenant(ctx context.Context, slug, name string) (models.Tenant, error) {
-	return s.store.CreateTenant(ctx, slug, name)
+func (s *Service) CreateOrganization(ctx context.Context, slug, name string) (models.Organization, error) {
+	return s.store.CreateOrganization(ctx, slug, name)
 }
 
-func (s *Service) ListTenants(ctx context.Context) ([]models.Tenant, error) {
-	return s.store.ListTenants(ctx)
+func (s *Service) ListOrganizations(ctx context.Context) ([]models.Organization, error) {
+	return s.store.ListOrganizations(ctx)
 }
 
-func (s *Service) TenantBySlug(ctx context.Context, slug string) (models.Tenant, error) {
-	return s.store.GetTenantBySlug(ctx, slug)
+func (s *Service) OrganizationBySlug(ctx context.Context, slug string) (models.Organization, error) {
+	return s.store.GetOrganizationBySlug(ctx, slug)
 }
 
-func (s *Service) UpdateTenant(ctx context.Context, id, name string) (models.Tenant, error) {
-	return s.store.UpdateTenant(ctx, id, name)
+func (s *Service) UpdateOrganization(ctx context.Context, id, name string) (models.Organization, error) {
+	return s.store.UpdateOrganization(ctx, id, name)
 }
 
-func (s *Service) DeleteTenant(ctx context.Context, id string) error {
-	return s.store.DeleteTenant(ctx, id)
+func (s *Service) DeleteOrganization(ctx context.Context, id string) error {
+	return s.store.DeleteOrganization(ctx, id)
 }
 
 // --- Projects ---
 
-func (s *Service) CreateProject(ctx context.Context, tenantID, key, name string) (models.Project, []models.Environment, error) {
-	return s.store.CreateProject(ctx, tenantID, key, name)
+func (s *Service) CreateProject(ctx context.Context, organizationID, key, name string) (models.Project, []models.Environment, error) {
+	return s.store.CreateProject(ctx, organizationID, key, name)
 }
 
-func (s *Service) ProjectByKey(ctx context.Context, tenantID, key string) (models.Project, error) {
-	return s.store.GetProjectByKey(ctx, tenantID, key)
+func (s *Service) ProjectByKey(ctx context.Context, organizationID, key string) (models.Project, error) {
+	return s.store.GetProjectByKey(ctx, organizationID, key)
 }
 
 // ProjectByID looks a project up by id.
@@ -80,16 +80,16 @@ func (s *Service) DeleteProject(ctx context.Context, id string) error {
 	return s.store.DeleteProject(ctx, id)
 }
 
-// ListReadableProjects lists a tenant's projects and filters them to those the
-// subject may read. tenantWide is true when a tenant-level grant (or superuser)
+// ListReadableProjects lists a organization's projects and filters them to those the
+// subject may read. organizationWide is true when a organization-level grant (or superuser)
 // makes an empty result legitimate rather than a permission failure.
-func (s *Service) ListReadableProjects(ctx context.Context, subject models.Subject, tenantID string) (visible []models.Project, tenantWide bool, err error) {
-	projects, err := s.store.ListProjectsByTenant(ctx, tenantID)
+func (s *Service) ListReadableProjects(ctx context.Context, subject models.Subject, organizationID string) (visible []models.Project, organizationWide bool, err error) {
+	projects, err := s.store.ListProjectsByOrganization(ctx, organizationID)
 	if err != nil {
 		return nil, false, err
 	}
-	visible, tenantWide = subject.ReadableProjects(tenantID, projects)
-	return visible, tenantWide, nil
+	visible, organizationWide = subject.ReadableProjects(organizationID, projects)
+	return visible, organizationWide, nil
 }
 
 // --- Environments ---

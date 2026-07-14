@@ -11,7 +11,7 @@ import { useCreateEnvironment, useEnvironments } from '@/features/environments/h
 
 /** Container. Lists a project's environments (server-side search) and creates new ones. */
 export function EnvironmentsPage() {
-  const { tenantSlug = '', projectKey = '' } = useParams()
+  const { organizationSlug = '', projectKey = '' } = useParams()
 
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
@@ -21,11 +21,11 @@ export function EnvironmentsPage() {
   }, [query])
 
   const { data: environments, isPending, isError, error, refetch } = useEnvironments(
-    tenantSlug,
+    organizationSlug,
     projectKey,
     search,
   )
-  const createEnvironment = useCreateEnvironment(tenantSlug, projectKey)
+  const createEnvironment = useCreateEnvironment(organizationSlug, projectKey)
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (

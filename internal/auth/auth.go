@@ -98,26 +98,26 @@ func (s *Service) NeedsSetup(ctx context.Context) (bool, error) {
 	return n == 0, nil
 }
 
-// BootstrapInput is the payload for first-run setup. Tenant fields are optional
+// BootstrapInput is the payload for first-run setup. Organization fields are optional
 // but must be provided together.
 type BootstrapInput struct {
-	Email      string
-	Password   string
-	FullName   string
-	TenantSlug string
-	TenantName string
+	Email            string
+	Password         string
+	FullName         string
+	OrganizationSlug string
+	OrganizationName string
 }
 
 // BootstrapResult is the outcome of first-run setup: the created superuser, the
-// optional first tenant, and a token so the caller lands signed in.
+// optional first organization, and a token so the caller lands signed in.
 type BootstrapResult struct {
-	User   models.User
-	Tenant *models.Tenant
-	Token  string
+	User         models.User
+	Organization *models.Organization
+	Token        string
 }
 
 // Bootstrap runs first-run setup: it creates the first superuser (and optional
-// first tenant) atomically, then issues a token. It returns ErrSetupComplete if
+// first organization) atomically, then issues a token. It returns ErrSetupComplete if
 // a superuser already exists, so the flow can never be replayed.
 func (s *Service) Bootstrap(ctx context.Context, in BootstrapInput) (BootstrapResult, error) {
 	n, err := s.store.CountSuperusers(ctx)
@@ -131,7 +131,7 @@ func (s *Service) Bootstrap(ctx context.Context, in BootstrapInput) (BootstrapRe
 	if err != nil {
 		return BootstrapResult{}, err
 	}
-	user, tenant, err := s.store.Bootstrap(ctx, in.Email, hash, in.FullName, in.TenantSlug, in.TenantName)
+	user, organization, err := s.store.Bootstrap(ctx, in.Email, hash, in.FullName, in.OrganizationSlug, in.OrganizationName)
 	if err != nil {
 		return BootstrapResult{}, err
 	}
@@ -139,7 +139,7 @@ func (s *Service) Bootstrap(ctx context.Context, in BootstrapInput) (BootstrapRe
 	if err != nil {
 		return BootstrapResult{}, err
 	}
-	return BootstrapResult{User: user, Tenant: tenant, Token: token}, nil
+	return BootstrapResult{User: user, Organization: organization, Token: token}, nil
 }
 
 // Login verifies credentials and, on success, returns a signed token and the user.

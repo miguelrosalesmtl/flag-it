@@ -9,7 +9,7 @@ import (
 	"github.com/miguelrosalesmtl/flag-it/internal/models"
 )
 
-const projectColumns = `id, tenant_id, key, name, created_at, updated_at`
+const projectColumns = `id, organization_id, key, name, created_at, updated_at`
 
 // defaultEnvironments are seeded for every new project, matching LaunchDarkly's
 // behavior of provisioning starter environments.
@@ -20,7 +20,7 @@ var defaultEnvironments = []struct{ Key, Name string }{
 
 // CreateProject inserts a project and its default environments in one
 // transaction, returning both.
-func (s *Store) CreateProject(ctx context.Context, tenantID, key, name string) (models.Project, []models.Environment, error) {
+func (s *Store) CreateProject(ctx context.Context, organizationID, key, name string) (models.Project, []models.Environment, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return models.Project{}, nil, fmt.Errorf("store: begin: %w", err)
@@ -28,10 +28,10 @@ func (s *Store) CreateProject(ctx context.Context, tenantID, key, name string) (
 	defer tx.Rollback(ctx) //nolint:errcheck // no-op after commit
 
 	const insertProject = `
-		INSERT INTO projects (tenant_id, key, name)
+		INSERT INTO projects (organization_id, key, name)
 		VALUES ($1, $2, $3)
 		RETURNING ` + projectColumns
-	project, err := scanProject(tx.QueryRow(ctx, insertProject, tenantID, key, name))
+	project, err := scanProject(tx.QueryRow(ctx, insertProject, organizationID, key, name))
 	if err != nil {
 		return models.Project{}, nil, fmt.Errorf("store: insert project: %w", err)
 	}
@@ -68,9 +68,9 @@ func (s *Store) GetProjectByID(ctx context.Context, id string) (models.Project, 
 	return p, nil
 }
 
-// GetProjectByKey looks a project up by tenant + key.
-func (s *Store) GetProjectByKey(ctx context.Context, tenantID, key string) (models.Project, error) {
-	row := s.pool.QueryRow(ctx, `SELECT `+projectColumns+` FROM projects WHERE tenant_id = $1 AND key = $2`, tenantID, key)
+// GetProjectByKey looks a project up by organization + key.
+func (s *Store) GetProjectByKey(ctx context.Context, organizationID, key string) (models.Project, error) {
+	row := s.pool.QueryRow(ctx, `SELECT `+projectColumns+` FROM projects WHERE organization_id = $1 AND key = $2`, organizationID, key)
 	p, err := scanProject(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return models.Project{}, ErrNotFound
@@ -81,10 +81,10 @@ func (s *Store) GetProjectByKey(ctx context.Context, tenantID, key string) (mode
 	return p, nil
 }
 
-// ListProjectsByTenant returns a tenant's projects ordered by key.
-func (s *Store) ListProjectsByTenant(ctx context.Context, tenantID string) ([]models.Project, error) {
+// ListProjectsByOrganization returns a organization's projects ordered by key.
+func (s *Store) ListProjectsByOrganization(ctx context.Context, organizationID string) ([]models.Project, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT `+projectColumns+` FROM projects WHERE tenant_id = $1 ORDER BY key`, tenantID)
+		`SELECT `+projectColumns+` FROM projects WHERE organization_id = $1 ORDER BY key`, organizationID)
 	if err != nil {
 		return nil, fmt.Errorf("store: list projects: %w", err)
 	}
@@ -128,7 +128,7 @@ func (s *Store) DeleteProject(ctx context.Context, id string) error {
 
 func scanProject(row pgx.Row) (models.Project, error) {
 	var p models.Project
-	if err := row.Scan(&p.ID, &p.TenantID, &p.Key, &p.Name, &p.CreatedAt, &p.UpdatedAt); err != nil {
+	if err := row.Scan(&p.ID, &p.OrganizationID, &p.Key, &p.Name, &p.CreatedAt, &p.UpdatedAt); err != nil {
 		return models.Project{}, err
 	}
 	return p, nil

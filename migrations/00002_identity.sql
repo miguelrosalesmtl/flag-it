@@ -1,6 +1,6 @@
 -- +goose Up
 
--- Global user identities. A user may belong to many tenants via memberships.
+-- Global user identities. A user may belong to many organizations via memberships.
 CREATE TABLE users (
     id            uuid PRIMARY KEY DEFAULT uuidv7(),
     email         citext NOT NULL UNIQUE,
@@ -12,8 +12,8 @@ CREATE TABLE users (
     updated_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- Tenants are the isolated top-level accounts (LaunchDarkly "accounts").
-CREATE TABLE tenants (
+-- Organizations are the isolated top-level accounts (LaunchDarkly "accounts").
+CREATE TABLE organizations (
     id         uuid PRIMARY KEY DEFAULT uuidv7(),
     slug       text NOT NULL UNIQUE,
     name       text NOT NULL,
@@ -21,22 +21,22 @@ CREATE TABLE tenants (
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- A user's link to a tenant, carrying their tenant-wide base role.
+-- A user's link to a organization, carrying their organization-wide base role.
 CREATE TABLE memberships (
     id         uuid PRIMARY KEY DEFAULT uuidv7(),
     user_id    uuid NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
-    tenant_id  uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    role       text NOT NULL CHECK (role IN ('tenant_admin', 'member')),
+    organization_id  uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    role       text NOT NULL CHECK (role IN ('organization_admin', 'member')),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (user_id, tenant_id)
+    UNIQUE (user_id, organization_id)
 );
 
--- The unique index leads with user_id; index tenant_id for "list members of a
--- tenant" lookups.
-CREATE INDEX memberships_tenant_id_idx ON memberships (tenant_id);
+-- The unique index leads with user_id; index organization_id for "list members of a
+-- organization" lookups.
+CREATE INDEX memberships_organization_id_idx ON memberships (organization_id);
 
 -- +goose Down
 DROP TABLE memberships;
-DROP TABLE tenants;
+DROP TABLE organizations;
 DROP TABLE users;
