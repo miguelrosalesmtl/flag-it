@@ -8,7 +8,9 @@ library only; no dependencies.
 from .client import (
     Client,
     Evaluation,
+    EvaluationDetail,
     FlagItError,
+    FlagsState,
     Stream,
     context,
     multi_context,
@@ -19,6 +21,8 @@ __all__ = [
     "Client",
     "CachedClient",
     "Evaluation",
+    "EvaluationDetail",
+    "FlagsState",
     "FlagItError",
     "Stream",
     "context",

@@ -31,18 +31,20 @@ client = flagit.Client(
 
 user = flagit.context("user", "u-123", {"plan": "pro"})
 
-# Typed reads never raise — they return the fallback on failure / type mismatch:
-if client.bool_variation("dark-mode", user, False):
+# Canonical reads (like LaunchDarkly) — never raise, return the default on error:
+if client.variation("dark-mode", user, False):
     ...
+detail = client.variation_detail("pricing-tier", user, "free")
+print(detail.value, detail.variation_index, detail.reason)
+
+# Typed conveniences over variation() (return the fallback on type mismatch):
+dark = client.bool_variation("dark-mode", user, False)
 tier = client.string_variation("pricing-tier", user, "free")
 limit = client.number_variation("rate-limit", user, 100)
 
-# Full evaluation (raises on a network/HTTP error):
-ev = client.evaluate("dark-mode", user)
-print(ev.value, ev.variation, ev.reason)
-
 # Everything at once (one round-trip — good for bootstrapping):
-flags = client.all_flags(user)
+state = client.all_flags_state(user)
+values = state.to_values_dict()  # {flag_key: value}
 
 # Multi-kind context (e.g. bucket by organization):
 ctx = flagit.multi_context(
@@ -68,12 +70,13 @@ client = flagit.CachedClient(
     context=flagit.context("user", "u-123", {"plan": "pro"}),
 )
 client.wait_for_initialization(timeout=5)
+client.is_initialized()  # True once the first snapshot arrives
 
 # Synchronous — no network:
-if client.bool_variation("dark-mode", False):
+if client.variation("dark-mode", False):
     ...
-tier = client.string_variation("pricing-tier", "free")
-all_flags = client.all_flags()
+tier = client.string_variation("pricing-tier", "free")  # typed convenience
+values = client.all_flags_state().to_values_dict()
 
 # React to live changes pushed over the stream:
 unsubscribe = client.on_change(lambda: rerender())
