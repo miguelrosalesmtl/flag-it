@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flag-it"
+version = "0.1.0"
+description = "Thin Python SDK for the flag-it feature-flag service (server-side evaluation)."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["feature-flags", "flag-it", "sdk"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/miguelrosalesmtl/flag-it"
+
+[tool.setuptools]
+packages = ["flagit"]
