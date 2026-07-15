@@ -23,8 +23,8 @@ Phase 7 tail left is code-reference scanning (needs an external CLI). **Phase 8*
 has begun: **outbound webhooks** (signed event delivery — migration 00018) ship.
 Not started: the rest of **Phase 8** (pre-built integrations, SSO/SCIM, teams,
 data export, CLI).
-Deferred: A/B experimentation (P6), JS SDK (P4), private attributes (P1), and the
-scaling/hardening list.
+Deferred: A/B experimentation (P6), private attributes (P1), and the
+scaling/hardening list. (JS SDK — and the full JS/Go/Python SDK suite — now done, P4.)
 
 ---
 
@@ -232,7 +232,18 @@ Ordered by value. Each phase should ship with migrations, tests, and a live chec
 - [x] Thin **Go SDK** (`pkg/ffclient`): Evaluate / AllFlags / Bool·StringVariation /
       Watch (SSE). No engine, no ruleset. Live-verified.
 - [x] Bootstrap — `AllFlags` is the primitive (call server-side, inline the map into a page)
-- [ ] JS SDK (Go SDK done; JS still to write)
+- [x] **Dedicated multi-language SDK suite** (`sdk/{javascript,go,python}/`, one folder per
+      language, each self-contained with its own README + runnable `examples/`). Every SDK
+      ships two clients: a **per-call** client (one request per read) and a **cached** client
+      (LaunchDarkly-style: opens one SSE stream, keeps an in-memory snapshot, serves
+      synchronous local reads with zero network per read, and reports usage as batched
+      summary events via `/events`). Context + multi-context helpers, typed variations,
+      auto-reconnect. Zero third-party deps in each (JS: `fetch`; Go: `net/http`; Python:
+      `urllib`+`threading`). Python API aligned to LaunchDarkly conventions
+      (`variation`/`variation_detail`, `is_initialized`, `all_flags_state`). All three
+      live-verified end-to-end: per-call reads, cached local reads, real-time streaming
+      updates, and per-account targeting via multi-kind context. (Supersedes the earlier
+      `pkg/ffclient` proof-of-concept.)
 
 Also: the whole HTTP layer is now **huma** (typed ops → auto-generated OpenAPI at
 `/docs`, `/openapi.yaml`; `make openapi`).
