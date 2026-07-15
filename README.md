@@ -97,6 +97,7 @@ internal/
   server              HTTP layer: huma operations (the ONLY place that knows HTTP)
 pkg/ffclient          Thin Go SDK (talks to the eval API)
 migrations            SQL schema (goose, embedded)
+sdk/                  Thin JS/TS SDK — isomorphic, streaming (see sdk/README.md)
 web/                  React + TypeScript dashboard (see web/README.md)
 ```
 
