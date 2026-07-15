@@ -99,6 +99,20 @@ stream := client.Stream(ctx, user, func(flags map[string]flagit.Evaluation) {
 defer stream.Close()
 ```
 
+## Examples
+
+Runnable examples live in [`examples/`](./examples):
+
+| Command | Shows |
+| --- | --- |
+| [`go run ./examples/percall`](./examples/percall) | one-off reads: `BoolVariation`, `Evaluate`, `AllFlags` |
+| [`go run ./examples/cached`](./examples/cached) | streaming cache, synchronous reads, `OnChange`, graceful `Close` |
+| [`go run ./examples/accounttargeting`](./examples/accounttargeting) | per-account targeting via a multi-kind context — the server matches the rule, the client only asserts identity |
+
+```bash
+FLAG_IT_SDK_KEY=sdk-… go run ./examples/percall
+```
+
 ## Server vs client SDK keys
 
 Use a **server** SDK key from a backend. Client keys only see flags marked
