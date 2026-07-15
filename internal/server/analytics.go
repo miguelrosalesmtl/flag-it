@@ -43,6 +43,32 @@ type flagStatsOutput struct {
 	}
 }
 
+type envStatsInput struct {
+	OrganizationSlug string `path:"organizationSlug"`
+	ProjectKey       string `path:"projectKey"`
+	EnvKey           string `path:"envKey"`
+	Since            string `query:"since" doc:"lookback window, e.g. 1h, 24h, 168h (default 24h)"`
+}
+
+type envStatsOutput struct {
+	Body struct {
+		Environment string             `json:"environment"`
+		Since       string             `json:"since"`
+		Flags       []models.FlagCount `json:"flags"`
+		Total       int64              `json:"total"`
+	}
+}
+
+// parseWindow reads a lookback duration, defaulting to 24h.
+func parseWindow(s string) time.Duration {
+	if s != "" {
+		if d, err := time.ParseDuration(s); err == nil && d > 0 {
+			return d
+		}
+	}
+	return 24 * time.Hour
+}
+
 func (s *Server) registerAnalytics() {
 	huma.Register(s.api, huma.Operation{
 		OperationID: "ingest-events", Method: http.MethodPost, Path: "/api/v1/events",
@@ -81,12 +107,7 @@ func (s *Server) registerAnalytics() {
 			return nil, err
 		}
 
-		window := 24 * time.Hour
-		if in.Since != "" {
-			if d, perr := time.ParseDuration(in.Since); perr == nil && d > 0 {
-				window = d
-			}
-		}
+		window := parseWindow(in.Since)
 		since := time.Now().Add(-window)
 
 		vcs, err := s.analytics.QueryStats(ctx, env.ID, in.FlagKey, since)
@@ -100,6 +121,38 @@ func (s *Server) registerAnalytics() {
 		out.Body.Variations = vcs
 		for _, vc := range vcs {
 			out.Body.Total += vc.Count
+		}
+		return out, nil
+	})
+
+	huma.Register(s.api, huma.Operation{
+		OperationID: "env-stats", Method: http.MethodGet,
+		Path:    "/api/v1/organizations/{organizationSlug}/projects/{projectKey}/environments/{envKey}/stats",
+		Summary: "Evaluation counts per flag in an environment, most-active first (requires flag.read)",
+		Tags:    []string{"Analytics"}, Security: bearer,
+	}, func(ctx context.Context, in *envStatsInput) (*envStatsOutput, error) {
+		_, project, err := s.resolveScope(ctx, in.OrganizationSlug, in.ProjectKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.authorize(ctx, models.PermFlagRead, models.Resource{OrganizationID: project.OrganizationID, ProjectID: project.ID}); err != nil {
+			return nil, err
+		}
+		env, err := s.resolveEnv(ctx, project.ID, in.EnvKey)
+		if err != nil {
+			return nil, err
+		}
+		window := parseWindow(in.Since)
+		flagsCounts, err := s.analytics.QueryEnvStats(ctx, env.ID, time.Now().Add(-window))
+		if err != nil {
+			return nil, huma.Error500InternalServerError(err.Error())
+		}
+		out := &envStatsOutput{}
+		out.Body.Environment = in.EnvKey
+		out.Body.Since = window.String()
+		out.Body.Flags = flagsCounts
+		for _, fc := range flagsCounts {
+			out.Body.Total += fc.Count
 		}
 		return out, nil
 	})

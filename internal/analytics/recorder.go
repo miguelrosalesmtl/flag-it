@@ -17,6 +17,7 @@ import (
 type Store interface {
 	UpsertEvalStats(ctx context.Context, stats []models.EvalStat) error
 	QueryEvalStats(ctx context.Context, environmentID, flagKey string, since time.Time) ([]models.VariationCount, error)
+	EnvEvalStats(ctx context.Context, environmentID string, since time.Time) ([]models.FlagCount, error)
 }
 
 type counterKey struct {
@@ -52,6 +53,12 @@ func New(store Store, interval time.Duration, log *slog.Logger) *Recorder {
 // since the given time.
 func (r *Recorder) QueryStats(ctx context.Context, environmentID, flagKey string, since time.Time) ([]models.VariationCount, error) {
 	return r.store.QueryEvalStats(ctx, environmentID, flagKey, since)
+}
+
+// QueryEnvStats returns each flag's total evaluations in an environment since the
+// given time, most-active first.
+func (r *Recorder) QueryEnvStats(ctx context.Context, environmentID string, since time.Time) ([]models.FlagCount, error) {
+	return r.store.EnvEvalStats(ctx, environmentID, since)
 }
 
 // Record counts one evaluation (in-memory; cheap enough for the hot path).

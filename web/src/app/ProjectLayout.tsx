@@ -1,4 +1,5 @@
 import {
+  BarChart3Icon,
   BoxIcon,
   CheckCheckIcon,
   FlagIcon,
@@ -75,6 +76,7 @@ export function ProjectLayout() {
           <NavItem to={`${base}/approvals`} icon={CheckCheckIcon} label="Approvals" />
           <NavItem to={`${base}/lifecycle`} icon={HeartPulseIcon} label="Lifecycle" />
           <NavItem to={`${base}/audit`} icon={ScrollTextIcon} label="Audit log" />
+          <NavItem to={`${base}/analytics`} icon={BarChart3Icon} label="Analytics" />
           <p className="text-muted-foreground px-2 pt-3 pb-1 text-xs font-medium uppercase">
             Project settings
           </p>

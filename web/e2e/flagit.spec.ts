@@ -673,6 +673,28 @@ test('shows the organization audit log with a resource filter', async ({ page })
   await expect(page.getByText('flag.config.patched')).toBeHidden()
 })
 
+test('shows evaluation analytics for an environment and a flag', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill('admin@flag-it.dev')
+  await page.getByLabel('Password').fill('supersecret123')
+  await page.getByRole('button', { name: 'Sign in' }).click()
+
+  await page.getByRole('button', { name: 'Acme Inc' }).click()
+  await page.getByRole('button', { name: 'Checkout' }).click()
+
+  // Environment-level analytics: flags ranked by evaluation count.
+  await page.getByRole('link', { name: 'Analytics' }).click()
+  await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
+  await expect(page.getByText('14,500 evaluations')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'new-checkout' })).toBeVisible()
+
+  // Click a flag → its detail page shows the per-variation breakdown.
+  await page.getByRole('button', { name: 'new-checkout' }).click()
+  await expect(page.getByRole('heading', { name: 'New checkout' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Evaluations' })).toBeVisible()
+  await expect(page.getByText(/10,300 in the last/)).toBeVisible()
+})
+
 test('creates a flag trigger, reveals its URL, then deletes it', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill('admin@flag-it.dev')
