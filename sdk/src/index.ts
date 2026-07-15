@@ -210,6 +210,185 @@ export function createClient(options: ClientOptions): Client {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Cached client — the LaunchDarkly-style pattern: stream flag values into an
+// in-memory store once, then read locally with ZERO network per read, and
+// report usage as batched summary events. Use this for a long-lived app; use
+// `createClient` for one-off / serverless calls.
+// ---------------------------------------------------------------------------
+
+export interface CachedClientOptions {
+  /** Service root, e.g. `http://localhost:8080`. */
+  baseUrl: string
+  /** An environment's SDK key. */
+  sdkKey: string
+  /** The evaluation context this client streams and reads for. */
+  context: EvalContext
+  /** Override the fetch implementation. Defaults to global fetch. */
+  fetch?: typeof fetch
+  /** How often to flush buffered usage events, in ms. 0 disables. Default 5000. */
+  flushIntervalMs?: number
+  /** Report evaluation usage back to the server as summary events. Default true. */
+  sendEvents?: boolean
+  /** Called on a stream error (before the automatic reconnect). */
+  onError?: (error: unknown) => void
+}
+
+export interface CachedClient {
+  /** Resolves once the initial flag snapshot has arrived. */
+  waitForInitialization(): Promise<void>
+  /** Whether the initial snapshot has loaded. */
+  initialized(): boolean
+  /** Subscribe to store updates; returns an unsubscribe function. */
+  onChange(listener: () => void): () => void
+
+  /** Synchronous local read — no network. Returns `fallback` before init / on type mismatch. */
+  boolVariation(flagKey: string, fallback: boolean): boolean
+  stringVariation(flagKey: string, fallback: string): string
+  numberVariation(flagKey: string, fallback: number): number
+  variation<T>(flagKey: string, fallback: T): T
+  /** A snapshot of all cached evaluations. */
+  allFlags(): Record<string, Evaluation>
+
+  /** Switch to a new context: flushes, reconnects the stream, resolves on the new snapshot. */
+  identify(context: EvalContext): Promise<void>
+  /** Flush buffered usage events now. */
+  flush(): Promise<void>
+  /** Stop streaming and flush a final time. */
+  close(): Promise<void>
+}
+
+export function createCachedClient(options: CachedClientOptions): CachedClient {
+  const base = createClient({
+    baseUrl: options.baseUrl,
+    sdkKey: options.sdkKey,
+    ...(options.fetch ? { fetch: options.fetch } : {}),
+  })
+  const flushIntervalMs = options.flushIntervalMs ?? 5000
+  const trackEvents = options.sendEvents ?? true
+  const onError = options.onError ?? (() => {})
+
+  let store: Record<string, Evaluation> = {}
+  let ready = false
+  let currentContext = options.context
+  let handle: StreamHandle | null = null
+  const listeners = new Set<() => void>()
+  let readyResolvers: Array<() => void> = []
+  // Buffered usage: flagKey -> variation -> count.
+  const counts = new Map<string, Map<number, number>>()
+
+  function markReady(): void {
+    ready = true
+    const resolvers = readyResolvers
+    readyResolvers = []
+    for (const resolve of resolvers) resolve()
+  }
+
+  function startStream(): void {
+    handle = base.stream(
+      currentContext,
+      (flags) => {
+        store = flags
+        if (!ready) markReady()
+        for (const listener of listeners) listener()
+      },
+      { onError },
+    )
+  }
+
+  function record(flagKey: string, variation: number): void {
+    if (!trackEvents) return
+    let byVariation = counts.get(flagKey)
+    if (!byVariation) {
+      byVariation = new Map()
+      counts.set(flagKey, byVariation)
+    }
+    byVariation.set(variation, (byVariation.get(variation) ?? 0) + 1)
+  }
+
+  function read(flagKey: string): Evaluation | undefined {
+    const ev = store[flagKey]
+    if (ev) record(flagKey, ev.variation)
+    return ev
+  }
+
+  async function flush(): Promise<void> {
+    if (counts.size === 0) return
+    const summary: EventSummary = { flags: {} }
+    for (const [flagKey, byVariation] of counts) {
+      summary.flags[flagKey] = {
+        counters: [...byVariation].map(([variation, count]) => ({ variation, count })),
+      }
+    }
+    counts.clear()
+    try {
+      await base.sendEvents(summary)
+    } catch (err) {
+      onError(err)
+    }
+  }
+
+  startStream()
+
+  const timer =
+    flushIntervalMs > 0 && trackEvents
+      ? setInterval(() => {
+          void flush()
+        }, flushIntervalMs)
+      : null
+  // In Node, don't let the flush timer keep the process alive.
+  if (timer !== null) {
+    ;(timer as unknown as { unref?: () => void }).unref?.()
+  }
+
+  return {
+    waitForInitialization() {
+      if (ready) return Promise.resolve()
+      return new Promise<void>((resolve) => readyResolvers.push(resolve))
+    },
+    initialized: () => ready,
+    onChange(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    boolVariation(flagKey, fallback) {
+      const ev = read(flagKey)
+      return ev && typeof ev.value === 'boolean' ? ev.value : fallback
+    },
+    stringVariation(flagKey, fallback) {
+      const ev = read(flagKey)
+      return ev && typeof ev.value === 'string' ? ev.value : fallback
+    },
+    numberVariation(flagKey, fallback) {
+      const ev = read(flagKey)
+      return ev && typeof ev.value === 'number' ? ev.value : fallback
+    },
+    variation<T>(flagKey: string, fallback: T): T {
+      const ev = read(flagKey)
+      return ev ? (ev.value as T) : fallback
+    },
+    allFlags() {
+      return { ...store }
+    },
+    async identify(context) {
+      await flush()
+      handle?.close()
+      store = {}
+      ready = false
+      currentContext = context
+      const done = new Promise<void>((resolve) => readyResolvers.push(resolve))
+      startStream()
+      return done
+    },
+    flush,
+    async close() {
+      if (timer !== null) clearInterval(timer)
+      handle?.close()
+      await flush()
+    },
+  }
+}
+
 /** Reads a Server-Sent Events body, invoking `onData` with each event's data payload. */
 async function readEventStream(
   body: ReadableStream<Uint8Array>,
