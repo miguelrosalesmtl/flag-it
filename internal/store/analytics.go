@@ -79,3 +79,29 @@ func (s *Store) QueryEvalStats(ctx context.Context, environmentID, flagKey strin
 	}
 	return out, rows.Err()
 }
+
+// EnvEvalStats returns each flag's total evaluations in an environment since a
+// given time, most-active first — the environment-level analytics rollup.
+func (s *Store) EnvEvalStats(ctx context.Context, environmentID string, since time.Time) ([]models.FlagCount, error) {
+	const q = `
+		SELECT flag_key, SUM(count)::bigint AS total
+		FROM flag_eval_stats
+		WHERE environment_id = $1 AND window_start >= $2
+		GROUP BY flag_key
+		ORDER BY total DESC, flag_key`
+	rows, err := s.pool.Query(ctx, q, environmentID, since)
+	if err != nil {
+		return nil, fmt.Errorf("store: env eval stats: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]models.FlagCount, 0)
+	for rows.Next() {
+		var fc models.FlagCount
+		if err := rows.Scan(&fc.FlagKey, &fc.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, fc)
+	}
+	return out, rows.Err()
+}

@@ -525,6 +525,42 @@ export const handlers = [
     return HttpResponse.json({ flags })
   }),
 
+  // --- Analytics ---
+  http.get(
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/flags/:flagKey/environments/:envKey/stats',
+    ({ params, request }) => {
+      const since = new URL(request.url).searchParams.get('since') ?? '24h'
+      const variations = [
+        { variation: 0, count: 7200 },
+        { variation: 1, count: 3100 },
+      ]
+      return HttpResponse.json({
+        flag_key: String(params.flagKey),
+        environment: String(params.envKey),
+        since,
+        variations,
+        total: variations.reduce((a, v) => a + v.count, 0),
+      })
+    },
+  ),
+
+  http.get(
+    '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/stats',
+    ({ params, request }) => {
+      const since = new URL(request.url).searchParams.get('since') ?? '24h'
+      const flags = [
+        { flag_key: 'new-checkout', count: 10300 },
+        { flag_key: 'pricing-tier', count: 4200 },
+      ]
+      return HttpResponse.json({
+        environment: String(params.envKey),
+        since,
+        flags,
+        total: flags.reduce((a, f) => a + f.count, 0),
+      })
+    },
+  ),
+
   // Flags with per-environment on/off state (the env-aware flag list).
   http.get(
     '*/api/v1/organizations/:organizationSlug/projects/:projectKey/environments/:envKey/flags',

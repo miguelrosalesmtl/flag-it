@@ -11,6 +11,7 @@ import { FlagTargeting } from '@/features/flags/components/FlagTargeting'
 import { RequestChangeDialog } from '@/features/flags/components/RequestChangeDialog'
 import { ScheduleChangeDialog } from '@/features/flags/components/ScheduleChangeDialog'
 import { ScheduledChangesCard } from '@/features/flags/components/ScheduledChangesCard'
+import { FlagStatsSection } from '@/features/analytics/FlagStatsSection'
 import { CreateTriggerDialog } from '@/features/flags/components/CreateTriggerDialog'
 import { TriggersCard } from '@/features/flags/components/TriggersCard'
 import { useCreateChange } from '@/features/approvals/hooks/useChanges'
@@ -70,7 +71,7 @@ export function FlagDetailPage() {
   const flagsUrl = `/organizations/${organizationSlug}/projects/${projectKey}`
 
   return (
-    <section className="space-y-6">
+    <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <Link to={flagsUrl} className="text-muted-foreground text-sm hover:underline">
@@ -147,6 +148,13 @@ export function FlagDetailPage() {
                 onToggle={(on) => toggle.mutate({ envKey, on })}
                 isToggling={toggle.isPending}
               />
+              <FlagStatsSection
+                organizationSlug={organizationSlug}
+                projectKey={projectKey}
+                flagKey={flagKey}
+                envKey={envKey}
+                variations={flag.data.variations}
+              />
               <FlagTargeting
                 flag={flag.data}
                 config={config.data}
@@ -220,6 +228,6 @@ export function FlagDetailPage() {
           )}
         </div>
       )}
-    </section>
+    </div>
   )
 }

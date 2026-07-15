@@ -4,6 +4,7 @@ import { AppLayout } from '@/app/AppLayout'
 import { ProjectLayout } from '@/app/ProjectLayout'
 import { SettingsLayout } from '@/app/SettingsLayout'
 import { LoginRoute, ProtectedLayout, SetupRoute } from '@/app/guards'
+import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { ApprovalsPage } from '@/features/approvals/ApprovalsPage'
 import { AuditPage } from '@/features/audit/AuditPage'
 import { ContextDetailPage } from '@/features/contexts/ContextDetailPage'
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
               { path: 'approvals', Component: ApprovalsPage },
               { path: 'lifecycle', Component: LifecyclePage },
               { path: 'audit', Component: AuditPage },
+              { path: 'analytics', Component: AnalyticsPage },
               { path: 'environments', Component: EnvironmentsPage },
             ],
           },
