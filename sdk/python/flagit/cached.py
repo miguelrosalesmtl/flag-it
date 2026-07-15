@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 from typing import Any, Callable, Dict, Optional
 
-from .client import Client, EvalContext, Evaluation, Stream
+from .client import Client, EvalContext, Evaluation, EvaluationDetail, FlagsState, Stream
 
 
 class CachedClient:
@@ -71,8 +71,9 @@ class CachedClient:
         """Block until the initial snapshot arrives. Returns True if it did."""
         return self._ready.wait(timeout)
 
-    def initialized(self) -> bool:
-        """Whether the initial snapshot has loaded."""
+    def is_initialized(self) -> bool:
+        """Whether the initial snapshot has loaded (matches LaunchDarkly's
+        ``is_initialized``)."""
         return self._ready.is_set()
 
     def on_change(self, listener: Callable[[], None]) -> Callable[[], None]:
@@ -113,14 +114,26 @@ class CachedClient:
             return ev.value
         return fallback
 
-    def variation(self, flag_key: str, fallback: Any) -> Any:
+    def variation(self, flag_key: str, default: Any) -> Any:
+        """The flag's value from the local store, or ``default``. The canonical
+        read (matching LaunchDarkly's ``variation``); the typed helpers above are
+        thin conveniences over it."""
         ev = self._read(flag_key)
-        return ev.value if ev is not None else fallback
+        return ev.value if ev is not None else default
 
-    def all_flags(self) -> Dict[str, Evaluation]:
-        """A snapshot of all cached evaluations."""
+    def variation_detail(self, flag_key: str, default: Any) -> EvaluationDetail:
+        """Like ``variation`` but also returns the variation index and reason
+        (matching LaunchDarkly's ``variation_detail``)."""
+        ev = self._read(flag_key)
+        if ev is None:
+            return EvaluationDetail(value=default, variation_index=None, reason={"kind": "FLAG_NOT_FOUND"})
+        return EvaluationDetail(value=ev.value, variation_index=ev.variation, reason=ev.reason)
+
+    def all_flags_state(self) -> FlagsState:
+        """A snapshot of all cached evaluations. Returns a ``FlagsState``; call
+        ``.to_values_dict()`` for a plain value map."""
         with self._lock:
-            return dict(self._store)
+            return FlagsState(dict(self._store))
 
     # -- usage events --------------------------------------------------------
 

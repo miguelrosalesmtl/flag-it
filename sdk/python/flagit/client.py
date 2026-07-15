@@ -32,6 +32,45 @@ class Evaluation:
         )
 
 
+@dataclass
+class EvaluationDetail:
+    """The value plus explanation returned by ``variation_detail`` (mirrors the
+    LaunchDarkly ``EvaluationDetail``). ``variation_index`` is ``None`` when the
+    default was returned because of an error."""
+
+    value: Any
+    variation_index: Optional[int]
+    reason: Any
+
+    def is_default_value(self) -> bool:
+        return self.variation_index is None
+
+
+class FlagsState:
+    """A snapshot of every flag's evaluation, returned by ``all_flags_state``
+    (mirrors the LaunchDarkly ``FeatureFlagsState``)."""
+
+    def __init__(self, evaluations: Dict[str, "Evaluation"]) -> None:
+        self._evaluations = evaluations
+
+    def to_values_dict(self) -> Dict[str, Any]:
+        """A plain ``{flag_key: value}`` map — handy for bootstrapping a page."""
+        return {k: e.value for k, e in self._evaluations.items()}
+
+    def get(self, flag_key: str) -> Optional["Evaluation"]:
+        """The full evaluation for one flag, or ``None`` if absent."""
+        return self._evaluations.get(flag_key)
+
+    def keys(self):
+        return self._evaluations.keys()
+
+    def __iter__(self):
+        return iter(self._evaluations)
+
+    def __contains__(self, flag_key: str) -> bool:
+        return flag_key in self._evaluations
+
+
 class FlagItError(Exception):
     """Raised for a non-2xx API response."""
 
@@ -107,11 +146,12 @@ class Client:
         out = self._request("POST", "/api/v1/eval", {"flag_key": flag_key, "context": ctx})
         return Evaluation.from_dict(out)
 
-    def all_flags(self, ctx: EvalContext) -> Dict[str, Evaluation]:
-        """Evaluate every flag visible to this key in one round-trip."""
+    def all_flags_state(self, ctx: EvalContext) -> FlagsState:
+        """Evaluate every flag visible to this key in one round-trip. Returns a
+        ``FlagsState``; call ``.to_values_dict()`` for a plain value map."""
         out = self._request("POST", "/api/v1/eval/all", {"context": ctx}) or {}
         flags = out.get("flags") or {}
-        return {k: Evaluation.from_dict(v) for k, v in flags.items()}
+        return FlagsState({k: Evaluation.from_dict(v) for k, v in flags.items()})
 
     def _safe_value(self, flag_key: str, ctx: EvalContext) -> Any:
         try:
@@ -134,10 +174,22 @@ class Client:
         v = self._safe_value(flag_key, ctx)
         return v if isinstance(v, (int, float)) and not isinstance(v, bool) else fallback
 
-    def variation(self, flag_key: str, ctx: EvalContext, fallback: Any) -> Any:
-        """Raw value, or ``fallback`` if unavailable. Never raises."""
+    def variation(self, flag_key: str, ctx: EvalContext, default: Any) -> Any:
+        """The flag's value, or ``default`` if unavailable. Never raises.
+
+        This is the canonical read (matching LaunchDarkly's ``variation``); the
+        typed helpers above are thin conveniences over it."""
         v = self._safe_value(flag_key, ctx)
-        return fallback if v is None else v
+        return default if v is None else v
+
+    def variation_detail(self, flag_key: str, ctx: EvalContext, default: Any) -> EvaluationDetail:
+        """Like ``variation`` but also returns the variation index and reason
+        (matching LaunchDarkly's ``variation_detail``). Never raises."""
+        try:
+            ev = self.evaluate(flag_key, ctx)
+        except Exception as err:  # noqa: BLE001 - reported via reason, not raised
+            return EvaluationDetail(value=default, variation_index=None, reason={"kind": "ERROR", "error": str(err)})
+        return EvaluationDetail(value=ev.value, variation_index=ev.variation, reason=ev.reason)
 
     def send_events(self, summary: Dict[str, Any]) -> None:
         """Report rolled-up evaluation counts (for clients that read from a local cache)."""
