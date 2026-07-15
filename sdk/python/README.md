@@ -103,6 +103,20 @@ stream = client.stream(user, on_update, on_error=lambda e: print(e))
 stream.close()
 ```
 
+## Examples
+
+Runnable examples live in [`examples/`](./examples):
+
+| File | Shows |
+| --- | --- |
+| [`per_call.py`](./examples/per_call.py) | one-off reads: `variation`, `variation_detail`, `all_flags_state` |
+| [`cached_client.py`](./examples/cached_client.py) | streaming cache, synchronous reads, `on_change`, graceful `close` |
+| [`account_targeting.py`](./examples/account_targeting.py) | per-account targeting via a multi-kind context — the server matches the rule, the client only asserts identity |
+
+```bash
+FLAG_IT_SDK_KEY=sdk-… python examples/per_call.py
+```
+
 ## Server vs client SDK keys
 
 Use a **server** SDK key from a backend. Client keys only see flags marked

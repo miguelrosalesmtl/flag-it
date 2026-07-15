@@ -140,6 +140,20 @@ await client.close() // stop the stream and flush a final batch
 
 Context helpers: `context(kind, key, attributes?)`, `multiContext(...parts)`.
 
+## Examples
+
+Runnable examples live in [`examples/`](./examples):
+
+| File | Shows |
+| --- | --- |
+| [`per-call.mjs`](./examples/per-call.mjs) | one-off reads: `boolVariation`, `evaluate`, `allFlags` |
+| [`cached-client.mjs`](./examples/cached-client.mjs) | streaming cache, synchronous reads, `onChange`, `identify`, graceful `close` |
+| [`account-targeting.mjs`](./examples/account-targeting.mjs) | per-account targeting via a multi-kind context — the server matches the rule, the client only asserts identity |
+
+```bash
+FLAG_IT_SDK_KEY=sdk-… node examples/per-call.mjs
+```
+
 ## Server vs client SDK keys
 
 Use a **server** SDK key from a backend, and a **client** key from a browser

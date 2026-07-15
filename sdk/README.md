@@ -24,6 +24,9 @@ language. They all speak the same server API and share the same design:
 | Go | [`go/`](./go/README.md) | `net/http`; concurrency-safe; Go 1.21+ |
 | Python | [`python/`](./python/README.md) | `urllib` + `threading`; thread-safe; Python 3.8+ |
 
+Each folder ships runnable **`examples/`** — a per-call read, a cached client,
+and a per-account targeting walkthrough — linked from its README.
+
 ## Shared concepts
 
 **Context** — who/what you're evaluating for. Single-kind (a user) or multi-kind
